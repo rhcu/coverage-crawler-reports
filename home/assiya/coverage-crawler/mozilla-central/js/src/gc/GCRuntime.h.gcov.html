@@ -1,0 +1,1159 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - /home/assiya/coverage-crawler/mozilla-central/js/src/gc/GCRuntime.h</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../../../../index.html">top level</a> - <a href="index.html">home/assiya/coverage-crawler/mozilla-central/js/src/gc</a> - GCRuntime.h<span style="font-size: 80%;"> (source / <a href="GCRuntime.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">128</td>
+            <td class="headerCovTableEntryLo">7.8 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-03 01:26:20</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-</a>
+<span class="lineNum">       2 </span>            :  * vim: set ts=8 sts=4 et sw=4 tw=99:
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef gc_GCRuntime_h
+<span class="lineNum">       8 </span>            : #define gc_GCRuntime_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &quot;mozilla/Atomics.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/EnumSet.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/Maybe.h&quot;
+<span class="lineNum">      13 </span>            : 
+<span class="lineNum">      14 </span>            : #include &quot;gc/ArenaList.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;gc/AtomMarking.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;gc/GCHelperState.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;gc/GCMarker.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;gc/GCParallelTask.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;gc/Nursery.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;gc/Scheduling.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;gc/Statistics.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;gc/StoreBuffer.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;js/GCAnnotations.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;js/UniquePtr.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;vm/AtomsTable.h&quot;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : namespace js {
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : class AutoLockGC;
+<span class="lineNum">      30 </span>            : class AutoLockGCBgAlloc;
+<span class="lineNum">      31 </span>            : class AutoLockHelperThreadState;
+<span class="lineNum">      32 </span>            : class VerifyPreTracer;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : namespace gc {
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : using BlackGrayEdgeVector = Vector&lt;TenuredCell*, 0, SystemAllocPolicy&gt;;
+<span class="lineNum">      37 </span>            : using ZoneVector = Vector&lt;JS::Zone*, 4, SystemAllocPolicy&gt;;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : class AutoCallGCCallbacks;
+<span class="lineNum">      40 </span>            : class AutoRunParallelTask;
+<span class="lineNum">      41 </span>            : class AutoTraceSession;
+<span class="lineNum">      42 </span>            : class MarkingValidator;
+<span class="lineNum">      43 </span>            : struct MovingTracer;
+<span class="lineNum">      44 </span>            : enum class ShouldCheckThresholds;
+<span class="lineNum">      45 </span>            : class SweepGroupsIter;
+<span class="lineNum">      46 </span>            : class WeakCacheSweepIterator;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : enum IncrementalProgress
+<span class="lineNum">      49 </span>            : {
+<span class="lineNum">      50 </span>            :     NotFinished = 0,
+<span class="lineNum">      51 </span>            :     Finished
+<span class="lineNum">      52 </span>            : };
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span>            : // Interface to a sweep action.
+<span class="lineNum">      55 </span>            : //
+<span class="lineNum">      56 </span>            : // Note that we don't need perfect forwarding for args here because the
+<span class="lineNum">      57 </span>            : // types are not deduced but come ultimately from the type of a function pointer
+<span class="lineNum">      58 </span>            : // passed to SweepFunc.
+<span class="lineNum">      59 </span>            : template &lt;typename... Args&gt;
+<span class="lineNum">      60 </span>            : struct SweepAction
+<span class="lineNum">      61 </span>            : {
+<span class="lineNum">      62 </span>            :     virtual ~SweepAction() {}
+<span class="lineNum">      63 </span>            :     virtual IncrementalProgress run(Args... args) = 0;
+<span class="lineNum">      64 </span>            :     virtual void assertFinished() const = 0;
+<span class="lineNum">      65 </span>            : };
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            : class ChunkPool
+<span class="lineNum">      68 </span>            : {
+<span class="lineNum">      69 </span>            :     Chunk* head_;
+<span class="lineNum">      70 </span>            :     size_t count_;
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            :   public:
+<span class="lineNum">      73 </span><span class="lineNoCov">          0 :     ChunkPool() : head_(nullptr), count_(0) {}</span>
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :     ~ChunkPool() {</span>
+<span class="lineNum">      75 </span>            :         // TODO: We should be able to assert that the chunk pool is empty but
+<span class="lineNum">      76 </span>            :         // this causes XPCShell test failures on Windows 2012. See bug 1379232.
+<span class="lineNum">      77 </span>            :     }
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            :     bool empty() const { return !head_; }
+<span class="lineNum">      80 </span>            :     size_t count() const { return count_; }
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :     Chunk* head() { MOZ_ASSERT(head_); return head_; }</span>
+<span class="lineNum">      83 </span>            :     Chunk* pop();
+<span class="lineNum">      84 </span>            :     void push(Chunk* chunk);
+<span class="lineNum">      85 </span>            :     Chunk* remove(Chunk* chunk);
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : #ifdef DEBUG
+<span class="lineNum">      88 </span>            :     bool contains(Chunk* chunk) const;
+<span class="lineNum">      89 </span>            :     bool verify() const;
+<span class="lineNum">      90 </span>            : #endif
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            :     // Pool mutation does not invalidate an Iter unless the mutation
+<span class="lineNum">      93 </span>            :     // is of the Chunk currently being visited by the Iter.
+<span class="lineNum">      94 </span>            :     class Iter {
+<span class="lineNum">      95 </span>            :       public:
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :         explicit Iter(ChunkPool&amp; pool) : current_(pool.head_) {}</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">          0 :         bool done() const { return !current_; }</span>
+<span class="lineNum">      98 </span>            :         void next();
+<span class="lineNum">      99 </span>            :         Chunk* get() const { return current_; }
+<span class="lineNum">     100 </span>            :         operator Chunk*() const { return get(); }
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :         Chunk* operator-&gt;() const { return get(); }</span>
+<span class="lineNum">     102 </span>            :       private:
+<span class="lineNum">     103 </span>            :         Chunk* current_;
+<span class="lineNum">     104 </span>            :     };
+<span class="lineNum">     105 </span>            : };
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            : // Performs extra allocation off thread so that when memory is required on the
+<span class="lineNum">     108 </span>            : // main thread it will already be available and waiting.
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 : class BackgroundAllocTask : public GCParallelTaskHelper&lt;BackgroundAllocTask&gt;</span>
+<span class="lineNum">     110 </span>            : {
+<span class="lineNum">     111 </span>            :     // Guarded by the GC lock.
+<span class="lineNum">     112 </span>            :     GCLockData&lt;ChunkPool&amp;&gt; chunkPool_;
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span>            :     const bool enabled_;
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            :   public:
+<span class="lineNum">     117 </span>            :     BackgroundAllocTask(JSRuntime* rt, ChunkPool&amp; pool);
+<span class="lineNum">     118 </span>            :     bool enabled() const { return enabled_; }
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            :     void run();
+<span class="lineNum">     121 </span>            : };
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            : // Search the provided Chunks for free arenas and decommit them.
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 : class BackgroundDecommitTask : public GCParallelTaskHelper&lt;BackgroundDecommitTask&gt;</span>
+<span class="lineNum">     125 </span>            : {
+<span class="lineNum">     126 </span>            :   public:
+<span class="lineNum">     127 </span>            :     using ChunkVector = mozilla::Vector&lt;Chunk*&gt;;
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :     explicit BackgroundDecommitTask(JSRuntime *rt) : GCParallelTaskHelper(rt) {}</span>
+<span class="lineNum">     130 </span>            :     void setChunksToScan(ChunkVector &amp;chunks);
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span>            :     void run();
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span>            :   private:
+<span class="lineNum">     135 </span>            :     MainThreadOrGCTaskData&lt;ChunkVector&gt; toDecommit;
+<span class="lineNum">     136 </span>            : };
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            : template&lt;typename F&gt;
+<span class="lineNum">     139 </span>            : struct Callback {
+<span class="lineNum">     140 </span>            :     MainThreadOrGCTaskData&lt;F&gt; op;
+<span class="lineNum">     141 </span>            :     MainThreadOrGCTaskData&lt;void*&gt; data;
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :     Callback()</span>
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :       : op(nullptr), data(nullptr)</span>
+<span class="lineNum">     145 </span>            :     {}
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :     Callback(F op, void* data)</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :       : op(op), data(data)</span>
+<span class="lineNum">     148 </span>            :     {}
+<span class="lineNum">     149 </span>            : };
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            : template&lt;typename F&gt;
+<span class="lineNum">     152 </span>            : using CallbackVector = MainThreadData&lt;Vector&lt;Callback&lt;F&gt;, 4, SystemAllocPolicy&gt;&gt;;
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span>            : template &lt;typename T, typename Iter0, typename Iter1&gt;
+<span class="lineNum">     155 </span>            : class ChainedIter
+<span class="lineNum">     156 </span>            : {
+<span class="lineNum">     157 </span>            :     Iter0 iter0_;
+<span class="lineNum">     158 </span>            :     Iter1 iter1_;
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span>            :   public:
+<span class="lineNum">     161 </span>            :     ChainedIter(const Iter0&amp; iter0, const Iter1&amp; iter1)
+<span class="lineNum">     162 </span>            :       : iter0_(iter0), iter1_(iter1)
+<span class="lineNum">     163 </span>            :     {}
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :     bool done() const { return iter0_.done() &amp;&amp; iter1_.done(); }</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :     void next() {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(!done());</span>
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :         if (!iter0_.done()) {</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :             iter0_.next();</span>
+<span class="lineNum">     170 </span>            :         } else {
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(!iter1_.done());</span>
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :             iter1_.next();</span>
+<span class="lineNum">     173 </span>            :         }
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :     T get() const {</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(!done());</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :         if (!iter0_.done())</span>
+<span class="lineNum">     178 </span>            :             return iter0_.get();
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(!iter1_.done());</span>
+<span class="lineNum">     180 </span>            :         return iter1_.get();
+<span class="lineNum">     181 </span>            :     }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :     operator T() const { return get(); }</span>
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 :     T operator-&gt;() const { return get(); }</span>
+<span class="lineNum">     185 </span>            : };
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span>            : typedef HashMap&lt;Value*, const char*, DefaultHasher&lt;Value*&gt;, SystemAllocPolicy&gt; RootedValueMap;
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span>            : using AllocKinds = mozilla::EnumSet&lt;AllocKind&gt;;
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            : // A singly linked list of zones.
+<span class="lineNum">     192 </span>            : class ZoneList
+<span class="lineNum">     193 </span>            : {
+<span class="lineNum">     194 </span>            :     static Zone * const End;
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            :     Zone* head;
+<span class="lineNum">     197 </span>            :     Zone* tail;
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span>            :   public:
+<span class="lineNum">     200 </span>            :     ZoneList();
+<span class="lineNum">     201 </span>            :     ~ZoneList();
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            :     bool isEmpty() const;
+<span class="lineNum">     204 </span>            :     Zone* front() const;
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span>            :     void append(Zone* zone);
+<span class="lineNum">     207 </span>            :     void transferFrom(ZoneList&amp; other);
+<span class="lineNum">     208 </span>            :     Zone* removeFront();
+<span class="lineNum">     209 </span>            :     void clear();
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span>            :   private:
+<span class="lineNum">     212 </span>            :     explicit ZoneList(Zone* singleZone);
+<span class="lineNum">     213 </span>            :     void check() const;
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            :     ZoneList(const ZoneList&amp; other) = delete;
+<span class="lineNum">     216 </span>            :     ZoneList&amp; operator=(const ZoneList&amp; other) = delete;
+<span class="lineNum">     217 </span>            : };
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 : class GCRuntime</span>
+<span class="lineNum">     220 </span>            : {
+<span class="lineNum">     221 </span>            :   public:
+<span class="lineNum">     222 </span>            :     explicit GCRuntime(JSRuntime* rt);
+<span class="lineNum">     223 </span>            :     MOZ_MUST_USE bool init(uint32_t maxbytes, uint32_t maxNurseryBytes);
+<span class="lineNum">     224 </span>            :     void finishRoots();
+<span class="lineNum">     225 </span>            :     void finish();
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span>            :     inline bool hasZealMode(ZealMode mode);
+<span class="lineNum">     228 </span>            :     inline void clearZealMode(ZealMode mode);
+<span class="lineNum">     229 </span>            :     inline bool upcomingZealousGC();
+<span class="lineNum">     230 </span>            :     inline bool needZealousGC();
+<span class="lineNum">     231 </span>            :     inline bool hasIncrementalTwoSliceZealMode();
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            :     MOZ_MUST_USE bool addRoot(Value* vp, const char* name);
+<span class="lineNum">     234 </span>            :     void removeRoot(Value* vp);
+<span class="lineNum">     235 </span>            :     void setMarkStackLimit(size_t limit, AutoLockGC&amp; lock);
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span>            :     MOZ_MUST_USE bool setParameter(JSGCParamKey key, uint32_t value, AutoLockGC&amp; lock);
+<span class="lineNum">     238 </span>            :     void resetParameter(JSGCParamKey key, AutoLockGC&amp; lock);
+<span class="lineNum">     239 </span>            :     uint32_t getParameter(JSGCParamKey key, const AutoLockGC&amp; lock);
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span>            :     MOZ_MUST_USE bool triggerGC(JS::gcreason::Reason reason);
+<span class="lineNum">     242 </span>            :     void maybeAllocTriggerZoneGC(Zone* zone, const AutoLockGC&amp; lock);
+<span class="lineNum">     243 </span>            :     // The return value indicates if we were able to do the GC.
+<span class="lineNum">     244 </span>            :     bool triggerZoneGC(Zone* zone, JS::gcreason::Reason reason,
+<span class="lineNum">     245 </span>            :                        size_t usedBytes, size_t thresholdBytes);
+<span class="lineNum">     246 </span>            :     void maybeGC(Zone* zone);
+<span class="lineNum">     247 </span>            :     // The return value indicates whether a major GC was performed.
+<span class="lineNum">     248 </span>            :     bool gcIfRequested();
+<span class="lineNum">     249 </span>            :     void gc(JSGCInvocationKind gckind, JS::gcreason::Reason reason);
+<span class="lineNum">     250 </span>            :     void startGC(JSGCInvocationKind gckind, JS::gcreason::Reason reason, int64_t millis = 0);
+<span class="lineNum">     251 </span>            :     void gcSlice(JS::gcreason::Reason reason, int64_t millis = 0);
+<span class="lineNum">     252 </span>            :     void finishGC(JS::gcreason::Reason reason);
+<span class="lineNum">     253 </span>            :     void abortGC();
+<span class="lineNum">     254 </span>            :     void startDebugGC(JSGCInvocationKind gckind, SliceBudget&amp; budget);
+<span class="lineNum">     255 </span>            :     void debugGCSlice(SliceBudget&amp; budget);
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span>            :     void triggerFullGCForAtoms(JSContext* cx);
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span>            :     void runDebugGC();
+<span class="lineNum">     260 </span>            :     void notifyRootsRemoved();
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span>            :     enum TraceOrMarkRuntime {
+<span class="lineNum">     263 </span>            :         TraceRuntime,
+<span class="lineNum">     264 </span>            :         MarkRuntime
+<span class="lineNum">     265 </span>            :     };
+<span class="lineNum">     266 </span>            :     void traceRuntime(JSTracer* trc, AutoTraceSession&amp; session);
+<span class="lineNum">     267 </span>            :     void traceRuntimeForMinorGC(JSTracer* trc, AutoTraceSession&amp; session);
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span>            :     void purgeRuntimeForMinorGC();
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            :     void shrinkBuffers();
+<span class="lineNum">     272 </span>            :     void onOutOfMallocMemory();
+<span class="lineNum">     273 </span>            :     void onOutOfMallocMemory(const AutoLockGC&amp; lock);
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span>            : #ifdef JS_GC_ZEAL
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :     const void* addressOfZealModeBits() { return &amp;zealModeBits; }</span>
+<span class="lineNum">     277 </span>            :     void getZealBits(uint32_t* zealBits, uint32_t* frequency, uint32_t* nextScheduled);
+<span class="lineNum">     278 </span>            :     void setZeal(uint8_t zeal, uint32_t frequency);
+<span class="lineNum">     279 </span>            :     bool parseAndSetZeal(const char* str);
+<span class="lineNum">     280 </span>            :     void setNextScheduled(uint32_t count);
+<span class="lineNum">     281 </span>            :     void verifyPreBarriers();
+<span class="lineNum">     282 </span>            :     void maybeVerifyPreBarriers(bool always);
+<span class="lineNum">     283 </span>            :     bool selectForMarking(JSObject* object);
+<span class="lineNum">     284 </span>            :     void clearSelectedForMarking();
+<span class="lineNum">     285 </span>            :     void setDeterministic(bool enable);
+<span class="lineNum">     286 </span>            : #endif
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            : #ifdef ENABLE_WASM_GC
+<span class="lineNum">     289 </span>            :     // If we run with wasm-gc enabled and there's wasm frames on the stack,
+<span class="lineNum">     290 </span>            :     // then GCs are suppressed and many APIs should not be available.
+<span class="lineNum">     291 </span>            :     // TODO (bug 1456824) This is temporary and should be removed once proper
+<span class="lineNum">     292 </span>            :     // GC support is implemented.
+<span class="lineNum">     293 </span>            :     static bool temporaryAbortIfWasmGc(JSContext* cx);
+<span class="lineNum">     294 </span>            : #else
+<span class="lineNum">     295 </span>            :     static bool temporaryAbortIfWasmGc(JSContext* cx) { return false; }
+<span class="lineNum">     296 </span>            : #endif
+<span class="lineNum">     297 </span>            : 
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :     uint64_t nextCellUniqueId() {</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(nextCellUniqueId_ &gt; 0);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :         uint64_t uid = ++nextCellUniqueId_;</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :         return uid;</span>
+<span class="lineNum">     302 </span>            :     }
+<span class="lineNum">     303 </span>            : 
+<span class="lineNum">     304 </span>            : #ifdef DEBUG
+<span class="lineNum">     305 </span>            :     bool shutdownCollectedEverything() const {
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :         return arenasEmptyAtShutdown;</span>
+<span class="lineNum">     307 </span>            :     }
+<span class="lineNum">     308 </span>            : #endif
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span>            :   public:
+<span class="lineNum">     311 </span>            :     // Internal public interface
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :     State state() const { return incrementalState; }</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :     bool isHeapCompacting() const { return state() == State::Compact; }</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :     bool isForegroundSweeping() const { return state() == State::Sweep; }</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :     bool isBackgroundSweeping() { return helperState.isBackgroundSweeping(); }</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :     void waitBackgroundSweepEnd() { helperState.waitBackgroundSweepEnd(); }</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :     void waitBackgroundSweepOrAllocEnd() {</span>
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 :         helperState.waitBackgroundSweepEnd();</span>
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :         allocTask.cancelAndWait();</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span>            : #ifdef DEBUG
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :     bool onBackgroundThread() { return helperState.onBackgroundThread(); }</span>
+<span class="lineNum">     324 </span>            : #endif // DEBUG
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span>            :     void lockGC() {
+<span class="lineNum">     327 </span>            :         lock.lock();
+<span class="lineNum">     328 </span>            :     }
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span>            :     void unlockGC() {
+<span class="lineNum">     331 </span>            :         lock.unlock();
+<span class="lineNum">     332 </span>            :     }
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span>            : #ifdef DEBUG
+<span class="lineNum">     335 </span>            :     bool currentThreadHasLockedGC() const {
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 :         return lock.ownedByCurrentThread();</span>
+<span class="lineNum">     337 </span>            :     }
+<span class="lineNum">     338 </span>            : #endif // DEBUG
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :     void setAlwaysPreserveCode() { alwaysPreserveCode = true; }</span>
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :     bool isIncrementalGCAllowed() const { return incrementalAllowed; }</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :     void disallowIncrementalGC() { incrementalAllowed = false; }</span>
+<span class="lineNum">     344 </span>            : 
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :     bool isIncrementalGCEnabled() const { return mode == JSGC_MODE_INCREMENTAL &amp;&amp; incrementalAllowed; }</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :     bool isIncrementalGCInProgress() const { return state() != State::NotActive; }</span>
+<span class="lineNum">     347 </span>            : 
+<span class="lineNum">     348 </span>            :     bool isCompactingGCEnabled() const;
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :     bool isShrinkingGC() const { return invocationKind == GC_SHRINK; }</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span>            :     bool initSweepActions();
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span>            :     void setGrayRootsTracer(JSTraceDataOp traceOp, void* data);
+<span class="lineNum">     355 </span>            :     MOZ_MUST_USE bool addBlackRootsTracer(JSTraceDataOp traceOp, void* data);
+<span class="lineNum">     356 </span>            :     void removeBlackRootsTracer(JSTraceDataOp traceOp, void* data);
+<span class="lineNum">     357 </span>            : 
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :     int32_t getMallocBytes() const { return mallocCounter.bytes(); }</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :     size_t maxMallocBytesAllocated() const { return mallocCounter.maxBytes(); }</span>
+<span class="lineNum">     360 </span>            :     void setMaxMallocBytes(size_t value, const AutoLockGC&amp; lock);
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :     bool updateMallocCounter(size_t nbytes) {</span>
+<span class="lineNum">     363 </span><span class="lineNoCov">          0 :         mallocCounter.update(nbytes);</span>
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         TriggerKind trigger = mallocCounter.shouldTriggerGC(tunables);</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :         if (MOZ_LIKELY(trigger == NoTrigger) || trigger &lt;= mallocCounter.triggered())</span>
+<span class="lineNum">     366 </span>            :             return false;
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         if (!triggerGC(JS::gcreason::TOO_MUCH_MALLOC))</span>
+<span class="lineNum">     369 </span>            :             return false;
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span>            :         // Even though this method may be called off the main thread it is safe
+<span class="lineNum">     372 </span>            :         // to access mallocCounter here since triggerGC() will return false in
+<span class="lineNum">     373 </span>            :         // that case.
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :         stats().recordTrigger(mallocCounter.bytes(), mallocCounter.maxBytes());</span>
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span><span class="lineNoCov">          0 :         mallocCounter.recordTrigger(trigger);</span>
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 :         return true;</span>
+<span class="lineNum">     378 </span>            :     }
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span>            :     void updateMallocCountersOnGCStart();
+<span class="lineNum">     381 </span>            : 
+<span class="lineNum">     382 </span>            :     void setGCCallback(JSGCCallback callback, void* data);
+<span class="lineNum">     383 </span>            :     void callGCCallback(JSGCStatus status) const;
+<span class="lineNum">     384 </span>            :     void setObjectsTenuredCallback(JSObjectsTenuredCallback callback,
+<span class="lineNum">     385 </span>            :                                    void* data);
+<span class="lineNum">     386 </span>            :     void callObjectsTenuredCallback();
+<span class="lineNum">     387 </span>            :     MOZ_MUST_USE bool addFinalizeCallback(JSFinalizeCallback callback, void* data);
+<span class="lineNum">     388 </span>            :     void removeFinalizeCallback(JSFinalizeCallback func);
+<span class="lineNum">     389 </span>            :     MOZ_MUST_USE bool addWeakPointerZonesCallback(JSWeakPointerZonesCallback callback,
+<span class="lineNum">     390 </span>            :                                                       void* data);
+<span class="lineNum">     391 </span>            :     void removeWeakPointerZonesCallback(JSWeakPointerZonesCallback callback);
+<span class="lineNum">     392 </span>            :     MOZ_MUST_USE bool addWeakPointerCompartmentCallback(JSWeakPointerCompartmentCallback callback,
+<span class="lineNum">     393 </span>            :                                                         void* data);
+<span class="lineNum">     394 </span>            :     void removeWeakPointerCompartmentCallback(JSWeakPointerCompartmentCallback callback);
+<span class="lineNum">     395 </span>            :     JS::GCSliceCallback setSliceCallback(JS::GCSliceCallback callback);
+<span class="lineNum">     396 </span>            :     JS::GCNurseryCollectionCallback setNurseryCollectionCallback(
+<span class="lineNum">     397 </span>            :         JS::GCNurseryCollectionCallback callback);
+<span class="lineNum">     398 </span>            :     JS::DoCycleCollectionCallback setDoCycleCollectionCallback(JS::DoCycleCollectionCallback callback);
+<span class="lineNum">     399 </span>            :     void callDoCycleCollectionCallback(JSContext* cx);
+<span class="lineNum">     400 </span>            : 
+<span class="lineNum">     401 </span>            :     void setFullCompartmentChecks(bool enable);
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :     JS::Zone* getCurrentSweepGroup() { return currentSweepGroup; }</span>
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :     uint64_t gcNumber() const { return number; }</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :     uint64_t minorGCCount() const { return minorGCNumber; }</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :     void incMinorGcNumber() { ++minorGCNumber; ++number; }</span>
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :     uint64_t majorGCCount() const { return majorGCNumber; }</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :     void incMajorGcNumber() { ++majorGCNumber; ++number; }</span>
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :     int64_t defaultSliceBudget() const { return defaultTimeBudget_; }</span>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :     bool isIncrementalGc() const { return isIncremental; }</span>
+<span class="lineNum">     416 </span>            :     bool isFullGc() const { return isFull; }
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :     bool isCompactingGc() const { return isCompacting; }</span>
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :     bool areGrayBitsValid() const { return grayBitsValid; }</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :     void setGrayBitsInvalid() { grayBitsValid = false; }</span>
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :     bool majorGCRequested() const { return majorGCTriggerReason != JS::gcreason::NO_REASON; }</span>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :     bool fullGCForAtomsRequested() const { return fullGCForAtomsRequested_; }</span>
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span>            :     double computeHeapGrowthFactor(size_t lastBytes);
+<span class="lineNum">     427 </span>            :     size_t computeTriggerBytes(double growthFactor, size_t lastBytes);
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :     JSGCMode gcMode() const { return mode; }</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :     void setGCMode(JSGCMode m) {</span>
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         mode = m;</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :         marker.setGCMode(mode);</span>
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span>            :     inline void updateOnFreeArenaAlloc(const ChunkInfo&amp; info);
+<span class="lineNum">     436 </span>            :     inline void updateOnArenaFree();
+<span class="lineNum">     437 </span>            : 
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :     ChunkPool&amp; fullChunks(const AutoLockGC&amp; lock) { return fullChunks_.ref(); }</span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :     ChunkPool&amp; availableChunks(const AutoLockGC&amp; lock) { return availableChunks_.ref(); }</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :     ChunkPool&amp; emptyChunks(const AutoLockGC&amp; lock) { return emptyChunks_.ref(); }</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :     const ChunkPool&amp; fullChunks(const AutoLockGC&amp; lock) const { return fullChunks_.ref(); }</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :     const ChunkPool&amp; availableChunks(const AutoLockGC&amp; lock) const { return availableChunks_.ref(); }</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :     const ChunkPool&amp; emptyChunks(const AutoLockGC&amp; lock) const { return emptyChunks_.ref(); }</span>
+<span class="lineNum">     444 </span>            :     typedef ChainedIter&lt;Chunk*, ChunkPool::Iter, ChunkPool::Iter&gt; NonEmptyChunksIter;
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :     NonEmptyChunksIter allNonEmptyChunks(const AutoLockGC&amp; lock) {</span>
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :         return NonEmptyChunksIter(ChunkPool::Iter(availableChunks(lock)),</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                                   ChunkPool::Iter(fullChunks(lock)));</span>
+<span class="lineNum">     448 </span>            :     }
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span>            :     Chunk* getOrAllocChunk(AutoLockGCBgAlloc&amp; lock);
+<span class="lineNum">     451 </span>            :     void recycleChunk(Chunk* chunk, const AutoLockGC&amp; lock);
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span>            : #ifdef JS_GC_ZEAL
+<span class="lineNum">     454 </span>            :     void startVerifyPreBarriers();
+<span class="lineNum">     455 </span>            :     void endVerifyPreBarriers();
+<span class="lineNum">     456 </span>            :     void finishVerifier();
+<span class="lineNum">     457 </span><span class="lineNoCov">          0 :     bool isVerifyPreBarriersEnabled() const { return !!verifyPreData; }</span>
+<span class="lineNum">     458 </span>            :     bool shouldYieldForZeal(ZealMode mode);
+<span class="lineNum">     459 </span>            : #else
+<span class="lineNum">     460 </span>            :     bool isVerifyPreBarriersEnabled() const { return false; }
+<span class="lineNum">     461 </span>            : #endif
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span>            :     // Free certain LifoAlloc blocks when it is safe to do so.
+<span class="lineNum">     464 </span>            :     void freeUnusedLifoBlocksAfterSweeping(LifoAlloc* lifo);
+<span class="lineNum">     465 </span>            :     void freeAllLifoBlocksAfterSweeping(LifoAlloc* lifo);
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span>            :     // Public here for ReleaseArenaLists and FinalizeTypedArenas.
+<span class="lineNum">     468 </span>            :     void releaseArena(Arena* arena, const AutoLockGC&amp; lock);
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span>            :     void releaseHeldRelocatedArenas();
+<span class="lineNum">     471 </span>            :     void releaseHeldRelocatedArenasWithoutUnlocking(const AutoLockGC&amp; lock);
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span>            :     // Allocator
+<span class="lineNum">     474 </span>            :     template &lt;AllowGC allowGC&gt;
+<span class="lineNum">     475 </span>            :     MOZ_MUST_USE bool checkAllocatorState(JSContext* cx, AllocKind kind);
+<span class="lineNum">     476 </span>            :     template &lt;AllowGC allowGC&gt;
+<span class="lineNum">     477 </span>            :     JSObject* tryNewNurseryObject(JSContext* cx, size_t thingSize, size_t nDynamicSlots,
+<span class="lineNum">     478 </span>            :                                   const Class* clasp);
+<span class="lineNum">     479 </span>            :     template &lt;AllowGC allowGC&gt;
+<span class="lineNum">     480 </span>            :     static JSObject* tryNewTenuredObject(JSContext* cx, AllocKind kind, size_t thingSize,
+<span class="lineNum">     481 </span>            :                                          size_t nDynamicSlots);
+<span class="lineNum">     482 </span>            :     template &lt;typename T, AllowGC allowGC&gt;
+<span class="lineNum">     483 </span>            :     static T* tryNewTenuredThing(JSContext* cx, AllocKind kind, size_t thingSize);
+<span class="lineNum">     484 </span>            :     template &lt;AllowGC allowGC&gt;
+<span class="lineNum">     485 </span>            :     JSString* tryNewNurseryString(JSContext* cx, size_t thingSize, AllocKind kind);
+<span class="lineNum">     486 </span>            :     static TenuredCell* refillFreeListInGC(Zone* zone, AllocKind thingKind);
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span>            :     void bufferGrayRoots();
+<span class="lineNum">     489 </span>            : 
+<span class="lineNum">     490 </span>            :     /*
+<span class="lineNum">     491 </span>            :      * Concurrent sweep infrastructure.
+<span class="lineNum">     492 </span>            :      */
+<span class="lineNum">     493 </span>            :     void startTask(GCParallelTask&amp; task, gcstats::PhaseKind phase,
+<span class="lineNum">     494 </span>            :                    AutoLockHelperThreadState&amp; locked);
+<span class="lineNum">     495 </span>            :     void joinTask(GCParallelTask&amp; task, gcstats::PhaseKind phase,
+<span class="lineNum">     496 </span>            :                   AutoLockHelperThreadState&amp; locked);
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span>            :     void mergeRealms(JS::Realm* source, JS::Realm* target);
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span>            :   private:
+<span class="lineNum">     501 </span>            :     enum IncrementalResult
+<span class="lineNum">     502 </span>            :     {
+<span class="lineNum">     503 </span>            :         Reset = 0,
+<span class="lineNum">     504 </span>            :         Ok
+<span class="lineNum">     505 </span>            :     };
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span>            :     // Delete an empty zone after its contents have been merged.
+<span class="lineNum">     508 </span>            :     void deleteEmptyZone(Zone* zone);
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span>            :     // For ArenaLists::allocateFromArena()
+<span class="lineNum">     511 </span>            :     friend class ArenaLists;
+<span class="lineNum">     512 </span>            :     Chunk* pickChunk(AutoLockGCBgAlloc&amp; lock);
+<span class="lineNum">     513 </span>            :     Arena* allocateArena(Chunk* chunk, Zone* zone, AllocKind kind,
+<span class="lineNum">     514 </span>            :                          ShouldCheckThresholds checkThresholds, const AutoLockGC&amp; lock);
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span>            : 
+<span class="lineNum">     517 </span>            :     void arenaAllocatedDuringGC(JS::Zone* zone, Arena* arena);
+<span class="lineNum">     518 </span>            : 
+<span class="lineNum">     519 </span>            :     // Allocator internals
+<span class="lineNum">     520 </span>            :     MOZ_MUST_USE bool gcIfNeededAtAllocation(JSContext* cx);
+<span class="lineNum">     521 </span>            :     template &lt;typename T&gt;
+<span class="lineNum">     522 </span>            :     static void checkIncrementalZoneState(JSContext* cx, T* t);
+<span class="lineNum">     523 </span>            :     static TenuredCell* refillFreeListFromAnyThread(JSContext* cx, AllocKind thingKind);
+<span class="lineNum">     524 </span>            :     static TenuredCell* refillFreeListFromMainThread(JSContext* cx, AllocKind thingKind);
+<span class="lineNum">     525 </span>            :     static TenuredCell* refillFreeListFromHelperThread(JSContext* cx, AllocKind thingKind);
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span>            :     /*
+<span class="lineNum">     528 </span>            :      * Return the list of chunks that can be released outside the GC lock.
+<span class="lineNum">     529 </span>            :      * Must be called either during the GC or with the GC lock taken.
+<span class="lineNum">     530 </span>            :      */
+<span class="lineNum">     531 </span>            :     friend class BackgroundDecommitTask;
+<span class="lineNum">     532 </span>            :     ChunkPool expireEmptyChunkPool(const AutoLockGC&amp; lock);
+<span class="lineNum">     533 </span>            :     void freeEmptyChunks(const AutoLockGC&amp; lock);
+<span class="lineNum">     534 </span>            :     void prepareToFreeChunk(ChunkInfo&amp; info);
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span>            :     friend class BackgroundAllocTask;
+<span class="lineNum">     537 </span>            :     bool wantBackgroundAllocation(const AutoLockGC&amp; lock) const;
+<span class="lineNum">     538 </span>            :     void startBackgroundAllocTaskIfIdle();
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span>            :     void requestMajorGC(JS::gcreason::Reason reason);
+<span class="lineNum">     541 </span>            :     SliceBudget defaultBudget(JS::gcreason::Reason reason, int64_t millis);
+<span class="lineNum">     542 </span>            :     IncrementalResult budgetIncrementalGC(bool nonincrementalByAPI, JS::gcreason::Reason reason,
+<span class="lineNum">     543 </span>            :                                           SliceBudget&amp; budget, AutoTraceSession&amp; session);
+<span class="lineNum">     544 </span>            :     IncrementalResult resetIncrementalGC(AbortReason reason, AutoTraceSession&amp; session);
+<span class="lineNum">     545 </span>            : 
+<span class="lineNum">     546 </span>            :     // Assert if the system state is such that we should never
+<span class="lineNum">     547 </span>            :     // receive a request to do GC work.
+<span class="lineNum">     548 </span>            :     void checkCanCallAPI();
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span>            :     // Check if the system state is such that GC has been supressed
+<span class="lineNum">     551 </span>            :     // or otherwise delayed.
+<span class="lineNum">     552 </span>            :     MOZ_MUST_USE bool checkIfGCAllowedInCurrentState(JS::gcreason::Reason reason);
+<span class="lineNum">     553 </span>            : 
+<span class="lineNum">     554 </span>            :     gcstats::ZoneGCStats scanZonesBeforeGC();
+<span class="lineNum">     555 </span>            :     void collect(bool nonincrementalByAPI, SliceBudget budget, JS::gcreason::Reason reason) JS_HAZ_GC_CALL;
+<span class="lineNum">     556 </span>            :     MOZ_MUST_USE IncrementalResult gcCycle(bool nonincrementalByAPI, SliceBudget&amp; budget,
+<span class="lineNum">     557 </span>            :                                            JS::gcreason::Reason reason);
+<span class="lineNum">     558 </span>            :     bool shouldRepeatForDeadZone(JS::gcreason::Reason reason);
+<span class="lineNum">     559 </span>            :     void incrementalCollectSlice(SliceBudget&amp; budget, JS::gcreason::Reason reason,
+<span class="lineNum">     560 </span>            :                                  AutoTraceSession&amp; session);
+<span class="lineNum">     561 </span>            : 
+<span class="lineNum">     562 </span>            :     friend class AutoCallGCCallbacks;
+<span class="lineNum">     563 </span>            :     void maybeCallGCCallback(JSGCStatus status);
+<span class="lineNum">     564 </span>            : 
+<span class="lineNum">     565 </span>            :     void pushZealSelectedObjects();
+<span class="lineNum">     566 </span>            :     void purgeRuntime();
+<span class="lineNum">     567 </span>            :     MOZ_MUST_USE bool beginMarkPhase(JS::gcreason::Reason reason, AutoTraceSession&amp; session);
+<span class="lineNum">     568 </span>            :     bool prepareZonesForCollection(JS::gcreason::Reason reason, bool* isFullOut,
+<span class="lineNum">     569 </span>            :                                    AutoLockForExclusiveAccess&amp; lock);
+<span class="lineNum">     570 </span>            :     bool shouldPreserveJITCode(JS::Realm* realm, int64_t currentTime,
+<span class="lineNum">     571 </span>            :                                JS::gcreason::Reason reason, bool canAllocateMoreCode);
+<span class="lineNum">     572 </span>            :     void traceRuntimeForMajorGC(JSTracer* trc, AutoTraceSession&amp; session);
+<span class="lineNum">     573 </span>            :     void traceRuntimeAtoms(JSTracer* trc, AutoLockForExclusiveAccess&amp; lock);
+<span class="lineNum">     574 </span>            :     void traceKeptAtoms(JSTracer* trc);
+<span class="lineNum">     575 </span>            :     void traceRuntimeCommon(JSTracer* trc, TraceOrMarkRuntime traceOrMark,
+<span class="lineNum">     576 </span>            :                             AutoTraceSession&amp; session);
+<span class="lineNum">     577 </span>            :     void maybeDoCycleCollection();
+<span class="lineNum">     578 </span>            :     void markCompartments();
+<span class="lineNum">     579 </span>            :     IncrementalProgress drainMarkStack(SliceBudget&amp; sliceBudget, gcstats::PhaseKind phase);
+<span class="lineNum">     580 </span>            :     template &lt;class CompartmentIterT&gt; void markWeakReferences(gcstats::PhaseKind phase);
+<span class="lineNum">     581 </span>            :     void markWeakReferencesInCurrentGroup(gcstats::PhaseKind phase);
+<span class="lineNum">     582 </span>            :     template &lt;class ZoneIterT, class CompartmentIterT&gt; void markGrayReferences(gcstats::PhaseKind phase);
+<span class="lineNum">     583 </span>            :     void markBufferedGrayRoots(JS::Zone* zone);
+<span class="lineNum">     584 </span>            :     void markGrayReferencesInCurrentGroup(gcstats::PhaseKind phase);
+<span class="lineNum">     585 </span>            :     void markAllWeakReferences(gcstats::PhaseKind phase);
+<span class="lineNum">     586 </span>            :     void markAllGrayReferences(gcstats::PhaseKind phase);
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span>            :     void beginSweepPhase(JS::gcreason::Reason reason, AutoTraceSession&amp; session);
+<span class="lineNum">     589 </span>            :     void groupZonesForSweeping(JS::gcreason::Reason reason);
+<span class="lineNum">     590 </span>            :     MOZ_MUST_USE bool findInterZoneEdges();
+<span class="lineNum">     591 </span>            :     void getNextSweepGroup();
+<span class="lineNum">     592 </span>            :     IncrementalProgress endMarkingSweepGroup(FreeOp* fop, SliceBudget&amp; budget);
+<span class="lineNum">     593 </span>            :     IncrementalProgress beginSweepingSweepGroup(FreeOp* fop, SliceBudget&amp; budget);
+<span class="lineNum">     594 </span>            : #ifdef JS_GC_ZEAL
+<span class="lineNum">     595 </span>            :     IncrementalProgress maybeYieldForSweepingZeal(FreeOp* fop, SliceBudget&amp; budget);
+<span class="lineNum">     596 </span>            : #endif
+<span class="lineNum">     597 </span>            :     bool shouldReleaseObservedTypes();
+<span class="lineNum">     598 </span>            :     void sweepDebuggerOnMainThread(FreeOp* fop);
+<span class="lineNum">     599 </span>            :     void sweepJitDataOnMainThread(FreeOp* fop);
+<span class="lineNum">     600 </span>            :     IncrementalProgress endSweepingSweepGroup(FreeOp* fop, SliceBudget&amp; budget);
+<span class="lineNum">     601 </span>            :     IncrementalProgress performSweepActions(SliceBudget&amp; sliceBudget);
+<span class="lineNum">     602 </span>            :     IncrementalProgress sweepTypeInformation(FreeOp* fop, SliceBudget&amp; budget, Zone* zone);
+<span class="lineNum">     603 </span>            :     IncrementalProgress releaseSweptEmptyArenas(FreeOp* fop, SliceBudget&amp; budget, Zone* zone);
+<span class="lineNum">     604 </span>            :     void startSweepingAtomsTable();
+<span class="lineNum">     605 </span>            :     IncrementalProgress sweepAtomsTable(FreeOp* fop, SliceBudget&amp; budget);
+<span class="lineNum">     606 </span>            :     IncrementalProgress sweepWeakCaches(FreeOp* fop, SliceBudget&amp; budget);
+<span class="lineNum">     607 </span>            :     IncrementalProgress finalizeAllocKind(FreeOp* fop, SliceBudget&amp; budget, Zone* zone,
+<span class="lineNum">     608 </span>            :                                           AllocKind kind);
+<span class="lineNum">     609 </span>            :     IncrementalProgress sweepShapeTree(FreeOp* fop, SliceBudget&amp; budget, Zone* zone);
+<span class="lineNum">     610 </span>            :     void endSweepPhase(bool lastGC);
+<span class="lineNum">     611 </span>            :     bool allCCVisibleZonesWereCollected() const;
+<span class="lineNum">     612 </span>            :     void sweepZones(FreeOp* fop, bool destroyingRuntime);
+<span class="lineNum">     613 </span>            :     void decommitAllWithoutUnlocking(const AutoLockGC&amp; lock);
+<span class="lineNum">     614 </span>            :     void startDecommit();
+<span class="lineNum">     615 </span>            :     void queueZonesForBackgroundSweep(ZoneList&amp; zones);
+<span class="lineNum">     616 </span>            :     void sweepBackgroundThings(ZoneList&amp; zones, LifoAlloc&amp; freeBlocks);
+<span class="lineNum">     617 </span>            :     void assertBackgroundSweepingFinished();
+<span class="lineNum">     618 </span>            :     bool shouldCompact();
+<span class="lineNum">     619 </span>            :     void beginCompactPhase();
+<span class="lineNum">     620 </span>            :     IncrementalProgress compactPhase(JS::gcreason::Reason reason, SliceBudget&amp; sliceBudget,
+<span class="lineNum">     621 </span>            :                                      AutoTraceSession&amp; session);
+<span class="lineNum">     622 </span>            :     void endCompactPhase();
+<span class="lineNum">     623 </span>            :     void sweepTypesAfterCompacting(Zone* zone);
+<span class="lineNum">     624 </span>            :     void sweepZoneAfterCompacting(Zone* zone);
+<span class="lineNum">     625 </span>            :     MOZ_MUST_USE bool relocateArenas(Zone* zone, JS::gcreason::Reason reason,
+<span class="lineNum">     626 </span>            :                                      Arena*&amp; relocatedListOut, SliceBudget&amp; sliceBudget);
+<span class="lineNum">     627 </span>            :     void updateTypeDescrObjects(MovingTracer* trc, Zone* zone);
+<span class="lineNum">     628 </span>            :     void updateCellPointers(Zone* zone, AllocKinds kinds, size_t bgTaskCount);
+<span class="lineNum">     629 </span>            :     void updateAllCellPointers(MovingTracer* trc, Zone* zone);
+<span class="lineNum">     630 </span>            :     void updateZonePointersToRelocatedCells(Zone* zone);
+<span class="lineNum">     631 </span>            :     void updateRuntimePointersToRelocatedCells(AutoTraceSession&amp; session);
+<span class="lineNum">     632 </span>            :     void protectAndHoldArenas(Arena* arenaList);
+<span class="lineNum">     633 </span>            :     void unprotectHeldRelocatedArenas();
+<span class="lineNum">     634 </span>            :     void releaseRelocatedArenas(Arena* arenaList);
+<span class="lineNum">     635 </span>            :     void releaseRelocatedArenasWithoutUnlocking(Arena* arenaList, const AutoLockGC&amp; lock);
+<span class="lineNum">     636 </span>            :     void finishCollection();
+<span class="lineNum">     637 </span>            : 
+<span class="lineNum">     638 </span>            :     void computeNonIncrementalMarkingForValidation(AutoTraceSession&amp; session);
+<span class="lineNum">     639 </span>            :     void validateIncrementalMarking();
+<span class="lineNum">     640 </span>            :     void finishMarkingValidation();
+<span class="lineNum">     641 </span>            : 
+<span class="lineNum">     642 </span>            : #ifdef DEBUG
+<span class="lineNum">     643 </span>            :     void checkForCompartmentMismatches();
+<span class="lineNum">     644 </span>            : #endif
+<span class="lineNum">     645 </span>            : 
+<span class="lineNum">     646 </span>            :     void callFinalizeCallbacks(FreeOp* fop, JSFinalizeStatus status) const;
+<span class="lineNum">     647 </span>            :     void callWeakPointerZonesCallbacks() const;
+<span class="lineNum">     648 </span>            :     void callWeakPointerCompartmentCallbacks(JS::Compartment* comp) const;
+<span class="lineNum">     649 </span>            : 
+<span class="lineNum">     650 </span>            :   public:
+<span class="lineNum">     651 </span>            :     JSRuntime* const rt;
+<span class="lineNum">     652 </span>            : 
+<span class="lineNum">     653 </span>            :     /* Embedders can use this zone and group however they wish. */
+<span class="lineNum">     654 </span>            :     UnprotectedData&lt;JS::Zone*&gt; systemZone;
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span>            :     // All zones in the runtime, except the atoms zone.
+<span class="lineNum">     657 </span>            :   private:
+<span class="lineNum">     658 </span>            :     MainThreadOrGCTaskData&lt;ZoneVector&gt; zones_;
+<span class="lineNum">     659 </span>            :   public:
+<span class="lineNum">     660 </span>            :     ZoneVector&amp; zones() { return zones_.ref(); }
+<span class="lineNum">     661 </span><span class="lineCov">        329 : </span>
+<span class="lineNum">     662 </span>            :     // The unique atoms zone.
+<span class="lineNum">     663 </span>            :     WriteOnceData&lt;Zone*&gt; atomsZone;
+<span class="lineNum">     664 </span>            : 
+<span class="lineNum">     665 </span>            :   private:
+<span class="lineNum">     666 </span>            :     UnprotectedData&lt;gcstats::Statistics&gt; stats_;
+<span class="lineNum">     667 </span>            :   public:
+<span class="lineNum">     668 </span>            :     gcstats::Statistics&amp; stats() { return stats_.ref(); }
+<span class="lineNum">     669 </span><span class="lineCov">        160 : </span>
+<span class="lineNum">     670 </span>            :     GCMarker marker;
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span>            :     Vector&lt;JS::GCCellPtr, 0, SystemAllocPolicy&gt; unmarkGrayStack;
+<span class="lineNum">     673 </span>            : 
+<span class="lineNum">     674 </span>            :     /* Track heap usage for this runtime. */
+<span class="lineNum">     675 </span>            :     HeapUsage usage;
+<span class="lineNum">     676 </span>            : 
+<span class="lineNum">     677 </span>            :     /* GC scheduling state and parameters. */
+<span class="lineNum">     678 </span>            :     GCSchedulingTunables tunables;
+<span class="lineNum">     679 </span>            :     GCSchedulingState schedulingState;
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span>            :     // State used for managing atom mark bitmaps in each zone. Protected by the
+<span class="lineNum">     682 </span>            :     // exclusive access lock.
+<span class="lineNum">     683 </span>            :     AtomMarkingRuntime atomMarking;
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span>            :   private:
+<span class="lineNum">     686 </span>            :     // When chunks are empty, they reside in the emptyChunks pool and are
+<span class="lineNum">     687 </span>            :     // re-used as needed or eventually expired if not re-used. The emptyChunks
+<span class="lineNum">     688 </span>            :     // pool gets refilled from the background allocation task heuristically so
+<span class="lineNum">     689 </span>            :     // that empty chunks should always be available for immediate allocation
+<span class="lineNum">     690 </span>            :     // without syscalls.
+<span class="lineNum">     691 </span>            :     GCLockData&lt;ChunkPool&gt; emptyChunks_;
+<span class="lineNum">     692 </span>            : 
+<span class="lineNum">     693 </span>            :     // Chunks which have had some, but not all, of their arenas allocated live
+<span class="lineNum">     694 </span>            :     // in the available chunk lists. When all available arenas in a chunk have
+<span class="lineNum">     695 </span>            :     // been allocated, the chunk is removed from the available list and moved
+<span class="lineNum">     696 </span>            :     // to the fullChunks pool. During a GC, if all arenas are free, the chunk
+<span class="lineNum">     697 </span>            :     // is moved back to the emptyChunks pool and scheduled for eventual
+<span class="lineNum">     698 </span>            :     // release.
+<span class="lineNum">     699 </span>            :     GCLockData&lt;ChunkPool&gt; availableChunks_;
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span>            :     // When all arenas in a chunk are used, it is moved to the fullChunks pool
+<span class="lineNum">     702 </span>            :     // so as to reduce the cost of operations on the available lists.
+<span class="lineNum">     703 </span>            :     GCLockData&lt;ChunkPool&gt; fullChunks_;
+<span class="lineNum">     704 </span>            : 
+<span class="lineNum">     705 </span>            :     MainThreadData&lt;RootedValueMap&gt; rootsHash;
+<span class="lineNum">     706 </span>            : 
+<span class="lineNum">     707 </span>            :     // An incrementing id used to assign unique ids to cells that require one.
+<span class="lineNum">     708 </span>            :     mozilla::Atomic&lt;uint64_t, mozilla::ReleaseAcquire&gt; nextCellUniqueId_;
+<span class="lineNum">     709 </span>            : 
+<span class="lineNum">     710 </span>            :     /*
+<span class="lineNum">     711 </span>            :      * Number of the committed arenas in all GC chunks including empty chunks.
+<span class="lineNum">     712 </span>            :      */
+<span class="lineNum">     713 </span>            :     mozilla::Atomic&lt;uint32_t, mozilla::ReleaseAcquire&gt; numArenasFreeCommitted;
+<span class="lineNum">     714 </span>            :     MainThreadData&lt;VerifyPreTracer*&gt; verifyPreData;
+<span class="lineNum">     715 </span>            : 
+<span class="lineNum">     716 </span>            :   private:
+<span class="lineNum">     717 </span>            :     UnprotectedData&lt;bool&gt; chunkAllocationSinceLastGC;
+<span class="lineNum">     718 </span>            :     MainThreadData&lt;int64_t&gt; lastGCTime;
+<span class="lineNum">     719 </span>            : 
+<span class="lineNum">     720 </span>            :     /*
+<span class="lineNum">     721 </span>            :      * JSGC_MODE
+<span class="lineNum">     722 </span>            :      * prefs: javascript.options.mem.gc_per_zone and
+<span class="lineNum">     723 </span>            :      *   javascript.options.mem.gc_incremental.
+<span class="lineNum">     724 </span>            :      */
+<span class="lineNum">     725 </span>            :     MainThreadData&lt;JSGCMode&gt; mode;
+<span class="lineNum">     726 </span>            : 
+<span class="lineNum">     727 </span>            :     mozilla::Atomic&lt;size_t, mozilla::ReleaseAcquire&gt; numActiveZoneIters;
+<span class="lineNum">     728 </span>            : 
+<span class="lineNum">     729 </span>            :     /* During shutdown, the GC needs to clean up every possible object. */
+<span class="lineNum">     730 </span>            :     MainThreadData&lt;bool&gt; cleanUpEverything;
+<span class="lineNum">     731 </span>            : 
+<span class="lineNum">     732 </span>            :     // Gray marking must be done after all black marking is complete. However,
+<span class="lineNum">     733 </span>            :     // we do not have write barriers on XPConnect roots. Therefore, XPConnect
+<span class="lineNum">     734 </span>            :     // roots must be accumulated in the first slice of incremental GC. We
+<span class="lineNum">     735 </span>            :     // accumulate these roots in each zone's gcGrayRoots vector and then mark
+<span class="lineNum">     736 </span>            :     // them later, after black marking is complete for each compartment. This
+<span class="lineNum">     737 </span>            :     // accumulation can fail, but in that case we switch to non-incremental GC.
+<span class="lineNum">     738 </span>            :     enum class GrayBufferState {
+<span class="lineNum">     739 </span>            :         Unused,
+<span class="lineNum">     740 </span>            :         Okay,
+<span class="lineNum">     741 </span>            :         Failed
+<span class="lineNum">     742 </span>            :     };
+<span class="lineNum">     743 </span>            :     MainThreadOrGCTaskData&lt;GrayBufferState&gt; grayBufferState;
+<span class="lineNum">     744 </span>            :     bool hasValidGrayRootsBuffer() const { return grayBufferState == GrayBufferState::Okay; }
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     746 </span>            :     // Clear each zone's gray buffers, but do not change the current state.
+<span class="lineNum">     747 </span>            :     void resetBufferedGrayRoots() const;
+<span class="lineNum">     748 </span>            : 
+<span class="lineNum">     749 </span>            :     // Reset the gray buffering state to Unused.
+<span class="lineNum">     750 </span>            :     void clearBufferedGrayRoots() {
+<span class="lineNum">     751 </span>            :         grayBufferState = GrayBufferState::Unused;
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :         resetBufferedGrayRoots();</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     754 </span>            : 
+<span class="lineNum">     755 </span>            :     /*
+<span class="lineNum">     756 </span>            :      * The gray bits can become invalid if UnmarkGray overflows the stack. A
+<span class="lineNum">     757 </span>            :      * full GC will reset this bit, since it fills in all the gray bits.
+<span class="lineNum">     758 </span>            :      */
+<span class="lineNum">     759 </span>            :     UnprotectedData&lt;bool&gt; grayBitsValid;
+<span class="lineNum">     760 </span>            : 
+<span class="lineNum">     761 </span>            :     mozilla::Atomic&lt;JS::gcreason::Reason, mozilla::Relaxed&gt; majorGCTriggerReason;
+<span class="lineNum">     762 </span>            : 
+<span class="lineNum">     763 </span>            :   private:
+<span class="lineNum">     764 </span>            :     /* Perform full GC if rt-&gt;keepAtoms() becomes false. */
+<span class="lineNum">     765 </span>            :     MainThreadData&lt;bool&gt; fullGCForAtomsRequested_;
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span>            :     /* Incremented at the start of every minor GC. */
+<span class="lineNum">     768 </span>            :     MainThreadData&lt;uint64_t&gt; minorGCNumber;
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span>            :     /* Incremented at the start of every major GC. */
+<span class="lineNum">     771 </span>            :     MainThreadData&lt;uint64_t&gt; majorGCNumber;
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span>            :     /* The major GC number at which to release observed type information. */
+<span class="lineNum">     774 </span>            :     MainThreadData&lt;uint64_t&gt; jitReleaseNumber;
+<span class="lineNum">     775 </span>            : 
+<span class="lineNum">     776 </span>            :     /* Incremented on every GC slice. */
+<span class="lineNum">     777 </span>            :     MainThreadData&lt;uint64_t&gt; number;
+<span class="lineNum">     778 </span>            : 
+<span class="lineNum">     779 </span>            :     /* Whether the currently running GC can finish in multiple slices. */
+<span class="lineNum">     780 </span>            :     MainThreadData&lt;bool&gt; isIncremental;
+<span class="lineNum">     781 </span>            : 
+<span class="lineNum">     782 </span>            :     /* Whether all zones are being collected in first GC slice. */
+<span class="lineNum">     783 </span>            :     MainThreadData&lt;bool&gt; isFull;
+<span class="lineNum">     784 </span>            : 
+<span class="lineNum">     785 </span>            :     /* Whether the heap will be compacted at the end of GC. */
+<span class="lineNum">     786 </span>            :     MainThreadData&lt;bool&gt; isCompacting;
+<span class="lineNum">     787 </span>            : 
+<span class="lineNum">     788 </span>            :     /* The invocation kind of the current GC, taken from the first slice. */
+<span class="lineNum">     789 </span>            :     MainThreadData&lt;JSGCInvocationKind&gt; invocationKind;
+<span class="lineNum">     790 </span>            : 
+<span class="lineNum">     791 </span>            :     /* The initial GC reason, taken from the first slice. */
+<span class="lineNum">     792 </span>            :     MainThreadData&lt;JS::gcreason::Reason&gt; initialReason;
+<span class="lineNum">     793 </span>            : 
+<span class="lineNum">     794 </span>            :     /*
+<span class="lineNum">     795 </span>            :      * The current incremental GC phase. This is also used internally in
+<span class="lineNum">     796 </span>            :      * non-incremental GC.
+<span class="lineNum">     797 </span>            :      */
+<span class="lineNum">     798 </span>            :     MainThreadOrGCTaskData&lt;State&gt; incrementalState;
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span>            :     /* The incremental state at the start of this slice. */
+<span class="lineNum">     801 </span>            :     MainThreadData&lt;State&gt; initialState;
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span>            : #ifdef JS_GC_ZEAL
+<span class="lineNum">     804 </span>            :     /* Whether to pay attention the zeal settings in this incremental slice. */
+<span class="lineNum">     805 </span>            :     MainThreadData&lt;bool&gt; useZeal;
+<span class="lineNum">     806 </span>            : #endif
+<span class="lineNum">     807 </span>            : 
+<span class="lineNum">     808 </span>            :     /* Indicates that the last incremental slice exhausted the mark stack. */
+<span class="lineNum">     809 </span>            :     MainThreadData&lt;bool&gt; lastMarkSlice;
+<span class="lineNum">     810 </span>            : 
+<span class="lineNum">     811 </span>            :     /* Whether it's currently safe to yield to the mutator in an incremental GC. */
+<span class="lineNum">     812 </span>            :     MainThreadData&lt;bool&gt; safeToYield;
+<span class="lineNum">     813 </span>            : 
+<span class="lineNum">     814 </span>            :     /* Whether any sweeping will take place in the separate GC helper thread. */
+<span class="lineNum">     815 </span>            :     MainThreadData&lt;bool&gt; sweepOnBackgroundThread;
+<span class="lineNum">     816 </span>            : 
+<span class="lineNum">     817 </span>            :     /* Whether observed type information is being released in the current GC. */
+<span class="lineNum">     818 </span>            :     MainThreadData&lt;bool&gt; releaseObservedTypes;
+<span class="lineNum">     819 </span>            : 
+<span class="lineNum">     820 </span>            :     /* Singly linked list of zones to be swept in the background. */
+<span class="lineNum">     821 </span>            :     MainThreadOrGCTaskData&lt;ZoneList&gt; backgroundSweepZones;
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span>            :     /*
+<span class="lineNum">     824 </span>            :      * Free LIFO blocks are transferred to this allocator before being freed on
+<span class="lineNum">     825 </span>            :      * the background GC thread after sweeping.
+<span class="lineNum">     826 </span>            :      */
+<span class="lineNum">     827 </span>            :     MainThreadOrGCTaskData&lt;LifoAlloc&gt; blocksToFreeAfterSweeping;
+<span class="lineNum">     828 </span>            : 
+<span class="lineNum">     829 </span>            :   private:
+<span class="lineNum">     830 </span>            :     /* Index of current sweep group (for stats). */
+<span class="lineNum">     831 </span>            :     MainThreadData&lt;unsigned&gt; sweepGroupIndex;
+<span class="lineNum">     832 </span>            : 
+<span class="lineNum">     833 </span>            :     /*
+<span class="lineNum">     834 </span>            :      * Incremental sweep state.
+<span class="lineNum">     835 </span>            :      */
+<span class="lineNum">     836 </span>            : 
+<span class="lineNum">     837 </span>            :     MainThreadData&lt;JS::Zone*&gt; sweepGroups;
+<span class="lineNum">     838 </span>            :     MainThreadOrGCTaskData&lt;JS::Zone*&gt; currentSweepGroup;
+<span class="lineNum">     839 </span>            :     MainThreadData&lt;UniquePtr&lt;SweepAction&lt;GCRuntime*, FreeOp*, SliceBudget&amp;&gt;&gt;&gt; sweepActions;
+<span class="lineNum">     840 </span>            :     MainThreadOrGCTaskData&lt;JS::Zone*&gt; sweepZone;
+<span class="lineNum">     841 </span>            :     MainThreadData&lt;mozilla::Maybe&lt;AtomSet::Enum&gt;&gt; maybeAtomsToSweep;
+<span class="lineNum">     842 </span>            :     MainThreadOrGCTaskData&lt;JS::detail::WeakCacheBase*&gt; sweepCache;
+<span class="lineNum">     843 </span>            :     MainThreadData&lt;bool&gt; abortSweepAfterCurrentGroup;
+<span class="lineNum">     844 </span>            : 
+<span class="lineNum">     845 </span>            :     friend class SweepGroupsIter;
+<span class="lineNum">     846 </span>            :     friend class WeakCacheSweepIterator;
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span>            :     /*
+<span class="lineNum">     849 </span>            :      * Incremental compacting state.
+<span class="lineNum">     850 </span>            :      */
+<span class="lineNum">     851 </span>            :     MainThreadData&lt;bool&gt; startedCompacting;
+<span class="lineNum">     852 </span>            :     MainThreadData&lt;ZoneList&gt; zonesToMaybeCompact;
+<span class="lineNum">     853 </span>            :     MainThreadData&lt;Arena*&gt; relocatedArenasToRelease;
+<span class="lineNum">     854 </span>            : 
+<span class="lineNum">     855 </span>            : #ifdef JS_GC_ZEAL
+<span class="lineNum">     856 </span>            :     MainThreadData&lt;MarkingValidator*&gt; markingValidator;
+<span class="lineNum">     857 </span>            : #endif
+<span class="lineNum">     858 </span>            : 
+<span class="lineNum">     859 </span>            :     /*
+<span class="lineNum">     860 </span>            :      * Default budget for incremental GC slice. See js/SliceBudget.h.
+<span class="lineNum">     861 </span>            :      *
+<span class="lineNum">     862 </span>            :      * JSGC_SLICE_TIME_BUDGET
+<span class="lineNum">     863 </span>            :      * pref: javascript.options.mem.gc_incremental_slice_ms,
+<span class="lineNum">     864 </span>            :      */
+<span class="lineNum">     865 </span>            :     MainThreadData&lt;int64_t&gt; defaultTimeBudget_;
+<span class="lineNum">     866 </span>            : 
+<span class="lineNum">     867 </span>            :     /*
+<span class="lineNum">     868 </span>            :      * We disable incremental GC if we encounter a Class with a trace hook
+<span class="lineNum">     869 </span>            :      * that does not implement write barriers.
+<span class="lineNum">     870 </span>            :      */
+<span class="lineNum">     871 </span>            :     MainThreadData&lt;bool&gt; incrementalAllowed;
+<span class="lineNum">     872 </span>            : 
+<span class="lineNum">     873 </span>            :     /*
+<span class="lineNum">     874 </span>            :      * Whether compacting GC can is enabled globally.
+<span class="lineNum">     875 </span>            :      *
+<span class="lineNum">     876 </span>            :      * JSGC_COMPACTING_ENABLED
+<span class="lineNum">     877 </span>            :      * pref: javascript.options.mem.gc_compacting
+<span class="lineNum">     878 </span>            :      */
+<span class="lineNum">     879 </span>            :     MainThreadData&lt;bool&gt; compactingEnabled;
+<span class="lineNum">     880 </span>            : 
+<span class="lineNum">     881 </span>            :     MainThreadData&lt;bool&gt; rootsRemoved;
+<span class="lineNum">     882 </span>            : 
+<span class="lineNum">     883 </span>            :     /*
+<span class="lineNum">     884 </span>            :      * These options control the zealousness of the GC. At every allocation,
+<span class="lineNum">     885 </span>            :      * nextScheduled is decremented. When it reaches zero we do a full GC.
+<span class="lineNum">     886 </span>            :      *
+<span class="lineNum">     887 </span>            :      * At this point, if zeal_ is one of the types that trigger periodic
+<span class="lineNum">     888 </span>            :      * collection, then nextScheduled is reset to the value of zealFrequency.
+<span class="lineNum">     889 </span>            :      * Otherwise, no additional GCs take place.
+<span class="lineNum">     890 </span>            :      *
+<span class="lineNum">     891 </span>            :      * You can control these values in several ways:
+<span class="lineNum">     892 </span>            :      *   - Set the JS_GC_ZEAL environment variable
+<span class="lineNum">     893 </span>            :      *   - Call gczeal() or schedulegc() from inside shell-executed JS code
+<span class="lineNum">     894 </span>            :      *     (see the help for details)
+<span class="lineNum">     895 </span>            :      *
+<span class="lineNum">     896 </span>            :      * If gcZeal_ == 1 then we perform GCs in select places (during MaybeGC and
+<span class="lineNum">     897 </span>            :      * whenever we are notified that GC roots have been removed). This option is
+<span class="lineNum">     898 </span>            :      * mainly useful to embedders.
+<span class="lineNum">     899 </span>            :      *
+<span class="lineNum">     900 </span>            :      * We use zeal_ == 4 to enable write barrier verification. See the comment
+<span class="lineNum">     901 </span>            :      * in gc/Verifier.cpp for more information about this.
+<span class="lineNum">     902 </span>            :      *
+<span class="lineNum">     903 </span>            :      * zeal_ values from 8 to 10 periodically run different types of
+<span class="lineNum">     904 </span>            :      * incremental GC.
+<span class="lineNum">     905 </span>            :      *
+<span class="lineNum">     906 </span>            :      * zeal_ value 14 performs periodic shrinking collections.
+<span class="lineNum">     907 </span>            :      */
+<span class="lineNum">     908 </span>            : #ifdef JS_GC_ZEAL
+<span class="lineNum">     909 </span>            :     static_assert(size_t(ZealMode::Count) &lt;= 32,
+<span class="lineNum">     910 </span>            :                   &quot;Too many zeal modes to store in a uint32_t&quot;);
+<span class="lineNum">     911 </span>            :     MainThreadData&lt;uint32_t&gt; zealModeBits;
+<span class="lineNum">     912 </span>            :     MainThreadData&lt;int&gt; zealFrequency;
+<span class="lineNum">     913 </span>            :     MainThreadData&lt;int&gt; nextScheduled;
+<span class="lineNum">     914 </span>            :     MainThreadData&lt;bool&gt; deterministicOnly;
+<span class="lineNum">     915 </span>            :     MainThreadData&lt;int&gt; incrementalLimit;
+<span class="lineNum">     916 </span>            : 
+<span class="lineNum">     917 </span>            :     MainThreadData&lt;Vector&lt;JSObject*, 0, SystemAllocPolicy&gt;&gt; selectedForMarking;
+<span class="lineNum">     918 </span>            : #endif
+<span class="lineNum">     919 </span>            : 
+<span class="lineNum">     920 </span>            :     MainThreadData&lt;bool&gt; fullCompartmentChecks;
+<span class="lineNum">     921 </span>            : 
+<span class="lineNum">     922 </span>            :     MainThreadData&lt;uint32_t&gt; gcCallbackDepth;
+<span class="lineNum">     923 </span>            : 
+<span class="lineNum">     924 </span>            :     Callback&lt;JSGCCallback&gt; gcCallback;
+<span class="lineNum">     925 </span>            :     Callback&lt;JS::DoCycleCollectionCallback&gt; gcDoCycleCollectionCallback;
+<span class="lineNum">     926 </span>            :     Callback&lt;JSObjectsTenuredCallback&gt; tenuredCallback;
+<span class="lineNum">     927 </span>            :     CallbackVector&lt;JSFinalizeCallback&gt; finalizeCallbacks;
+<span class="lineNum">     928 </span>            :     CallbackVector&lt;JSWeakPointerZonesCallback&gt; updateWeakPointerZonesCallbacks;
+<span class="lineNum">     929 </span>            :     CallbackVector&lt;JSWeakPointerCompartmentCallback&gt; updateWeakPointerCompartmentCallbacks;
+<span class="lineNum">     930 </span>            : 
+<span class="lineNum">     931 </span>            :     MemoryCounter mallocCounter;
+<span class="lineNum">     932 </span>            : 
+<span class="lineNum">     933 </span>            :     /*
+<span class="lineNum">     934 </span>            :      * The trace operations to trace embedding-specific GC roots. One is for
+<span class="lineNum">     935 </span>            :      * tracing through black roots and the other is for tracing through gray
+<span class="lineNum">     936 </span>            :      * roots. The black/gray distinction is only relevant to the cycle
+<span class="lineNum">     937 </span>            :      * collector.
+<span class="lineNum">     938 </span>            :      */
+<span class="lineNum">     939 </span>            :     CallbackVector&lt;JSTraceDataOp&gt; blackRootTracers;
+<span class="lineNum">     940 </span>            :     Callback&lt;JSTraceDataOp&gt; grayRootTracer;
+<span class="lineNum">     941 </span>            : 
+<span class="lineNum">     942 </span>            :     /* Always preserve JIT code during GCs, for testing. */
+<span class="lineNum">     943 </span>            :     MainThreadData&lt;bool&gt; alwaysPreserveCode;
+<span class="lineNum">     944 </span>            : 
+<span class="lineNum">     945 </span>            : #ifdef DEBUG
+<span class="lineNum">     946 </span>            :     MainThreadData&lt;bool&gt; arenasEmptyAtShutdown;
+<span class="lineNum">     947 </span>            : #endif
+<span class="lineNum">     948 </span>            : 
+<span class="lineNum">     949 </span>            :     /* Synchronize GC heap access among GC helper threads and the main thread. */
+<span class="lineNum">     950 </span>            :     friend class js::AutoLockGC;
+<span class="lineNum">     951 </span>            :     friend class js::AutoLockGCBgAlloc;
+<span class="lineNum">     952 </span>            :     js::Mutex lock;
+<span class="lineNum">     953 </span>            : 
+<span class="lineNum">     954 </span>            :     BackgroundAllocTask allocTask;
+<span class="lineNum">     955 </span>            :     BackgroundDecommitTask decommitTask;
+<span class="lineNum">     956 </span>            : 
+<span class="lineNum">     957 </span>            :     js::GCHelperState helperState;
+<span class="lineNum">     958 </span>            : 
+<span class="lineNum">     959 </span>            :     /*
+<span class="lineNum">     960 </span>            :      * During incremental sweeping, this field temporarily holds the arenas of
+<span class="lineNum">     961 </span>            :      * the current AllocKind being swept in order of increasing free space.
+<span class="lineNum">     962 </span>            :      */
+<span class="lineNum">     963 </span>            :     MainThreadData&lt;SortedArenaList&gt; incrementalSweepList;
+<span class="lineNum">     964 </span>            : 
+<span class="lineNum">     965 </span>            :   private:
+<span class="lineNum">     966 </span>            :     MainThreadData&lt;Nursery&gt; nursery_;
+<span class="lineNum">     967 </span>            :     MainThreadData&lt;gc::StoreBuffer&gt; storeBuffer_;
+<span class="lineNum">     968 </span>            :   public:
+<span class="lineNum">     969 </span>            :     Nursery&amp; nursery() { return nursery_.ref(); }
+<span class="lineNum">     970 </span><span class="lineNoCov">          0 :     gc::StoreBuffer&amp; storeBuffer() { return storeBuffer_.ref(); }</span>
+<span class="lineNum">     971 </span><span class="lineCov">       5701 : </span>
+<span class="lineNum">     972 </span>            :     // Free LIFO blocks are transferred to this allocator before being freed
+<span class="lineNum">     973 </span>            :     // after minor GC.
+<span class="lineNum">     974 </span>            :     MainThreadData&lt;LifoAlloc&gt; blocksToFreeAfterMinorGC;
+<span class="lineNum">     975 </span>            : 
+<span class="lineNum">     976 </span>            :     const void* addressOfNurseryPosition() {
+<span class="lineNum">     977 </span>            :         return nursery_.refNoCheck().addressOfPosition();
+<span class="lineNum">     978 </span><span class="lineCov">        996 :     }</span>
+<span class="lineNum">     979 </span>            :     const void* addressOfNurseryCurrentEnd() {
+<span class="lineNum">     980 </span>            :         return nursery_.refNoCheck().addressOfCurrentEnd();
+<span class="lineNum">     981 </span><span class="lineCov">        498 :     }</span>
+<span class="lineNum">     982 </span>            :     const void* addressOfStringNurseryCurrentEnd() {
+<span class="lineNum">     983 </span>            :         return nursery_.refNoCheck().addressOfCurrentStringEnd();
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     985 </span>            : 
+<span class="lineNum">     986 </span>            :     void minorGC(JS::gcreason::Reason reason,
+<span class="lineNum">     987 </span>            :                  gcstats::PhaseKind phase = gcstats::PhaseKind::MINOR_GC) JS_HAZ_GC_CALL;
+<span class="lineNum">     988 </span>            :     void evictNursery(JS::gcreason::Reason reason = JS::gcreason::EVICT_NURSERY) {
+<span class="lineNum">     989 </span>            :         minorGC(reason, gcstats::PhaseKind::EVICT_NURSERY);
+<span class="lineNum">     990 </span><span class="lineCov">          1 :     }</span>
+<span class="lineNum">     991 </span>            :     void freeAllLifoBlocksAfterMinorGC(LifoAlloc* lifo);
+<span class="lineNum">     992 </span>            : 
+<span class="lineNum">     993 </span>            :     friend class js::GCHelperState;
+<span class="lineNum">     994 </span>            :     friend class MarkingValidator;
+<span class="lineNum">     995 </span>            :     friend class AutoTraceSession;
+<span class="lineNum">     996 </span>            :     friend class AutoEnterIteration;
+<span class="lineNum">     997 </span>            : };
+<span class="lineNum">     998 </span>            : 
+<span class="lineNum">     999 </span>            : /* Prevent compartments and zones from being collected during iteration. */
+<span class="lineNum">    1000 </span>            : class MOZ_RAII AutoEnterIteration {
+<span class="lineNum">    1001 </span>            :     GCRuntime* gc;
+<span class="lineNum">    1002 </span>            : 
+<span class="lineNum">    1003 </span>            :   public:
+<span class="lineNum">    1004 </span>            :     explicit AutoEnterIteration(GCRuntime* gc_) : gc(gc_) {
+<span class="lineNum">    1005 </span><span class="lineNoCov">          0 :         ++gc-&gt;numActiveZoneIters;</span>
+<span class="lineNum">    1006 </span><span class="lineCov">        316 :     }</span>
+<span class="lineNum">    1007 </span>            : 
+<span class="lineNum">    1008 </span>            :     ~AutoEnterIteration() {
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(gc-&gt;numActiveZoneIters);</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">          0 :         --gc-&gt;numActiveZoneIters;</span>
+<span class="lineNum">    1011 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">    1012 </span><span class="lineCov">        158 : };</span>
+<span class="lineNum">    1013 </span>            : 
+<span class="lineNum">    1014 </span>            : #ifdef JS_GC_ZEAL
+<span class="lineNum">    1015 </span>            : 
+<span class="lineNum">    1016 </span>            : inline bool
+<span class="lineNum">    1017 </span>            : GCRuntime::hasZealMode(ZealMode mode)
+<span class="lineNum">    1018 </span>            : {
+<span class="lineNum">    1019 </span>            :     static_assert(size_t(ZealMode::Limit) &lt; sizeof(zealModeBits) * 8,
+<span class="lineNum">    1020 </span>            :                   &quot;Zeal modes must fit in zealModeBits&quot;);
+<span class="lineNum">    1021 </span>            :     return zealModeBits &amp; (1 &lt;&lt; uint32_t(mode));
+<span class="lineNum">    1022 </span><span class="lineCov">    1718391 : }</span>
+<span class="lineNum">    1023 </span>            : 
+<span class="lineNum">    1024 </span>            : inline void
+<span class="lineNum">    1025 </span>            : GCRuntime::clearZealMode(ZealMode mode)
+<span class="lineNum">    1026 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">    1027 </span>            :     zealModeBits &amp;= ~(1 &lt;&lt; uint32_t(mode));
+<span class="lineNum">    1028 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!hasZealMode(mode));</span>
+<span class="lineNum">    1029 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">    1030 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">    1031 </span>            : inline bool
+<span class="lineNum">    1032 </span>            : GCRuntime::upcomingZealousGC() {
+<span class="lineNum">    1033 </span>            :     return nextScheduled == 1;
+<span class="lineNum">    1034 </span><span class="lineCov">     164500 : }</span>
+<span class="lineNum">    1035 </span>            : 
+<span class="lineNum">    1036 </span>            : inline bool
+<span class="lineNum">    1037 </span>            : GCRuntime::needZealousGC() {
+<span class="lineNum">    1038 </span><span class="lineNoCov">          0 :     if (nextScheduled &gt; 0 &amp;&amp; --nextScheduled == 0) {</span>
+<span class="lineNum">    1039 </span><span class="lineNoCov">          0 :         if (hasZealMode(ZealMode::Alloc) ||</span>
+<span class="lineNum">    1040 </span><span class="lineNoCov">          0 :             hasZealMode(ZealMode::GenerationalGC) ||</span>
+<span class="lineNum">    1041 </span><span class="lineNoCov">          0 :             hasZealMode(ZealMode::IncrementalMultipleSlices) ||</span>
+<span class="lineNum">    1042 </span><span class="lineNoCov">          0 :             hasZealMode(ZealMode::Compact) ||</span>
+<span class="lineNum">    1043 </span><span class="lineNoCov">          0 :             hasIncrementalTwoSliceZealMode())</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :         {</span>
+<span class="lineNum">    1045 </span>            :             nextScheduled = zealFrequency;
+<span class="lineNum">    1046 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">    1047 </span>            :         return true;
+<span class="lineNum">    1048 </span>            :     }
+<span class="lineNum">    1049 </span>            :     return false;
+<span class="lineNum">    1050 </span>            : }
+<span class="lineNum">    1051 </span>            : 
+<span class="lineNum">    1052 </span>            : inline bool
+<span class="lineNum">    1053 </span>            : GCRuntime::hasIncrementalTwoSliceZealMode() {
+<span class="lineNum">    1054 </span><span class="lineNoCov">          0 :     return hasZealMode(ZealMode::YieldBeforeMarking) ||</span>
+<span class="lineNum">    1055 </span><span class="lineNoCov">          0 :            hasZealMode(ZealMode::YieldBeforeSweeping) ||</span>
+<span class="lineNum">    1056 </span><span class="lineNoCov">          0 :            hasZealMode(ZealMode::YieldBeforeSweepingAtoms) ||</span>
+<span class="lineNum">    1057 </span><span class="lineNoCov">          0 :            hasZealMode(ZealMode::YieldBeforeSweepingCaches) ||</span>
+<span class="lineNum">    1058 </span><span class="lineNoCov">          0 :            hasZealMode(ZealMode::YieldBeforeSweepingTypes) ||</span>
+<span class="lineNum">    1059 </span><span class="lineNoCov">          0 :            hasZealMode(ZealMode::YieldBeforeSweepingObjects) ||</span>
+<span class="lineNum">    1060 </span><span class="lineNoCov">          0 :            hasZealMode(ZealMode::YieldBeforeSweepingNonObjects) ||</span>
+<span class="lineNum">    1061 </span><span class="lineNoCov">          0 :            hasZealMode(ZealMode::YieldBeforeSweepingShapeTrees);</span>
+<span class="lineNum">    1062 </span>            : }
+<span class="lineNum">    1063 </span>            : 
+<span class="lineNum">    1064 </span>            : #else
+<span class="lineNum">    1065 </span>            : inline bool GCRuntime::hasZealMode(ZealMode mode) { return false; }
+<span class="lineNum">    1066 </span>            : inline void GCRuntime::clearZealMode(ZealMode mode) { }
+<span class="lineNum">    1067 </span>            : inline bool GCRuntime::upcomingZealousGC() { return false; }
+<span class="lineNum">    1068 </span>            : inline bool GCRuntime::needZealousGC() { return false; }
+<span class="lineNum">    1069 </span>            : inline bool GCRuntime::hasIncrementalTwoSliceZealMode() { return false; }
+<span class="lineNum">    1070 </span>            : #endif
+<span class="lineNum">    1071 </span>            : 
+<span class="lineNum">    1072 </span>            : } /* namespace gc */
+<span class="lineNum">    1073 </span>            : } /* namespace js */
+<span class="lineNum">    1074 </span>            : 
+<span class="lineNum">    1075 </span>            : #endif
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

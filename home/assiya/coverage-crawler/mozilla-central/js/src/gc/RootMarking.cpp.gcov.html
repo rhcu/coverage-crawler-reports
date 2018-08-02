@@ -1,0 +1,685 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - /home/assiya/coverage-crawler/mozilla-central/js/src/gc/RootMarking.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../../../../index.html">top level</a> - <a href="index.html">home/assiya/coverage-crawler/mozilla-central/js/src/gc</a> - RootMarking.cpp<span style="font-size: 80%;"> (source / <a href="RootMarking.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">19</td>
+            <td class="headerCovTableEntry">222</td>
+            <td class="headerCovTableEntryLo">8.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-03 01:26:20</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-</a>
+<span class="lineNum">       2 </span>            :  * vim: set ts=8 sts=4 et sw=4 tw=99:
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifdef MOZ_VALGRIND
+<span class="lineNum">       8 </span>            : # include &lt;valgrind/memcheck.h&gt;
+<span class="lineNum">       9 </span>            : #endif
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            : #include &quot;jstypes.h&quot;
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            : #include &quot;builtin/MapObject.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;frontend/BytecodeCompiler.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;gc/GCInternals.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;gc/Marking.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;jit/MacroAssembler.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;js/HashTable.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;vm/Debugger.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;vm/JSContext.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;vm/JSONParser.h&quot;
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : #include &quot;gc/Nursery-inl.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;gc/PrivateIterators-inl.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;vm/JSObject-inl.h&quot;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : using namespace js;
+<span class="lineNum">      28 </span>            : using namespace js::gc;
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : using JS::AutoGCRooter;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : typedef RootedValueMap::Range RootRange;
+<span class="lineNum">      33 </span>            : typedef RootedValueMap::Entry RootEntry;
+<span class="lineNum">      34 </span>            : typedef RootedValueMap::Enum RootEnum;
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : template &lt;typename T&gt;
+<span class="lineNum">      37 </span>            : using TraceFunction = void (*)(JSTracer* trc, T* ref, const char* name);
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : // For more detail see JS::Rooted::ptr and js::DispatchWrapper.
+<span class="lineNum">      40 </span>            : //
+<span class="lineNum">      41 </span>            : // The JS::RootKind::Traceable list contains a bunch of totally disparate
+<span class="lineNum">      42 </span>            : // types, but the instantiations of DispatchWrapper below need /something/ in
+<span class="lineNum">      43 </span>            : // the type field. We use the following type as a compatible stand-in. No
+<span class="lineNum">      44 </span>            : // actual methods from ConcreteTraceable type are actually used at runtime --
+<span class="lineNum">      45 </span>            : // the real trace function has been stored inline in the DispatchWrapper.
+<span class="lineNum">      46 </span>            : struct ConcreteTraceable {
+<span class="lineNum">      47 </span>            :     ConcreteTraceable() { MOZ_CRASH(&quot;instantiation of ConcreteTraceable&quot;); }
+<span class="lineNum">      48 </span>            :     void trace(JSTracer*) {}
+<span class="lineNum">      49 </span>            : };
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span>            : template &lt;typename T&gt;
+<span class="lineNum">      52 </span>            : static inline void
+<span class="lineNum">      53 </span>            : TraceStackOrPersistentRoot(JSTracer* trc, T* thingp, const char* name)
+<span class="lineNum">      54 </span>            : {
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :     TraceNullableRoot(trc, thingp, name);</span>
+<span class="lineNum">      56 </span>            : }
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : template &lt;&gt;
+<span class="lineNum">      59 </span>            : inline void
+<span class="lineNum">      60 </span>            : TraceStackOrPersistentRoot(JSTracer* trc, ConcreteTraceable* thingp, const char* name)
+<span class="lineNum">      61 </span>            : {
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :     js::DispatchWrapper&lt;ConcreteTraceable&gt;::TraceWrapped(trc, thingp, name);</span>
+<span class="lineNum">      63 </span>            : }
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : template &lt;typename T&gt;
+<span class="lineNum">      66 </span>            : static inline void
+<span class="lineNum">      67 </span>            : TraceExactStackRootList(JSTracer* trc, JS::Rooted&lt;void*&gt;* rooter, const char* name)
+<span class="lineNum">      68 </span>            : {
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :     while (rooter) {</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :         T* addr = reinterpret_cast&lt;JS::Rooted&lt;T&gt;*&gt;(rooter)-&gt;address();</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         TraceStackOrPersistentRoot(trc, addr, name);</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :         rooter = rooter-&gt;previous();</span>
+<span class="lineNum">      73 </span>            :     }
+<span class="lineNum">      74 </span>            : }
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span>            : static inline void
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 : TraceStackRoots(JSTracer* trc, JS::RootedListHeads&amp; stackRoots)</span>
+<span class="lineNum">      78 </span>            : {
+<span class="lineNum">      79 </span>            : #define TRACE_ROOTS(name, type, _) \
+<span class="lineNum">      80 </span>            :     TraceExactStackRootList&lt;type*&gt;(trc, stackRoots[JS::RootKind::name], &quot;exact-&quot; #name);
+<span class="lineNum">      81 </span><span class="lineNoCov">          0 : JS_FOR_EACH_TRACEKIND(TRACE_ROOTS)</span>
+<span class="lineNum">      82 </span>            : #undef TRACE_ROOTS
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :     TraceExactStackRootList&lt;jsid&gt;(trc, stackRoots[JS::RootKind::Id], &quot;exact-id&quot;);</span>
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :     TraceExactStackRootList&lt;Value&gt;(trc, stackRoots[JS::RootKind::Value], &quot;exact-value&quot;);</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :     TraceExactStackRootList&lt;ConcreteTraceable&gt;(</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :         trc, stackRoots[JS::RootKind::Traceable], &quot;Traceable&quot;);</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span>            : void
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 : JS::RootingContext::traceStackRoots(JSTracer* trc)</span>
+<span class="lineNum">      91 </span>            : {
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :     TraceStackRoots(trc, stackRoots_);</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span>            : static void
+<span class="lineNum">      96 </span>            : TraceExactStackRoots(JSContext* cx, JSTracer* trc)
+<span class="lineNum">      97 </span>            : {
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :     cx-&gt;traceStackRoots(trc);</span>
+<span class="lineNum">      99 </span>            : }
+<span class="lineNum">     100 </span>            : 
+<span class="lineNum">     101 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     102 </span>            : static inline void
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 : TracePersistentRootedList(JSTracer* trc, mozilla::LinkedList&lt;PersistentRooted&lt;void*&gt;&gt;&amp; list,</span>
+<span class="lineNum">     104 </span>            :                          const char* name)
+<span class="lineNum">     105 </span>            : {
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :     for (PersistentRooted&lt;void*&gt;* r : list)</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :         TraceStackOrPersistentRoot(trc, reinterpret_cast&lt;PersistentRooted&lt;T&gt;*&gt;(r)-&gt;address(), name);</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            : void
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 : JSRuntime::tracePersistentRoots(JSTracer* trc)</span>
+<span class="lineNum">     112 </span>            : {
+<span class="lineNum">     113 </span>            : #define TRACE_ROOTS(name, type, _) \
+<span class="lineNum">     114 </span>            :     TracePersistentRootedList&lt;type*&gt;(trc, heapRoots.ref()[JS::RootKind::name], &quot;persistent-&quot; #name);
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 : JS_FOR_EACH_TRACEKIND(TRACE_ROOTS)</span>
+<span class="lineNum">     116 </span>            : #undef TRACE_ROOTS
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 :     TracePersistentRootedList&lt;jsid&gt;(trc, heapRoots.ref()[JS::RootKind::Id], &quot;persistent-id&quot;);</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :     TracePersistentRootedList&lt;Value&gt;(trc, heapRoots.ref()[JS::RootKind::Value], &quot;persistent-value&quot;);</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :     TracePersistentRootedList&lt;ConcreteTraceable&gt;(</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :         trc, heapRoots.ref()[JS::RootKind::Traceable], &quot;persistent-traceable&quot;);</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            : static void
+<span class="lineNum">     124 </span>            : TracePersistentRooted(JSRuntime* rt, JSTracer* trc)
+<span class="lineNum">     125 </span>            : {
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :     rt-&gt;tracePersistentRoots(trc);</span>
+<span class="lineNum">     127 </span>            : }
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     130 </span>            : static void
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 : FinishPersistentRootedChain(mozilla::LinkedList&lt;PersistentRooted&lt;void*&gt;&gt;&amp; listArg)</span>
+<span class="lineNum">     132 </span>            : {
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :     auto&amp; list = reinterpret_cast&lt;mozilla::LinkedList&lt;PersistentRooted&lt;T&gt;&gt;&amp;&gt;(listArg);</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :     while (!list.isEmpty())</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :         list.getFirst()-&gt;reset();</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            : void
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 : JSRuntime::finishPersistentRoots()</span>
+<span class="lineNum">     140 </span>            : {
+<span class="lineNum">     141 </span>            : #define FINISH_ROOT_LIST(name, type, _)                                 \
+<span class="lineNum">     142 </span>            :     FinishPersistentRootedChain&lt;type*&gt;(heapRoots.ref()[JS::RootKind::name]);
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 : JS_FOR_EACH_TRACEKIND(FINISH_ROOT_LIST)</span>
+<span class="lineNum">     144 </span>            : #undef FINISH_ROOT_LIST
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :     FinishPersistentRootedChain&lt;jsid&gt;(heapRoots.ref()[JS::RootKind::Id]);</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :     FinishPersistentRootedChain&lt;Value&gt;(heapRoots.ref()[JS::RootKind::Value]);</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span>            :     // Note that we do not finalize the Traceable list as we do not know how to
+<span class="lineNum">     149 </span>            :     // safely clear members. We instead assert that none escape the RootLists.
+<span class="lineNum">     150 </span>            :     // See the comment on RootLists::~RootLists for details.
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            : inline void
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 : AutoGCRooter::trace(JSTracer* trc)</span>
+<span class="lineNum">     155 </span>            : {
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :     switch (tag_) {</span>
+<span class="lineNum">     157 </span>            :       case Tag::Parser:
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         frontend::TraceParser(trc, this);</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         return;</span>
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span>            : #if defined(JS_BUILD_BINAST)
+<span class="lineNum">     162 </span>            :       case Tag::BinParser:
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         frontend::TraceBinParser(trc, this);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         return;</span>
+<span class="lineNum">     165 </span>            : #endif // defined(JS_BUILD_BINAST)
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span>            :       case Tag::ValueArray: {
+<span class="lineNum">     168 </span>            :         /*
+<span class="lineNum">     169 </span>            :          * We don't know the template size parameter, but we can safely treat it
+<span class="lineNum">     170 </span>            :          * as an AutoValueArray&lt;1&gt; because the length is stored separately.
+<span class="lineNum">     171 </span>            :          */
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :         AutoValueArray&lt;1&gt;* array = static_cast&lt;AutoValueArray&lt;1&gt;*&gt;(this);</span>
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :         TraceRootRange(trc, array-&gt;length(), array-&gt;begin(), &quot;js::AutoValueArray&quot;);</span>
+<span class="lineNum">     174 </span>            :         return;
+<span class="lineNum">     175 </span>            :       }
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            :       case Tag::Wrapper: {
+<span class="lineNum">     178 </span>            :         /*
+<span class="lineNum">     179 </span>            :          * We need to use TraceManuallyBarrieredEdge here because we trace
+<span class="lineNum">     180 </span>            :          * wrapper roots in every slice. This is because of some rule-breaking
+<span class="lineNum">     181 </span>            :          * in RemapAllWrappersForObject; see comment there.
+<span class="lineNum">     182 </span>            :          */
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :         TraceManuallyBarrieredEdge(trc, &amp;static_cast&lt;AutoWrapperRooter*&gt;(this)-&gt;value.get(),</span>
+<span class="lineNum">     184 </span>            :                                    &quot;js::AutoWrapperRooter.value&quot;);
+<span class="lineNum">     185 </span>            :         return;
+<span class="lineNum">     186 </span>            :       }
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span>            :       case Tag::WrapperVector: {
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :         auto vector = static_cast&lt;AutoWrapperVector*&gt;(this);</span>
+<span class="lineNum">     190 </span>            :         /*
+<span class="lineNum">     191 </span>            :          * We need to use TraceManuallyBarrieredEdge here because we trace
+<span class="lineNum">     192 </span>            :          * wrapper roots in every slice. This is because of some rule-breaking
+<span class="lineNum">     193 </span>            :          * in RemapAllWrappersForObject; see comment there.
+<span class="lineNum">     194 </span>            :          */
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         for (WrapperValue* p = vector-&gt;begin(); p &lt; vector-&gt;end(); p++)</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :             TraceManuallyBarrieredEdge(trc, &amp;p-&gt;get(), &quot;js::AutoWrapperVector.vector&quot;);</span>
+<span class="lineNum">     197 </span>            :         return;
+<span class="lineNum">     198 </span>            :       }
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span>            :       case Tag::Custom:
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :         static_cast&lt;JS::CustomAutoRooter*&gt;(this)-&gt;trace(trc);</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :         return;</span>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span>            :       case Tag::Array: {
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :         auto array = static_cast&lt;AutoArrayRooter*&gt;(this);</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :         if (Value* vp = array-&gt;begin())</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :             TraceRootRange(trc, array-&gt;length(), vp, &quot;js::AutoArrayRooter&quot;);</span>
+<span class="lineNum">     208 </span>            :         return;
+<span class="lineNum">     209 </span>            :       }
+<span class="lineNum">     210 </span>            :     }
+<span class="lineNum">     211 </span>            : 
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :     MOZ_CRASH(&quot;Bad AutoGCRooter::Tag&quot;);</span>
+<span class="lineNum">     213 </span>            : }
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            : /* static */ void
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 : AutoGCRooter::traceAll(JSContext* cx, JSTracer* trc)</span>
+<span class="lineNum">     217 </span>            : {
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :     for (AutoGCRooter* gcr = cx-&gt;autoGCRooters_; gcr; gcr = gcr-&gt;down)</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :         gcr-&gt;trace(trc);</span>
+<span class="lineNum">     220 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     221 </span>            : 
+<span class="lineNum">     222 </span>            : /* static */ void
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 : AutoGCRooter::traceAllWrappers(JSContext* cx, JSTracer* trc)</span>
+<span class="lineNum">     224 </span>            : {
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :     for (AutoGCRooter* gcr = cx-&gt;autoGCRooters_; gcr; gcr = gcr-&gt;down) {</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :         if (gcr-&gt;tag_ == Tag::WrapperVector || gcr-&gt;tag_ == Tag::Wrapper)</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :             gcr-&gt;trace(trc);</span>
+<span class="lineNum">     228 </span>            :     }
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span>            : void
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 : StackShape::trace(JSTracer* trc)</span>
+<span class="lineNum">     233 </span>            : {
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :     if (base)</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :         TraceRoot(trc, &amp;base, &quot;StackShape base&quot;);</span>
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :     TraceRoot(trc, (jsid*) &amp;propid, &quot;StackShape id&quot;);</span>
+<span class="lineNum">     238 </span>            : 
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :     if ((attrs &amp; JSPROP_GETTER) &amp;&amp; rawGetter)</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :         TraceRoot(trc, (JSObject**)&amp;rawGetter, &quot;StackShape getter&quot;);</span>
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :     if ((attrs &amp; JSPROP_SETTER) &amp;&amp; rawSetter)</span>
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :         TraceRoot(trc, (JSObject**)&amp;rawSetter, &quot;StackShape setter&quot;);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span>            : void
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 : PropertyDescriptor::trace(JSTracer* trc)</span>
+<span class="lineNum">     248 </span>            : {
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :     if (obj)</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         TraceRoot(trc, &amp;obj, &quot;Descriptor::obj&quot;);</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :     TraceRoot(trc, &amp;value, &quot;Descriptor::value&quot;);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :     if ((attrs &amp; JSPROP_GETTER) &amp;&amp; getter) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :         JSObject* tmp = JS_FUNC_TO_DATA_PTR(JSObject*, getter);</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         TraceRoot(trc, &amp;tmp, &quot;Descriptor::get&quot;);</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         getter = JS_DATA_TO_FUNC_PTR(JSGetterOp, tmp);</span>
+<span class="lineNum">     256 </span>            :     }
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :     if ((attrs &amp; JSPROP_SETTER) &amp;&amp; setter) {</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         JSObject* tmp = JS_FUNC_TO_DATA_PTR(JSObject*, setter);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         TraceRoot(trc, &amp;tmp, &quot;Descriptor::set&quot;);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :         setter = JS_DATA_TO_FUNC_PTR(JSSetterOp, tmp);</span>
+<span class="lineNum">     261 </span>            :     }
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            : void
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 : js::gc::GCRuntime::traceRuntimeForMajorGC(JSTracer* trc, AutoTraceSession&amp; session)</span>
+<span class="lineNum">     266 </span>            : {
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!TlsContext.get()-&gt;suppressGC);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :     MOZ_ASSERT_IF(atomsZone-&gt;isCollecting(), session.maybeLock.isSome());</span>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span>            :     // FinishRoots will have asserted that every root that we do not expect
+<span class="lineNum">     271 </span>            :     // is gone, so we can simply skip traceRuntime here.
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :     if (rt-&gt;isBeingDestroyed())</span>
+<span class="lineNum">     273 </span>            :         return;
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :     gcstats::AutoPhase ap(stats(), gcstats::PhaseKind::MARK_ROOTS);</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :     if (atomsZone-&gt;isCollecting())</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :         traceRuntimeAtoms(trc, session.lock());</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :     traceKeptAtoms(trc);</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :     Compartment::traceIncomingCrossCompartmentEdgesForZoneGC(trc);</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :     traceRuntimeCommon(trc, MarkRuntime, session);</span>
+<span class="lineNum">     281 </span>            : }
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            : void
+<span class="lineNum">     284 </span><span class="lineCov">          3 : js::gc::GCRuntime::traceRuntimeForMinorGC(JSTracer* trc, AutoTraceSession&amp; session)</span>
+<span class="lineNum">     285 </span>            : {
+<span class="lineNum">     286 </span><span class="lineCov">          6 :     MOZ_ASSERT(!TlsContext.get()-&gt;suppressGC);</span>
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            :     // Note that we *must* trace the runtime during the SHUTDOWN_GC's minor GC
+<span class="lineNum">     289 </span>            :     // despite having called FinishRoots already. This is because FinishRoots
+<span class="lineNum">     290 </span>            :     // does not clear the crossCompartmentWrapper map. It cannot do this
+<span class="lineNum">     291 </span>            :     // because Proxy's trace for CrossCompartmentWrappers asserts presence in
+<span class="lineNum">     292 </span>            :     // the map. And we can reach its trace function despite having finished the
+<span class="lineNum">     293 </span>            :     // roots via the edges stored by the pre-barrier verifier when we finish
+<span class="lineNum">     294 </span>            :     // the verifier for the last time.
+<span class="lineNum">     295 </span><span class="lineCov">          9 :     gcstats::AutoPhase ap(stats(), gcstats::PhaseKind::MARK_ROOTS);</span>
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineCov">          3 :     jit::JitRuntime::TraceJitcodeGlobalTableForMinorGC(trc);</span>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :     traceRuntimeCommon(trc, TraceRuntime, session);</span>
+<span class="lineNum">     300 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span>            : void
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 : js::TraceRuntime(JSTracer* trc)</span>
+<span class="lineNum">     304 </span>            : {
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!trc-&gt;isMarkingTracer());</span>
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :     JSRuntime* rt = trc-&gt;runtime();</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :     rt-&gt;gc.evictNursery();</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :     AutoPrepareForTracing prep(rt-&gt;mainContextFromOwnThread());</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :     gcstats::AutoPhase ap(rt-&gt;gc.stats(), gcstats::PhaseKind::TRACE_HEAP);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :     rt-&gt;gc.traceRuntime(trc, prep.session());</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span>            : void
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 : js::gc::GCRuntime::traceRuntime(JSTracer* trc, AutoTraceSession&amp; session)</span>
+<span class="lineNum">     316 </span>            : {
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!rt-&gt;isBeingDestroyed());</span>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :     gcstats::AutoPhase ap(stats(), gcstats::PhaseKind::MARK_ROOTS);</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :     traceRuntimeAtoms(trc, session.lock());</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :     traceRuntimeCommon(trc, TraceRuntime, session);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span>            : void
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 : js::gc::GCRuntime::traceRuntimeAtoms(JSTracer* trc, AutoLockForExclusiveAccess&amp; lock)</span>
+<span class="lineNum">     326 </span>            : {
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :     gcstats::AutoPhase ap(stats(), gcstats::PhaseKind::MARK_RUNTIME_DATA);</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :     TracePermanentAtoms(trc);</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :     TraceAtoms(trc, lock);</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :     TraceWellKnownSymbols(trc);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :     jit::JitRuntime::Trace(trc, lock);</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span>            : void
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 : js::gc::GCRuntime::traceKeptAtoms(JSTracer* trc)</span>
+<span class="lineNum">     336 </span>            : {
+<span class="lineNum">     337 </span>            :     // We don't have exact rooting information for atoms while parsing. When
+<span class="lineNum">     338 </span>            :     // this is happeninng we set a flag on the zone and trace all atoms in the
+<span class="lineNum">     339 </span>            :     // zone's cache.
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :     for (GCZonesIter zone(trc-&gt;runtime()); !zone.done(); zone.next()) {</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :         if (zone-&gt;hasKeptAtoms())</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :             zone-&gt;traceAtomCache(trc);</span>
+<span class="lineNum">     343 </span>            :     }
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span>            : void
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 : js::gc::GCRuntime::traceRuntimeCommon(JSTracer* trc, TraceOrMarkRuntime traceOrMark,</span>
+<span class="lineNum">     348 </span>            :                                       AutoTraceSession&amp; session)
+<span class="lineNum">     349 </span>            : {
+<span class="lineNum">     350 </span>            :     {
+<span class="lineNum">     351 </span><span class="lineCov">          9 :         gcstats::AutoPhase ap(stats(), gcstats::PhaseKind::MARK_STACK);</span>
+<span class="lineNum">     352 </span>            : 
+<span class="lineNum">     353 </span><span class="lineCov">          1 :         JSContext* cx = rt-&gt;mainContextFromOwnThread();</span>
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span>            :         // Trace active interpreter and JIT stack roots.
+<span class="lineNum">     356 </span><span class="lineCov">          3 :         TraceInterpreterActivations(cx, trc);</span>
+<span class="lineNum">     357 </span><span class="lineCov">          3 :         jit::TraceJitActivations(cx, trc);</span>
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span>            :         // Trace legacy C stack roots.
+<span class="lineNum">     360 </span><span class="lineCov">          3 :         AutoGCRooter::traceAll(cx, trc);</span>
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span>            :         // Trace C stack roots.
+<span class="lineNum">     363 </span><span class="lineCov">          3 :         TraceExactStackRoots(cx, trc);</span>
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :         for (RootRange r = rootsHash.ref().all(); !r.empty(); r.popFront()) {</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :             const RootEntry&amp; entry = r.front();</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :             TraceRoot(trc, entry.key(), entry.value());</span>
+<span class="lineNum">     368 </span>            :         }
+<span class="lineNum">     369 </span>            :     }
+<span class="lineNum">     370 </span>            : 
+<span class="lineNum">     371 </span>            :     // Trace runtime global roots.
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :     TracePersistentRooted(rt, trc);</span>
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span>            :     // Trace the self-hosting global compartment.
+<span class="lineNum">     375 </span><span class="lineCov">          3 :     rt-&gt;traceSelfHostingGlobal(trc);</span>
+<span class="lineNum">     376 </span>            : 
+<span class="lineNum">     377 </span>            :     // Trace the shared Intl data.
+<span class="lineNum">     378 </span><span class="lineCov">          3 :     rt-&gt;traceSharedIntlData(trc);</span>
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span>            :     // Trace the JSContext.
+<span class="lineNum">     381 </span><span class="lineCov">          3 :     rt-&gt;mainContextFromOwnThread()-&gt;trace(trc);</span>
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span>            :     // Trace all realm roots, but not the realm itself; it is traced via the
+<span class="lineNum">     384 </span>            :     // parent pointer if traceRoots actually traces anything.
+<span class="lineNum">     385 </span><span class="lineCov">         66 :     for (RealmsIter r(rt); !r.done(); r.next())</span>
+<span class="lineNum">     386 </span><span class="lineCov">         30 :         r-&gt;traceRoots(trc, traceOrMark);</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span>            :     // Trace helper thread roots.
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :     HelperThreadState().trace(trc, session);</span>
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span>            :     // Trace the embedding's black and gray roots.
+<span class="lineNum">     392 </span><span class="lineCov">          3 :     if (!JS::RuntimeHeapIsMinorCollecting()) {</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :         gcstats::AutoPhase ap(stats(), gcstats::PhaseKind::MARK_EMBEDDING);</span>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span>            :         /*
+<span class="lineNum">     396 </span>            :          * The embedding can register additional roots here.
+<span class="lineNum">     397 </span>            :          *
+<span class="lineNum">     398 </span>            :          * We don't need to trace these in a minor GC because all pointers into
+<span class="lineNum">     399 </span>            :          * the nursery should be in the store buffer, and we want to avoid the
+<span class="lineNum">     400 </span>            :          * time taken to trace all these roots.
+<span class="lineNum">     401 </span>            :          */
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :         for (size_t i = 0; i &lt; blackRootTracers.ref().length(); i++) {</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :             const Callback&lt;JSTraceDataOp&gt;&amp; e = blackRootTracers.ref()[i];</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :             (*e.op)(trc, e.data);</span>
+<span class="lineNum">     405 </span>            :         }
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span>            :         /* During GC, we don't trace gray roots at this stage. */
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :         if (JSTraceDataOp op = grayRootTracer.op) {</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :             if (traceOrMark == TraceRuntime)</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :                 (*op)(trc, grayRootTracer.data);</span>
+<span class="lineNum">     411 </span>            :         }
+<span class="lineNum">     412 </span>            :     }
+<span class="lineNum">     413 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span>            : #ifdef DEBUG
+<span class="lineNum">     416 </span>            : class AssertNoRootsTracer : public JS::CallbackTracer
+<span class="lineNum">     417 </span>            : {
+<span class="lineNum">     418 </span><span class="lineNoCov">          0 :     void onChild(const JS::GCCellPtr&amp; thing) override {</span>
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :         MOZ_CRASH(&quot;There should not be any roots after finishRoots&quot;);</span>
+<span class="lineNum">     420 </span>            :     }
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span>            :   public:
+<span class="lineNum">     423 </span>            :     AssertNoRootsTracer(JSRuntime* rt, WeakMapTraceKind weakTraceKind)
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :       : JS::CallbackTracer(rt, weakTraceKind)</span>
+<span class="lineNum">     425 </span>            :     {}
+<span class="lineNum">     426 </span>            : };
+<span class="lineNum">     427 </span>            : #endif // DEBUG
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span>            : void
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 : js::gc::GCRuntime::finishRoots()</span>
+<span class="lineNum">     431 </span>            : {
+<span class="lineNum">     432 </span>            :     AutoNoteSingleThreadedRegion anstr;
+<span class="lineNum">     433 </span>            : 
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :     rt-&gt;finishAtoms();</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :     if (rootsHash.ref().initialized())</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :         rootsHash.ref().clear();</span>
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :     rt-&gt;finishPersistentRoots();</span>
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :     rt-&gt;finishSelfHosting();</span>
+<span class="lineNum">     442 </span>            : 
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :     for (RealmsIter r(rt); !r.done(); r.next())</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :         r-&gt;finishRoots();</span>
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span>            : #ifdef DEBUG
+<span class="lineNum">     447 </span>            :     // The nsWrapperCache may not be empty before our shutdown GC, so we have
+<span class="lineNum">     448 </span>            :     // to skip that table when verifying that we are fully unrooted.
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :     auto prior = grayRootTracer;</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :     grayRootTracer = Callback&lt;JSTraceDataOp&gt;(nullptr, nullptr);</span>
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :     AssertNoRootsTracer trc(rt, TraceWeakMapKeysValues);</span>
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :     AutoPrepareForTracing prep(TlsContext.get());</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :     gcstats::AutoPhase ap(rt-&gt;gc.stats(), gcstats::PhaseKind::TRACE_HEAP);</span>
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :     traceRuntime(&amp;trc, prep.session());</span>
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span>            :     // Restore the wrapper tracing so that we leak instead of leaving dangling
+<span class="lineNum">     458 </span>            :     // pointers.
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :     grayRootTracer = prior;</span>
+<span class="lineNum">     460 </span>            : #endif // DEBUG
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span>            : // Append traced things to a buffer on the zone for use later in the GC.
+<span class="lineNum">     464 </span>            : // See the comment in GCRuntime.h above grayBufferState for details.
+<span class="lineNum">     465 </span>            : class BufferGrayRootsTracer final : public JS::CallbackTracer
+<span class="lineNum">     466 </span>            : {
+<span class="lineNum">     467 </span>            :     // Set to false if we OOM while buffering gray roots.
+<span class="lineNum">     468 </span>            :     bool bufferingGrayRootsFailed;
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :     void onObjectEdge(JSObject** objp) override { bufferRoot(*objp); }</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :     void onStringEdge(JSString** stringp) override { bufferRoot(*stringp); }</span>
+<span class="lineNum">     472 </span><span class="lineNoCov">          0 :     void onScriptEdge(JSScript** scriptp) override { bufferRoot(*scriptp); }</span>
+<span class="lineNum">     473 </span><span class="lineNoCov">          0 :     void onSymbolEdge(JS::Symbol** symbolp) override { bufferRoot(*symbolp); }</span>
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :     void onChild(const JS::GCCellPtr&amp; thing) override {</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :         MOZ_CRASH(&quot;Unexpected gray root kind&quot;);</span>
+<span class="lineNum">     477 </span>            :     }
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span>            :     template &lt;typename T&gt; inline void bufferRoot(T* thing);
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span>            :   public:
+<span class="lineNum">     482 </span>            :     explicit BufferGrayRootsTracer(JSRuntime* rt)
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :       : JS::CallbackTracer(rt), bufferingGrayRootsFailed(false)</span>
+<span class="lineNum">     484 </span>            :     {}
+<span class="lineNum">     485 </span>            : 
+<span class="lineNum">     486 </span>            :     bool failed() const { return bufferingGrayRootsFailed; }
+<span class="lineNum">     487 </span>            :     void setFailed() { bufferingGrayRootsFailed = true; }
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span>            : #ifdef DEBUG
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :     TracerKind getTracerKind() const override { return TracerKind::GrayBuffering; }</span>
+<span class="lineNum">     491 </span>            : #endif
+<span class="lineNum">     492 </span>            : };
+<span class="lineNum">     493 </span>            : 
+<span class="lineNum">     494 </span>            : #ifdef DEBUG
+<span class="lineNum">     495 </span>            : // Return true if this trace is happening on behalf of gray buffering during
+<span class="lineNum">     496 </span>            : // the marking phase of incremental GC.
+<span class="lineNum">     497 </span>            : bool
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 : js::IsBufferGrayRootsTracer(JSTracer* trc)</span>
+<span class="lineNum">     499 </span>            : {
+<span class="lineNum">     500 </span><span class="lineCov">        144 :     return trc-&gt;isCallbackTracer() &amp;&amp;</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :            trc-&gt;asCallbackTracer()-&gt;getTracerKind() == JS::CallbackTracer::TracerKind::GrayBuffering;</span>
+<span class="lineNum">     502 </span>            : }
+<span class="lineNum">     503 </span>            : #endif
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span>            : void
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 : js::gc::GCRuntime::bufferGrayRoots()</span>
+<span class="lineNum">     507 </span>            : {
+<span class="lineNum">     508 </span>            :     // Precondition: the state has been reset to &quot;unused&quot; after the last GC
+<span class="lineNum">     509 </span>            :     //               and the zone's buffers have been cleared.
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(grayBufferState == GrayBufferState::Unused);</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :     for (GCZonesIter zone(rt); !zone.done(); zone.next())</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(zone-&gt;gcGrayRoots().empty());</span>
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :     BufferGrayRootsTracer grayBufferer(rt);</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :     if (JSTraceDataOp op = grayRootTracer.op)</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         (*op)(&amp;grayBufferer, grayRootTracer.data);</span>
+<span class="lineNum">     517 </span>            : 
+<span class="lineNum">     518 </span>            :     // Propagate the failure flag from the marker to the runtime.
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :     if (grayBufferer.failed()) {</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :       grayBufferState = GrayBufferState::Failed;</span>
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 :       resetBufferedGrayRoots();</span>
+<span class="lineNum">     522 </span>            :     } else {
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :       grayBufferState = GrayBufferState::Okay;</span>
+<span class="lineNum">     524 </span>            :     }
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     528 </span>            : inline void
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 : BufferGrayRootsTracer::bufferRoot(T* thing)</span>
+<span class="lineNum">     530 </span>            : {
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(JS::RuntimeHeapIsBusy());</span>
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(thing);</span>
+<span class="lineNum">     533 </span>            :     // Check if |thing| is corrupt by calling a method that touches the heap.
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(thing-&gt;getTraceKind() &lt;= JS::TraceKind::Null);</span>
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :     TenuredCell* tenured = &amp;thing-&gt;asTenured();</span>
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span>            :     // This is run from a helper thread while the mutator is paused so we have
+<span class="lineNum">     539 </span>            :     // to use *FromAnyThread methods here.
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :     Zone* zone = tenured-&gt;zoneFromAnyThread();</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :     if (zone-&gt;isCollectingFromAnyThread()) {</span>
+<span class="lineNum">     542 </span>            :         // See the comment on SetMaybeAliveFlag to see why we only do this for
+<span class="lineNum">     543 </span>            :         // objects and scripts. We rely on gray root buffering for this to work,
+<span class="lineNum">     544 </span>            :         // but we only need to worry about uncollected dead compartments during
+<span class="lineNum">     545 </span>            :         // incremental GCs (when we do gray root buffering).
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :         SetMaybeAliveFlag(thing);</span>
+<span class="lineNum">     547 </span>            : 
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :         if (!zone-&gt;gcGrayRoots().append(tenured))</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :             bufferingGrayRootsFailed = true;</span>
+<span class="lineNum">     550 </span>            :     }
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span>            : void
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 : GCRuntime::markBufferedGrayRoots(JS::Zone* zone)</span>
+<span class="lineNum">     555 </span>            : {
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(grayBufferState == GrayBufferState::Okay);</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(zone-&gt;isGCMarkingGray() || zone-&gt;isGCCompacting());</span>
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :     auto&amp; roots = zone-&gt;gcGrayRoots();</span>
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :     if (roots.empty())</span>
+<span class="lineNum">     561 </span>            :         return;
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :     for (size_t i = 0; i &lt; roots.length(); i++) {</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :         Cell* cell = roots[i];</span>
+<span class="lineNum">     565 </span>            : 
+<span class="lineNum">     566 </span>            :         // Bug 1203273: Check for bad pointers on OSX and output diagnostics.
+<span class="lineNum">     567 </span>            : #if defined(XP_DARWIN) &amp;&amp; defined(MOZ_DIAGNOSTIC_ASSERT_ENABLED)
+<span class="lineNum">     568 </span>            :         auto addr = uintptr_t(cell);
+<span class="lineNum">     569 </span>            :         if (addr &lt; ChunkSize || addr % CellAlignBytes != 0) {
+<span class="lineNum">     570 </span>            :             MOZ_CRASH_UNSAFE_PRINTF(
+<span class="lineNum">     571 </span>            :                 &quot;Bad GC thing pointer in gray root buffer: %p at index %zu of %zu, address %p&quot;,
+<span class="lineNum">     572 </span>            :                 cell, i, roots.length(), &amp;roots[i]);
+<span class="lineNum">     573 </span>            :         }
+<span class="lineNum">     574 </span>            : #else
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(IsCellPointerValid(cell));</span>
+<span class="lineNum">     576 </span>            : #endif
+<span class="lineNum">     577 </span>            : 
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :         TraceManuallyBarrieredGenericPointerEdge(&amp;marker, &amp;cell, &quot;buffered gray root&quot;);</span>
+<span class="lineNum">     579 </span>            :     }
+<span class="lineNum">     580 </span>            : }
+<span class="lineNum">     581 </span>            : 
+<span class="lineNum">     582 </span>            : void
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 : GCRuntime::resetBufferedGrayRoots() const</span>
+<span class="lineNum">     584 </span>            : {
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(grayBufferState != GrayBufferState::Okay,</span>
+<span class="lineNum">     586 </span>            :                &quot;Do not clear the gray buffers unless we are Failed or becoming Unused&quot;);
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :     for (GCZonesIter zone(rt); !zone.done(); zone.next())</span>
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :         zone-&gt;gcGrayRoots().clearAndFree();</span>
+<span class="lineNum">     589 </span>            : }
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span>            : JS_PUBLIC_API(void)
+<span class="lineNum">     592 </span>            : JS::AddPersistentRoot(JS::RootingContext* cx, RootKind kind, PersistentRooted&lt;void*&gt;* root)
+<span class="lineNum">     593 </span>            : {
+<span class="lineNum">     594 </span>            :     static_cast&lt;JSContext*&gt;(cx)-&gt;runtime()-&gt;heapRoots.ref()[kind].insertBack(root);
+<span class="lineNum">     595 </span>            : }
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span>            : JS_PUBLIC_API(void)
+<span class="lineNum">     598 </span>            : JS::AddPersistentRoot(JSRuntime* rt, RootKind kind, PersistentRooted&lt;void*&gt;* root)
+<span class="lineNum">     599 </span>            : {
+<span class="lineNum">     600 </span>            :     rt-&gt;heapRoots.ref()[kind].insertBack(root);
+<span class="lineNum">     601 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

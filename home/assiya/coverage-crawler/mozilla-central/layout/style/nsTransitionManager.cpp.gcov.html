@@ -1,0 +1,994 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - /home/assiya/coverage-crawler/mozilla-central/layout/style/nsTransitionManager.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../../../index.html">top level</a> - <a href="index.html">home/assiya/coverage-crawler/mozilla-central/layout/style</a> - nsTransitionManager.cpp<span style="font-size: 80%;"> (source / <a href="nsTransitionManager.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">61</td>
+            <td class="headerCovTableEntry">360</td>
+            <td class="headerCovTableEntryLo">16.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-03 01:26:20</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : /* Code to start and animate CSS transitions. */
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;nsTransitionManager.h&quot;
+<span class="lineNum">      10 </span>            : #include &quot;nsAnimationManager.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/dom/CSSTransitionBinding.h&quot;
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            : #include &quot;nsIContent.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;nsContentUtils.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/ComputedStyle.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/MemoryReporting.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/TimeStamp.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;nsRefreshDriver.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;nsCSSPropertyIDSet.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;mozilla/AnimationEventDispatcher.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;mozilla/EffectCompositor.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;mozilla/EffectSet.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;mozilla/EventDispatcher.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;mozilla/ServoBindings.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;mozilla/StyleAnimationValue.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;mozilla/dom/DocumentTimeline.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;mozilla/dom/Element.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;nsIFrame.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;Layers.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;FrameLayerBuilder.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;nsCSSProps.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;nsCSSPseudoElements.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;nsDisplayList.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;nsRFPService.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;nsStyleChangeList.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;mozilla/RestyleManager.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;nsDOMMutationObserver.h&quot;
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : using mozilla::TimeStamp;
+<span class="lineNum">      40 </span>            : using mozilla::TimeDuration;
+<span class="lineNum">      41 </span>            : using mozilla::dom::Animation;
+<span class="lineNum">      42 </span>            : using mozilla::dom::AnimationPlayState;
+<span class="lineNum">      43 </span>            : using mozilla::dom::CSSTransition;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : using namespace mozilla;
+<span class="lineNum">      46 </span>            : using namespace mozilla::css;
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : double
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 : ElementPropertyTransition::CurrentValuePortion() const</span>
+<span class="lineNum">      50 </span>            : {
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(!GetLocalTime().IsNull(),</span>
+<span class="lineNum">      52 </span>            :              &quot;Getting the value portion of an animation that's not being &quot;
+<span class="lineNum">      53 </span>            :              &quot;sampled&quot;);
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            :   // Transitions use a fill mode of 'backwards' so GetComputedTiming will
+<span class="lineNum">      56 </span>            :   // never return a null time progress due to being *before* the animation
+<span class="lineNum">      57 </span>            :   // interval. However, it might be possible that we're behind on flushing
+<span class="lineNum">      58 </span>            :   // causing us to get called *after* the animation interval. So, just in
+<span class="lineNum">      59 </span>            :   // case, we override the fill mode to 'both' to ensure the progress
+<span class="lineNum">      60 </span>            :   // is never null.
+<span class="lineNum">      61 </span><span class="lineNoCov">          0 :   TimingParams timingToUse = SpecifiedTiming();</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :   timingToUse.SetFill(dom::FillMode::Both);</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :   ComputedTiming computedTiming = GetComputedTiming(&amp;timingToUse);</span>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(!computedTiming.mProgress.IsNull(),</span>
+<span class="lineNum">      66 </span>            :              &quot;Got a null progress for a fill mode of 'both'&quot;);
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(mKeyframes.Length() == 2,</span>
+<span class="lineNum">      68 </span>            :              &quot;Should have two animation keyframes for a transition&quot;);
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :   return ComputedTimingFunction::GetPortion(mKeyframes[0].mTimingFunction,</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :                                             computedTiming.mProgress.Value(),</span>
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                                             computedTiming.mBeforeFlag);</span>
+<span class="lineNum">      72 </span>            : }
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            : void
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 : ElementPropertyTransition::UpdateStartValueFromReplacedTransition()</span>
+<span class="lineNum">      76 </span>            : {
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 :   if (!mReplacedTransition) {</span>
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">      79 </span>            :   }
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(nsCSSProps::PropHasFlags(TransitionProperty(),</span>
+<span class="lineNum">      81 </span>            :                                       CSSPropFlags::CanAnimateOnCompositor),
+<span class="lineNum">      82 </span>            :              &quot;The transition property should be able to be run on the &quot;
+<span class="lineNum">      83 </span>            :              &quot;compositor&quot;);
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(mTarget &amp;&amp; mTarget-&gt;mElement-&gt;OwnerDoc(),</span>
+<span class="lineNum">      85 </span>            :              &quot;We should have a valid document at this moment&quot;);
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :   dom::DocumentTimeline* timeline = mTarget-&gt;mElement-&gt;OwnerDoc()-&gt;Timeline();</span>
+<span class="lineNum">      88 </span>            :   ComputedTiming computedTiming = GetComputedTimingAt(
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :     dom::CSSTransition::GetCurrentTimeAt(*timeline,</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :                                          TimeStamp::Now(),</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :                                          mReplacedTransition-&gt;mStartTime,</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :                                          mReplacedTransition-&gt;mPlaybackRate),</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :     mReplacedTransition-&gt;mTiming,</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :     mReplacedTransition-&gt;mPlaybackRate);</span>
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :   if (!computedTiming.mProgress.IsNull()) {</span>
+<span class="lineNum">      97 </span>            :     double valuePosition =
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :       ComputedTimingFunction::GetPortion(mReplacedTransition-&gt;mTimingFunction,</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :                                          computedTiming.mProgress.Value(),</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :                                          computedTiming.mBeforeFlag);</span>
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(mProperties.Length() == 1 &amp;&amp;</span>
+<span class="lineNum">     103 </span>            :                mProperties[0].mSegments.Length() == 1,
+<span class="lineNum">     104 </span>            :                &quot;The transition should have one property and one segment&quot;);
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(mKeyframes.Length() == 2,</span>
+<span class="lineNum">     106 </span>            :                &quot;Transitions should have exactly two animation keyframes&quot;);
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(mKeyframes[0].mPropertyValues.Length() == 1,</span>
+<span class="lineNum">     108 </span>            :                &quot;Transitions should have exactly one property in their first &quot;
+<span class="lineNum">     109 </span>            :                &quot;frame&quot;);
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :     const AnimationValue&amp; replacedFrom = mReplacedTransition-&gt;mFromValue;</span>
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :     const AnimationValue&amp; replacedTo = mReplacedTransition-&gt;mToValue;</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :     AnimationValue startValue;</span>
+<span class="lineNum">     114 </span>            :     startValue.mServo =
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :       Servo_AnimationValues_Interpolate(replacedFrom.mServo,</span>
+<span class="lineNum">     116 </span>            :                                         replacedTo.mServo,
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 :                                         valuePosition).Consume();</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :     if (startValue.mServo) {</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :       mKeyframes[0].mPropertyValues[0].mServoDeclarationBlock =</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :         Servo_AnimationValue_Uncompute(startValue.mServo).Consume();</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :       mProperties[0].mSegments[0].mFromValue = std::move(startValue);</span>
+<span class="lineNum">     122 </span>            :     }
+<span class="lineNum">     123 </span>            :   }
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineNoCov">          0 :   mReplacedTransition.reset();</span>
+<span class="lineNum">     126 </span>            : }
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : ////////////////////////// CSSTransition ////////////////////////////
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span>            : JSObject*
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 : CSSTransition::WrapObject(JSContext* aCx, JS::Handle&lt;JSObject*&gt; aGivenProto)</span>
+<span class="lineNum">     132 </span>            : {
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :   return dom::CSSTransitionBinding::Wrap(aCx, this, aGivenProto);</span>
+<span class="lineNum">     134 </span>            : }
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span>            : void
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 : CSSTransition::GetTransitionProperty(nsString&amp; aRetVal) const</span>
+<span class="lineNum">     138 </span>            : {
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(eCSSProperty_UNKNOWN != mTransitionProperty,</span>
+<span class="lineNum">     140 </span>            :              &quot;Transition Property should be initialized&quot;);
+<span class="lineNum">     141 </span>            :   aRetVal =
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :     NS_ConvertUTF8toUTF16(nsCSSProps::GetStringValue(mTransitionProperty));</span>
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span>            : AnimationPlayState
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 : CSSTransition::PlayStateFromJS() const</span>
+<span class="lineNum">     147 </span>            : {
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :   FlushUnanimatedStyle();</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :   return Animation::PlayStateFromJS();</span>
+<span class="lineNum">     150 </span>            : }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            : bool
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 : CSSTransition::PendingFromJS() const</span>
+<span class="lineNum">     154 </span>            : {
+<span class="lineNum">     155 </span>            :   // Transitions don't become pending again after they start running but, if
+<span class="lineNum">     156 </span>            :   // while the transition is still pending, style is updated in such a way
+<span class="lineNum">     157 </span>            :   // that the transition will be canceled, we need to report false here.
+<span class="lineNum">     158 </span>            :   // Hence we need to flush, but only when we're pending.
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :   if (Pending()) {</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :     FlushUnanimatedStyle();</span>
+<span class="lineNum">     161 </span>            :   }
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :   return Animation::PendingFromJS();</span>
+<span class="lineNum">     163 </span>            : }
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span>            : void
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 : CSSTransition::PlayFromJS(ErrorResult&amp; aRv)</span>
+<span class="lineNum">     167 </span>            : {
+<span class="lineNum">     168 </span><span class="lineNoCov">          0 :   FlushUnanimatedStyle();</span>
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :   Animation::PlayFromJS(aRv);</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            : void
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 : CSSTransition::UpdateTiming(SeekFlag aSeekFlag, SyncNotifyFlag aSyncNotifyFlag)</span>
+<span class="lineNum">     174 </span>            : {
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :   if (mNeedsNewAnimationIndexWhenRun &amp;&amp;</span>
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :       PlayState() != AnimationPlayState::Idle) {</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :     mAnimationIndex = sNextAnimationIndex++;</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :     mNeedsNewAnimationIndexWhenRun = false;</span>
+<span class="lineNum">     179 </span>            :   }
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :   Animation::UpdateTiming(aSeekFlag, aSyncNotifyFlag);</span>
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            : void
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 : CSSTransition::QueueEvents(const StickyTimeDuration&amp; aActiveTime)</span>
+<span class="lineNum">     186 </span>            : {
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :   if (!mOwningElement.IsSet()) {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">     189 </span>            :   }
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :   nsPresContext* presContext = mOwningElement.GetPresContext();</span>
+<span class="lineNum">     192 </span><span class="lineNoCov">          0 :   if (!presContext) {</span>
+<span class="lineNum">     193 </span>            :     return;
+<span class="lineNum">     194 </span>            :   }
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            :   static constexpr StickyTimeDuration zeroDuration = StickyTimeDuration();
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            :   TransitionPhase currentPhase;
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :   StickyTimeDuration intervalStartTime;</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :   StickyTimeDuration intervalEndTime;</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :   if (!mEffect) {</span>
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :     currentPhase = GetAnimationPhaseWithoutEffect&lt;TransitionPhase&gt;(*this);</span>
+<span class="lineNum">     204 </span>            :   } else {
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :     ComputedTiming computedTiming = mEffect-&gt;GetComputedTiming();</span>
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :     currentPhase = static_cast&lt;TransitionPhase&gt;(computedTiming.mPhase);</span>
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :     intervalStartTime =</span>
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :       std::max(std::min(StickyTimeDuration(-mEffect-&gt;SpecifiedTiming().Delay()),</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :                         computedTiming.mActiveDuration), zeroDuration);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :     intervalEndTime =</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :       std::max(std::min((EffectEnd() - mEffect-&gt;SpecifiedTiming().Delay()),</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :                         computedTiming.mActiveDuration), zeroDuration);</span>
+<span class="lineNum">     214 </span>            :   }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span>            :   // TimeStamps to use for ordering the events when they are dispatched. We
+<span class="lineNum">     217 </span>            :   // use a TimeStamp so we can compare events produced by different elements,
+<span class="lineNum">     218 </span>            :   // perhaps even with different timelines.
+<span class="lineNum">     219 </span>            :   // The zero timestamp is for transitionrun events where we ignore the delay
+<span class="lineNum">     220 </span>            :   // for the purpose of ordering events.
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :   TimeStamp zeroTimeStamp  = AnimationTimeToTimeStamp(zeroDuration);</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :   TimeStamp startTimeStamp = ElapsedTimeToTimeStamp(intervalStartTime);</span>
+<span class="lineNum">     223 </span><span class="lineNoCov">          0 :   TimeStamp endTimeStamp   = ElapsedTimeToTimeStamp(intervalEndTime);</span>
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :   if (mPendingState != PendingState::NotPending &amp;&amp;</span>
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :       (mPreviousTransitionPhase == TransitionPhase::Idle ||</span>
+<span class="lineNum">     227 </span>            :        mPreviousTransitionPhase == TransitionPhase::Pending))
+<span class="lineNum">     228 </span>            :   {
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :     currentPhase = TransitionPhase::Pending;</span>
+<span class="lineNum">     230 </span>            :   }
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :   AutoTArray&lt;AnimationEventInfo, 3&gt; events;</span>
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span>            :   auto appendTransitionEvent = [&amp;](EventMessage aMessage,
+<span class="lineNum">     235 </span>            :                                    const StickyTimeDuration&amp; aElapsedTime,
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :                                    const TimeStamp&amp; aTimeStamp) {</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :     double elapsedTime = aElapsedTime.ToSeconds();</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :     if (aMessage == eTransitionCancel) {</span>
+<span class="lineNum">     239 </span>            :       // 0 is an inappropriate value for this callsite. What we need to do is
+<span class="lineNum">     240 </span>            :       // use a single random value for all increasing times reportable.
+<span class="lineNum">     241 </span>            :       // That is to say, whenever elapsedTime goes negative (because an
+<span class="lineNum">     242 </span>            :       // animation restarts, something rewinds the animation, or otherwise)
+<span class="lineNum">     243 </span>            :       // a new random value for the mix-in must be generated.
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :       elapsedTime = nsRFPService::ReduceTimePrecisionAsSecs(elapsedTime, 0, TimerPrecisionType::RFPOnly);</span>
+<span class="lineNum">     245 </span>            :     }
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :     events.AppendElement(AnimationEventInfo(TransitionProperty(),</span>
+<span class="lineNum">     247 </span>            :                                             mOwningElement.Target(),
+<span class="lineNum">     248 </span>            :                                             aMessage,
+<span class="lineNum">     249 </span>            :                                             elapsedTime,
+<span class="lineNum">     250 </span>            :                                             aTimeStamp,
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :                                             this));</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :   };</span>
+<span class="lineNum">     253 </span>            : 
+<span class="lineNum">     254 </span>            :   // Handle cancel events first
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :   if ((mPreviousTransitionPhase != TransitionPhase::Idle &amp;&amp;</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :        mPreviousTransitionPhase != TransitionPhase::After) &amp;&amp;</span>
+<span class="lineNum">     257 </span>            :       currentPhase == TransitionPhase::Idle) {
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :     TimeStamp activeTimeStamp = ElapsedTimeToTimeStamp(aActiveTime);</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :     appendTransitionEvent(eTransitionCancel, aActiveTime, activeTimeStamp);</span>
+<span class="lineNum">     260 </span>            :   }
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span>            :   // All other events
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :   switch (mPreviousTransitionPhase) {</span>
+<span class="lineNum">     264 </span>            :     case TransitionPhase::Idle:
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :       if (currentPhase == TransitionPhase::Pending ||</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :           currentPhase == TransitionPhase::Before) {</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         appendTransitionEvent(eTransitionRun, intervalStartTime, zeroTimeStamp);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :       } else if (currentPhase == TransitionPhase::Active) {</span>
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :         appendTransitionEvent(eTransitionRun, intervalStartTime, zeroTimeStamp);</span>
+<span class="lineNum">     270 </span>            :         appendTransitionEvent(eTransitionStart,
+<span class="lineNum">     271 </span>            :                               intervalStartTime,
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :                               startTimeStamp);</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :       } else if (currentPhase == TransitionPhase::After) {</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         appendTransitionEvent(eTransitionRun, intervalStartTime, zeroTimeStamp);</span>
+<span class="lineNum">     275 </span>            :         appendTransitionEvent(eTransitionStart,
+<span class="lineNum">     276 </span>            :                               intervalStartTime,
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :                               startTimeStamp);</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :         appendTransitionEvent(eTransitionEnd, intervalEndTime, endTimeStamp);</span>
+<span class="lineNum">     279 </span>            :       }
+<span class="lineNum">     280 </span>            :       break;
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span>            :     case TransitionPhase::Pending:
+<span class="lineNum">     283 </span>            :     case TransitionPhase::Before:
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :       if (currentPhase == TransitionPhase::Active) {</span>
+<span class="lineNum">     285 </span>            :         appendTransitionEvent(eTransitionStart,
+<span class="lineNum">     286 </span>            :                               intervalStartTime,
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :                               startTimeStamp);</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :       } else if (currentPhase == TransitionPhase::After) {</span>
+<span class="lineNum">     289 </span>            :         appendTransitionEvent(eTransitionStart,
+<span class="lineNum">     290 </span>            :                               intervalStartTime,
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :                               startTimeStamp);</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :         appendTransitionEvent(eTransitionEnd, intervalEndTime, endTimeStamp);</span>
+<span class="lineNum">     293 </span>            :       }
+<span class="lineNum">     294 </span>            :       break;
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span>            :     case TransitionPhase::Active:
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :       if (currentPhase == TransitionPhase::After) {</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :         appendTransitionEvent(eTransitionEnd, intervalEndTime, endTimeStamp);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :       } else if (currentPhase == TransitionPhase::Before) {</span>
+<span class="lineNum">     300 </span>            :         appendTransitionEvent(eTransitionEnd,
+<span class="lineNum">     301 </span>            :                               intervalStartTime,
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :                               startTimeStamp);</span>
+<span class="lineNum">     303 </span>            :       }
+<span class="lineNum">     304 </span>            :       break;
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span>            :     case TransitionPhase::After:
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :       if (currentPhase == TransitionPhase::Active) {</span>
+<span class="lineNum">     308 </span>            :         appendTransitionEvent(eTransitionStart,
+<span class="lineNum">     309 </span>            :                               intervalEndTime,
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :                               startTimeStamp);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :       } else if (currentPhase == TransitionPhase::Before) {</span>
+<span class="lineNum">     312 </span>            :         appendTransitionEvent(eTransitionStart,
+<span class="lineNum">     313 </span>            :                               intervalEndTime,
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :                               startTimeStamp);</span>
+<span class="lineNum">     315 </span>            :         appendTransitionEvent(eTransitionEnd,
+<span class="lineNum">     316 </span>            :                               intervalStartTime,
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :                               endTimeStamp);</span>
+<span class="lineNum">     318 </span>            :       }
+<span class="lineNum">     319 </span>            :       break;
+<span class="lineNum">     320 </span>            :   }
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :   mPreviousTransitionPhase = currentPhase;</span>
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :   if (!events.IsEmpty()) {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :     presContext-&gt;AnimationEventDispatcher()-&gt;QueueEvents(std::move(events));</span>
+<span class="lineNum">     325 </span>            :   }
+<span class="lineNum">     326 </span>            : }
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span>            : void
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 : CSSTransition::Tick()</span>
+<span class="lineNum">     330 </span>            : {
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :   Animation::Tick();</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :   QueueEvents();</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span>            : nsCSSPropertyID
+<span class="lineNum">     336 </span><span class="lineNoCov">          0 : CSSTransition::TransitionProperty() const</span>
+<span class="lineNum">     337 </span>            : {
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(eCSSProperty_UNKNOWN != mTransitionProperty,</span>
+<span class="lineNum">     339 </span>            :              &quot;Transition property should be initialized&quot;);
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :   return mTransitionProperty;</span>
+<span class="lineNum">     341 </span>            : }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span>            : AnimationValue
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 : CSSTransition::ToValue() const</span>
+<span class="lineNum">     345 </span>            : {
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(!mTransitionToValue.IsNull(),</span>
+<span class="lineNum">     347 </span>            :              &quot;Transition ToValue should be initialized&quot;);
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :   return mTransitionToValue;</span>
+<span class="lineNum">     349 </span>            : }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span>            : bool
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 : CSSTransition::HasLowerCompositeOrderThan(const CSSTransition&amp; aOther) const</span>
+<span class="lineNum">     353 </span>            : {
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(IsTiedToMarkup() &amp;&amp; aOther.IsTiedToMarkup(),</span>
+<span class="lineNum">     355 </span>            :              &quot;Should only be called for CSS transitions that are sorted &quot;
+<span class="lineNum">     356 </span>            :              &quot;as CSS transitions (i.e. tied to CSS markup)&quot;);
+<span class="lineNum">     357 </span>            : 
+<span class="lineNum">     358 </span>            :   // 0. Object-equality case
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :   if (&amp;aOther == this) {</span>
+<span class="lineNum">     360 </span>            :     return false;
+<span class="lineNum">     361 </span>            :   }
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            :   // 1. Sort by document order
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :   if (!mOwningElement.Equals(aOther.mOwningElement)) {</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :     return mOwningElement.LessThan(aOther.mOwningElement);</span>
+<span class="lineNum">     366 </span>            :   }
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span>            :   // 2. (Same element and pseudo): Sort by transition generation
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :   if (mAnimationIndex != aOther.mAnimationIndex) {</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :     return mAnimationIndex &lt; aOther.mAnimationIndex;</span>
+<span class="lineNum">     371 </span>            :   }
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span>            :   // 3. (Same transition generation): Sort by transition property
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :   return nsCSSProps::GetStringValue(TransitionProperty()) &lt;</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :          nsCSSProps::GetStringValue(aOther.TransitionProperty());</span>
+<span class="lineNum">     376 </span>            : }
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span>            : /* static */ Nullable&lt;TimeDuration&gt;
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 : CSSTransition::GetCurrentTimeAt(const dom::DocumentTimeline&amp; aTimeline,</span>
+<span class="lineNum">     380 </span>            :                                 const TimeStamp&amp; aBaseTime,
+<span class="lineNum">     381 </span>            :                                 const TimeDuration&amp; aStartTime,
+<span class="lineNum">     382 </span>            :                                 double aPlaybackRate)
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :   Nullable&lt;TimeDuration&gt; result;</span>
+<span class="lineNum">     385 </span>            : 
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :   Nullable&lt;TimeDuration&gt; timelineTime = aTimeline.ToTimelineTime(aBaseTime);</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :   if (!timelineTime.IsNull()) {</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :     result.SetValue((timelineTime.Value() - aStartTime)</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                       .MultDouble(aPlaybackRate));</span>
+<span class="lineNum">     390 </span>            :   }
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :   return result;</span>
+<span class="lineNum">     393 </span>            : }
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span>            : void
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 : CSSTransition::SetEffectFromStyle(dom::AnimationEffect* aEffect)</span>
+<span class="lineNum">     397 </span>            : {
+<span class="lineNum">     398 </span><span class="lineNoCov">          0 :   Animation::SetEffectNoUpdate(aEffect);</span>
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span>            :   // Initialize transition property.
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :   ElementPropertyTransition* pt = aEffect ? aEffect-&gt;AsTransition() : nullptr;</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :   if (eCSSProperty_UNKNOWN == mTransitionProperty &amp;&amp; pt) {</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :     mTransitionProperty = pt-&gt;TransitionProperty();</span>
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :     mTransitionToValue = pt-&gt;ToValue();</span>
+<span class="lineNum">     405 </span>            :   }
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span>            : ////////////////////////// nsTransitionManager ////////////////////////////
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span>            : 
+<span class="lineNum">     411 </span>            : static inline bool
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 : ExtractNonDiscreteComputedValue(nsCSSPropertyID aProperty,</span>
+<span class="lineNum">     413 </span>            :                                 const ComputedStyle&amp; aComputedStyle,
+<span class="lineNum">     414 </span>            :                                 AnimationValue&amp; aAnimationValue)
+<span class="lineNum">     415 </span>            : {
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :   if (Servo_Property_IsDiscreteAnimatable(aProperty) &amp;&amp;</span>
+<span class="lineNum">     417 </span>            :       aProperty != eCSSProperty_visibility) {
+<span class="lineNum">     418 </span>            :     return false;
+<span class="lineNum">     419 </span>            :   }
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span>            :   aAnimationValue.mServo =
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :     Servo_ComputedValues_ExtractAnimationValue(&amp;aComputedStyle,</span>
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :                                                aProperty).Consume();</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :   return !!aAnimationValue.mServo;</span>
+<span class="lineNum">     425 </span>            : }
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span>            : bool
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 : nsTransitionManager::UpdateTransitions(</span>
+<span class="lineNum">     430 </span>            :   dom::Element *aElement,
+<span class="lineNum">     431 </span>            :   CSSPseudoElementType aPseudoType,
+<span class="lineNum">     432 </span>            :   const ComputedStyle&amp; aOldStyle,
+<span class="lineNum">     433 </span>            :   const ComputedStyle&amp; aNewStyle)
+<span class="lineNum">     434 </span>            : {
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :   if (!mPresContext-&gt;IsDynamic()) {</span>
+<span class="lineNum">     436 </span>            :     // For print or print preview, ignore transitions.
+<span class="lineNum">     437 </span>            :     return false;
+<span class="lineNum">     438 </span>            :   }
+<span class="lineNum">     439 </span>            : 
+<span class="lineNum">     440 </span>            :   CSSTransitionCollection* collection =
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :     CSSTransitionCollection::GetAnimationCollection(aElement, aPseudoType);</span>
+<span class="lineNum">     442 </span>            :   const nsStyleDisplay* disp =
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :       aNewStyle.ComputedData()-&gt;GetStyleDisplay();</span>
+<span class="lineNum">     444 </span>            :   return DoUpdateTransitions(*disp,
+<span class="lineNum">     445 </span>            :                              aElement, aPseudoType,
+<span class="lineNum">     446 </span>            :                              collection,
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                              aOldStyle, aNewStyle);</span>
+<span class="lineNum">     448 </span>            : }
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span>            : bool
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 : nsTransitionManager::DoUpdateTransitions(</span>
+<span class="lineNum">     452 </span>            :   const nsStyleDisplay&amp; aDisp,
+<span class="lineNum">     453 </span>            :   dom::Element* aElement,
+<span class="lineNum">     454 </span>            :   CSSPseudoElementType aPseudoType,
+<span class="lineNum">     455 </span>            :   CSSTransitionCollection*&amp; aElementTransitions,
+<span class="lineNum">     456 </span>            :   const ComputedStyle&amp; aOldStyle,
+<span class="lineNum">     457 </span>            :   const ComputedStyle&amp; aNewStyle)
+<span class="lineNum">     458 </span>            : {
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(!aElementTransitions ||</span>
+<span class="lineNum">     460 </span>            :              aElementTransitions-&gt;mElement == aElement, &quot;Element mismatch&quot;);
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span>            :   // Per http://lists.w3.org/Archives/Public/www-style/2009Aug/0109.html
+<span class="lineNum">     463 </span>            :   // I'll consider only the transitions from the number of items in
+<span class="lineNum">     464 </span>            :   // 'transition-property' on down, and later ones will override earlier
+<span class="lineNum">     465 </span>            :   // ones (tracked using |propertiesChecked|).
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :   bool startedAny = false;</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :   nsCSSPropertyIDSet propertiesChecked;</span>
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :   for (uint32_t i = aDisp.mTransitionPropertyCount; i--; ) {</span>
+<span class="lineNum">     469 </span>            :     // We're not going to look at any further transitions, so we can just avoid
+<span class="lineNum">     470 </span>            :     // looking at this if we know it will not start any transitions.
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :     if (i == 0 &amp;&amp; aDisp.GetTransitionCombinedDuration(i) &lt;= 0.0f) {</span>
+<span class="lineNum">     472 </span>            :       continue;
+<span class="lineNum">     473 </span>            :     }
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :     nsCSSPropertyID property = aDisp.GetTransitionProperty(i);</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :     if (property == eCSSPropertyExtra_no_properties ||</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :         property == eCSSPropertyExtra_variable ||</span>
+<span class="lineNum">     478 </span>            :         property == eCSSProperty_UNKNOWN) {
+<span class="lineNum">     479 </span>            :       // Nothing to do.
+<span class="lineNum">     480 </span>            :       continue;
+<span class="lineNum">     481 </span>            :     }
+<span class="lineNum">     482 </span>            :     // We might have something to transition.  See if any of the
+<span class="lineNum">     483 </span>            :     // properties in question changed and are animatable.
+<span class="lineNum">     484 </span>            :     // FIXME: Would be good to find a way to share code between this
+<span class="lineNum">     485 </span>            :     // interpretation of transition-property and the one below.
+<span class="lineNum">     486 </span>            :     // FIXME(emilio): This should probably just use the &quot;all&quot; shorthand id, and
+<span class="lineNum">     487 </span>            :     // we should probably remove eCSSPropertyExtra_all_properties.
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 :     if (property == eCSSPropertyExtra_all_properties) {</span>
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :       for (nsCSSPropertyID p = nsCSSPropertyID(0);</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :            p &lt; eCSSProperty_COUNT_no_shorthands;</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :            p = nsCSSPropertyID(p + 1)) {</span>
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :         if (!nsCSSProps::IsEnabled(p, CSSEnabledState::eForAllContent)) {</span>
+<span class="lineNum">     493 </span>            :           continue;
+<span class="lineNum">     494 </span>            :         }
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :         startedAny |=</span>
+<span class="lineNum">     496 </span><span class="lineNoCov">          0 :           ConsiderInitiatingTransition(p, aDisp, i, aElement, aPseudoType,</span>
+<span class="lineNum">     497 </span>            :                                        aElementTransitions,
+<span class="lineNum">     498 </span>            :                                        aOldStyle, aNewStyle,
+<span class="lineNum">     499 </span>            :                                        propertiesChecked);
+<span class="lineNum">     500 </span>            :       }
+<span class="lineNum">     501 </span><span class="lineCov">          2 :     } else if (nsCSSProps::IsShorthand(property)) {</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :       CSSPROPS_FOR_SHORTHAND_SUBPROPERTIES(subprop, property,</span>
+<span class="lineNum">     503 </span>            :                                            CSSEnabledState::eForAllContent)
+<span class="lineNum">     504 </span>            :       {
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :         startedAny |=</span>
+<span class="lineNum">     506 </span><span class="lineNoCov">          0 :           ConsiderInitiatingTransition(*subprop, aDisp, i, aElement, aPseudoType,</span>
+<span class="lineNum">     507 </span>            :                                        aElementTransitions,
+<span class="lineNum">     508 </span>            :                                        aOldStyle, aNewStyle,
+<span class="lineNum">     509 </span>            :                                        propertiesChecked);
+<span class="lineNum">     510 </span>            :       }
+<span class="lineNum">     511 </span>            :     } else {
+<span class="lineNum">     512 </span><span class="lineCov">          2 :       startedAny |=</span>
+<span class="lineNum">     513 </span><span class="lineCov">          2 :         ConsiderInitiatingTransition(property, aDisp, i, aElement, aPseudoType,</span>
+<span class="lineNum">     514 </span>            :                                      aElementTransitions,
+<span class="lineNum">     515 </span>            :                                      aOldStyle, aNewStyle,
+<span class="lineNum">     516 </span>            :                                      propertiesChecked);
+<span class="lineNum">     517 </span>            :     }
+<span class="lineNum">     518 </span>            :   }
+<span class="lineNum">     519 </span>            : 
+<span class="lineNum">     520 </span>            :   // Stop any transitions for properties that are no longer in
+<span class="lineNum">     521 </span>            :   // 'transition-property', including finished transitions.
+<span class="lineNum">     522 </span>            :   // Also stop any transitions (and remove any finished transitions)
+<span class="lineNum">     523 </span>            :   // for properties that just changed (and are still in the set of
+<span class="lineNum">     524 </span>            :   // properties to transition), but for which we didn't just start the
+<span class="lineNum">     525 </span>            :   // transition.  This can happen delay and duration are both zero, or
+<span class="lineNum">     526 </span>            :   // because the new value is not interpolable.
+<span class="lineNum">     527 </span>            :   // Note that we also do the latter set of work in
+<span class="lineNum">     528 </span>            :   // nsTransitionManager::PruneCompletedTransitions.
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :   if (aElementTransitions) {</span>
+<span class="lineNum">     530 </span>            :     bool checkProperties =
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :       aDisp.GetTransitionProperty(0) != eCSSPropertyExtra_all_properties;</span>
+<span class="lineNum">     532 </span><span class="lineCov">          2 :     nsCSSPropertyIDSet allTransitionProperties;</span>
+<span class="lineNum">     533 </span><span class="lineCov">          2 :     if (checkProperties) {</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :       for (uint32_t i = aDisp.mTransitionPropertyCount; i-- != 0; ) {</span>
+<span class="lineNum">     535 </span>            :         // FIXME: Would be good to find a way to share code between this
+<span class="lineNum">     536 </span>            :         // interpretation of transition-property and the one above.
+<span class="lineNum">     537 </span><span class="lineCov">          2 :         nsCSSPropertyID property = aDisp.GetTransitionProperty(i);</span>
+<span class="lineNum">     538 </span><span class="lineCov">          4 :         if (property == eCSSPropertyExtra_no_properties ||</span>
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :             property == eCSSPropertyExtra_variable ||</span>
+<span class="lineNum">     540 </span>            :             property == eCSSProperty_UNKNOWN) {
+<span class="lineNum">     541 </span>            :           // Nothing to do, but need to exclude this from cases below.
+<span class="lineNum">     542 </span><span class="lineCov">          1 :         } else if (property == eCSSPropertyExtra_all_properties) {</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :           for (nsCSSPropertyID p = nsCSSPropertyID(0);</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :                p &lt; eCSSProperty_COUNT_no_shorthands;</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">          0 :                p = nsCSSPropertyID(p + 1)) {</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :             allTransitionProperties.AddProperty(p);</span>
+<span class="lineNum">     547 </span>            :           }
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :         } else if (nsCSSProps::IsShorthand(property)) {</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :           CSSPROPS_FOR_SHORTHAND_SUBPROPERTIES(</span>
+<span class="lineNum">     550 </span>            :               subprop, property, CSSEnabledState::eForAllContent) {
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :             allTransitionProperties.AddProperty(*subprop);</span>
+<span class="lineNum">     552 </span>            :           }
+<span class="lineNum">     553 </span>            :         } else {
+<span class="lineNum">     554 </span><span class="lineCov">          2 :           allTransitionProperties.AddProperty(property);</span>
+<span class="lineNum">     555 </span>            :         }
+<span class="lineNum">     556 </span>            :       }
+<span class="lineNum">     557 </span>            :     }
+<span class="lineNum">     558 </span>            : 
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :     OwningCSSTransitionPtrArray&amp; animations = aElementTransitions-&gt;mAnimations;</span>
+<span class="lineNum">     560 </span><span class="lineCov">          4 :     size_t i = animations.Length();</span>
+<span class="lineNum">     561 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(i != 0, &quot;empty transitions list?&quot;);</span>
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 :     AnimationValue currentValue;</span>
+<span class="lineNum">     563 </span>            :     do {
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :       --i;</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :       CSSTransition* anim = animations[i];</span>
+<span class="lineNum">     566 </span>            :           // properties no longer in 'transition-property'
+<span class="lineNum">     567 </span><span class="lineCov">          4 :       if ((checkProperties &amp;&amp;</span>
+<span class="lineNum">     568 </span><span class="lineCov">          4 :            !allTransitionProperties.HasProperty(anim-&gt;TransitionProperty())) ||</span>
+<span class="lineNum">     569 </span>            :           // properties whose computed values changed but for which we
+<span class="lineNum">     570 </span>            :           // did not start a new transition (because delay and
+<span class="lineNum">     571 </span>            :           // duration are both zero, or because the new value is not
+<span class="lineNum">     572 </span>            :           // interpolable); a new transition would have anim-&gt;ToValue()
+<span class="lineNum">     573 </span>            :           // matching currentValue
+<span class="lineNum">     574 </span><span class="lineCov">          2 :           !ExtractNonDiscreteComputedValue(anim-&gt;TransitionProperty(),</span>
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :                                            aNewStyle, currentValue) ||</span>
+<span class="lineNum">     576 </span><span class="lineCov">          6 :           currentValue != anim-&gt;ToValue()) {</span>
+<span class="lineNum">     577 </span>            :         // stop the transition
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :         if (anim-&gt;HasCurrentEffect()) {</span>
+<span class="lineNum">     579 </span>            :           EffectSet* effectSet =
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :             EffectSet::GetEffectSet(aElement, aPseudoType);</span>
+<span class="lineNum">     581 </span><span class="lineNoCov">          0 :           if (effectSet) {</span>
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :             effectSet-&gt;UpdateAnimationGeneration(mPresContext);</span>
+<span class="lineNum">     583 </span>            :           }
+<span class="lineNum">     584 </span>            :         }
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :         anim-&gt;CancelFromStyle();</span>
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 :         animations.RemoveElementAt(i);</span>
+<span class="lineNum">     587 </span>            :       }
+<span class="lineNum">     588 </span><span class="lineNoCov">          0 :     } while (i != 0);</span>
+<span class="lineNum">     589 </span>            : 
+<span class="lineNum">     590 </span><span class="lineCov">          4 :     if (animations.IsEmpty()) {</span>
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :       aElementTransitions-&gt;Destroy();</span>
+<span class="lineNum">     592 </span><span class="lineNoCov">          0 :       aElementTransitions = nullptr;</span>
+<span class="lineNum">     593 </span>            :     }
+<span class="lineNum">     594 </span>            :   }
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span><span class="lineCov">          2 :   return startedAny;</span>
+<span class="lineNum">     597 </span>            : }
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span>            : static Keyframe&amp;
+<span class="lineNum">     600 </span><span class="lineCov">          4 : AppendKeyframe(double aOffset,</span>
+<span class="lineNum">     601 </span>            :                nsCSSPropertyID aProperty,
+<span class="lineNum">     602 </span>            :                AnimationValue&amp;&amp; aValue,
+<span class="lineNum">     603 </span>            :                nsTArray&lt;Keyframe&gt;&amp; aKeyframes)
+<span class="lineNum">     604 </span>            : {
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :   Keyframe&amp; frame = *aKeyframes.AppendElement();</span>
+<span class="lineNum">     606 </span><span class="lineCov">          4 :   frame.mOffset.emplace(aOffset);</span>
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :   if (aValue.mServo) {</span>
+<span class="lineNum">     609 </span>            :     RefPtr&lt;RawServoDeclarationBlock&gt; decl =
+<span class="lineNum">     610 </span><span class="lineCov">         16 :       Servo_AnimationValue_Uncompute(aValue.mServo).Consume();</span>
+<span class="lineNum">     611 </span><span class="lineCov">          1 :     frame.mPropertyValues.AppendElement(</span>
+<span class="lineNum">     612 </span><span class="lineCov">         12 :       PropertyValuePair(aProperty, std::move(decl)));</span>
+<span class="lineNum">     613 </span>            :   } else {
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :     MOZ_CRASH(&quot;old style system disabled&quot;);</span>
+<span class="lineNum">     615 </span>            :   }
+<span class="lineNum">     616 </span><span class="lineCov">          4 :   return frame;</span>
+<span class="lineNum">     617 </span>            : }
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span>            : static nsTArray&lt;Keyframe&gt;
+<span class="lineNum">     620 </span><span class="lineCov">          2 : GetTransitionKeyframes(nsCSSPropertyID aProperty,</span>
+<span class="lineNum">     621 </span>            :                        AnimationValue&amp;&amp; aStartValue,
+<span class="lineNum">     622 </span>            :                        AnimationValue&amp;&amp; aEndValue,
+<span class="lineNum">     623 </span>            :                        const nsTimingFunction&amp; aTimingFunction)
+<span class="lineNum">     624 </span>            : {
+<span class="lineNum">     625 </span><span class="lineNoCov">          0 :   nsTArray&lt;Keyframe&gt; keyframes(2);</span>
+<span class="lineNum">     626 </span>            : 
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :   Keyframe&amp; fromFrame = AppendKeyframe(0.0, aProperty, std::move(aStartValue),</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :                                        keyframes);</span>
+<span class="lineNum">     629 </span><span class="lineCov">          2 :   if (aTimingFunction.mType != nsTimingFunction::Type::Linear) {</span>
+<span class="lineNum">     630 </span><span class="lineCov">          2 :     fromFrame.mTimingFunction.emplace();</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :     fromFrame.mTimingFunction-&gt;Init(aTimingFunction);</span>
+<span class="lineNum">     632 </span>            :   }
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span><span class="lineCov">          2 :   AppendKeyframe(1.0, aProperty, std::move(aEndValue), keyframes);</span>
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span><span class="lineCov">          2 :   return keyframes;</span>
+<span class="lineNum">     637 </span>            : }
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span>            : static bool
+<span class="lineNum">     640 </span>            : IsTransitionable(nsCSSPropertyID aProperty)
+<span class="lineNum">     641 </span>            : {
+<span class="lineNum">     642 </span><span class="lineCov">          2 :   return Servo_Property_IsTransitionable(aProperty);</span>
+<span class="lineNum">     643 </span>            : }
+<span class="lineNum">     644 </span>            : 
+<span class="lineNum">     645 </span>            : bool
+<span class="lineNum">     646 </span><span class="lineCov">          2 : nsTransitionManager::ConsiderInitiatingTransition(</span>
+<span class="lineNum">     647 </span>            :   nsCSSPropertyID aProperty,
+<span class="lineNum">     648 </span>            :   const nsStyleDisplay&amp; aStyleDisplay,
+<span class="lineNum">     649 </span>            :   uint32_t transitionIdx,
+<span class="lineNum">     650 </span>            :   dom::Element* aElement,
+<span class="lineNum">     651 </span>            :   CSSPseudoElementType aPseudoType,
+<span class="lineNum">     652 </span>            :   CSSTransitionCollection*&amp; aElementTransitions,
+<span class="lineNum">     653 </span>            :   const ComputedStyle&amp; aOldStyle,
+<span class="lineNum">     654 </span>            :   const ComputedStyle&amp; aNewStyle,
+<span class="lineNum">     655 </span>            :   nsCSSPropertyIDSet&amp; aPropertiesChecked)
+<span class="lineNum">     656 </span>            : {
+<span class="lineNum">     657 </span>            :   // IsShorthand itself will assert if aProperty is not a property.
+<span class="lineNum">     658 </span><span class="lineCov">          2 :   MOZ_ASSERT(!nsCSSProps::IsShorthand(aProperty),</span>
+<span class="lineNum">     659 </span>            :              &quot;property out of range&quot;);
+<span class="lineNum">     660 </span><span class="lineCov">          2 :   NS_ASSERTION(!aElementTransitions ||</span>
+<span class="lineNum">     661 </span>            :                aElementTransitions-&gt;mElement == aElement, &quot;Element mismatch&quot;);
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span>            :   // A later item in transition-property already specified a transition for this
+<span class="lineNum">     664 </span>            :   // property, so we ignore this one.
+<span class="lineNum">     665 </span>            :   // See http://lists.w3.org/Archives/Public/www-style/2009Aug/0109.html .
+<span class="lineNum">     666 </span><span class="lineCov">          2 :   if (aPropertiesChecked.HasProperty(aProperty)) {</span>
+<span class="lineNum">     667 </span>            :     return false;
+<span class="lineNum">     668 </span>            :   }
+<span class="lineNum">     669 </span>            : 
+<span class="lineNum">     670 </span><span class="lineCov">          2 :   aPropertiesChecked.AddProperty(aProperty);</span>
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :   if (!IsTransitionable(aProperty)) {</span>
+<span class="lineNum">     673 </span>            :     return false;
+<span class="lineNum">     674 </span>            :   }
+<span class="lineNum">     675 </span>            : 
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :   float delay = aStyleDisplay.GetTransitionDelay(transitionIdx);</span>
+<span class="lineNum">     677 </span>            : 
+<span class="lineNum">     678 </span>            :   // The spec says a negative duration is treated as zero.
+<span class="lineNum">     679 </span>            :   float duration =
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :     std::max(aStyleDisplay.GetTransitionDuration(transitionIdx), 0.0f);</span>
+<span class="lineNum">     681 </span>            : 
+<span class="lineNum">     682 </span>            :   // If the combined duration of this transition is 0 or less don't start a
+<span class="lineNum">     683 </span>            :   // transition.
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :   if (delay + duration &lt;= 0.0f) {</span>
+<span class="lineNum">     685 </span>            :     return false;
+<span class="lineNum">     686 </span>            :   }
+<span class="lineNum">     687 </span>            : 
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :   dom::DocumentTimeline* timeline = aElement-&gt;OwnerDoc()-&gt;Timeline();</span>
+<span class="lineNum">     689 </span>            : 
+<span class="lineNum">     690 </span><span class="lineCov">          6 :   AnimationValue startValue, endValue;</span>
+<span class="lineNum">     691 </span>            :   bool haveValues =
+<span class="lineNum">     692 </span><span class="lineNoCov">          0 :     ExtractNonDiscreteComputedValue(aProperty, aOldStyle, startValue) &amp;&amp;</span>
+<span class="lineNum">     693 </span><span class="lineCov">          4 :     ExtractNonDiscreteComputedValue(aProperty, aNewStyle, endValue);</span>
+<span class="lineNum">     694 </span>            : 
+<span class="lineNum">     695 </span><span class="lineCov">          2 :   bool haveChange = startValue != endValue;</span>
+<span class="lineNum">     696 </span>            : 
+<span class="lineNum">     697 </span>            :   bool shouldAnimate =
+<span class="lineNum">     698 </span><span class="lineCov">          2 :     haveValues &amp;&amp;</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :     haveChange &amp;&amp;</span>
+<span class="lineNum">     700 </span><span class="lineCov">          4 :     startValue.IsInterpolableWith(aProperty, endValue);</span>
+<span class="lineNum">     701 </span>            : 
+<span class="lineNum">     702 </span><span class="lineNoCov">          0 :   bool haveCurrentTransition = false;</span>
+<span class="lineNum">     703 </span><span class="lineNoCov">          0 :   size_t currentIndex = nsTArray&lt;ElementPropertyTransition&gt;::NoIndex;</span>
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :   const ElementPropertyTransition *oldPT = nullptr;</span>
+<span class="lineNum">     705 </span><span class="lineCov">          2 :   if (aElementTransitions) {</span>
+<span class="lineNum">     706 </span><span class="lineNoCov">          0 :     OwningCSSTransitionPtrArray&amp; animations = aElementTransitions-&gt;mAnimations;</span>
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 :     for (size_t i = 0, i_end = animations.Length(); i &lt; i_end; ++i) {</span>
+<span class="lineNum">     708 </span><span class="lineNoCov">          0 :       if (animations[i]-&gt;TransitionProperty() == aProperty) {</span>
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :         haveCurrentTransition = true;</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :         currentIndex = i;</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :         oldPT = animations[i]-&gt;GetEffect()</span>
+<span class="lineNum">     712 </span><span class="lineNoCov">          0 :                 ? animations[i]-&gt;GetEffect()-&gt;AsTransition()</span>
+<span class="lineNum">     713 </span>            :                 : nullptr;
+<span class="lineNum">     714 </span>            :         break;
+<span class="lineNum">     715 </span>            :       }
+<span class="lineNum">     716 </span>            :     }
+<span class="lineNum">     717 </span>            :   }
+<span class="lineNum">     718 </span>            : 
+<span class="lineNum">     719 </span>            :   // If we got a style change that changed the value to the endpoint
+<span class="lineNum">     720 </span>            :   // of the currently running transition, we don't want to interrupt
+<span class="lineNum">     721 </span>            :   // its timing function.
+<span class="lineNum">     722 </span>            :   // This needs to be before the !shouldAnimate &amp;&amp; haveCurrentTransition
+<span class="lineNum">     723 </span>            :   // case below because we might be close enough to the end of the
+<span class="lineNum">     724 </span>            :   // transition that the current value rounds to the final value.  In
+<span class="lineNum">     725 </span>            :   // this case, we'll end up with shouldAnimate as false (because
+<span class="lineNum">     726 </span>            :   // there's no value change), but we need to return early here rather
+<span class="lineNum">     727 </span>            :   // than cancel the running transition because shouldAnimate is false!
+<span class="lineNum">     728 </span>            :   //
+<span class="lineNum">     729 </span>            :   // Likewise, if we got a style change that changed the value to the
+<span class="lineNum">     730 </span>            :   // endpoint of our finished transition, we also don't want to start
+<span class="lineNum">     731 </span>            :   // a new transition for the reasons described in
+<span class="lineNum">     732 </span>            :   // https://lists.w3.org/Archives/Public/www-style/2015Jan/0444.html .
+<span class="lineNum">     733 </span><span class="lineCov">          6 :   if (haveCurrentTransition &amp;&amp; haveValues &amp;&amp;</span>
+<span class="lineNum">     734 </span><span class="lineCov">          2 :       aElementTransitions-&gt;mAnimations[currentIndex]-&gt;ToValue() == endValue) {</span>
+<span class="lineNum">     735 </span>            :     // GetAnimationRule already called RestyleForAnimation.
+<span class="lineNum">     736 </span>            :     return false;
+<span class="lineNum">     737 </span>            :   }
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span><span class="lineCov">          2 :   if (!shouldAnimate) {</span>
+<span class="lineNum">     740 </span><span class="lineNoCov">          0 :     if (haveCurrentTransition) {</span>
+<span class="lineNum">     741 </span>            :       // We're in the middle of a transition, and just got a non-transition
+<span class="lineNum">     742 </span>            :       // style change to something that we can't animate.  This might happen
+<span class="lineNum">     743 </span>            :       // because we got a non-transition style change changing to the current
+<span class="lineNum">     744 </span>            :       // in-progress value (which is particularly easy to cause when we're
+<span class="lineNum">     745 </span>            :       // currently in the 'transition-delay').  It also might happen because we
+<span class="lineNum">     746 </span>            :       // just got a style change to a value that can't be interpolated.
+<span class="lineNum">     747 </span>            :       OwningCSSTransitionPtrArray&amp; animations =
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :         aElementTransitions-&gt;mAnimations;</span>
+<span class="lineNum">     749 </span><span class="lineNoCov">          0 :       animations[currentIndex]-&gt;CancelFromStyle();</span>
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :       oldPT = nullptr; // Clear pointer so it doesn't dangle</span>
+<span class="lineNum">     751 </span><span class="lineNoCov">          0 :       animations.RemoveElementAt(currentIndex);</span>
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :       EffectSet* effectSet = EffectSet::GetEffectSet(aElement, aPseudoType);</span>
+<span class="lineNum">     753 </span><span class="lineNoCov">          0 :       if (effectSet) {</span>
+<span class="lineNum">     754 </span><span class="lineNoCov">          0 :         effectSet-&gt;UpdateAnimationGeneration(mPresContext);</span>
+<span class="lineNum">     755 </span>            :       }
+<span class="lineNum">     756 </span>            : 
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 :       if (animations.IsEmpty()) {</span>
+<span class="lineNum">     758 </span><span class="lineNoCov">          0 :         aElementTransitions-&gt;Destroy();</span>
+<span class="lineNum">     759 </span>            :         // |aElementTransitions| is now a dangling pointer!
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :         aElementTransitions = nullptr;</span>
+<span class="lineNum">     761 </span>            :       }
+<span class="lineNum">     762 </span>            :       // GetAnimationRule already called RestyleForAnimation.
+<span class="lineNum">     763 </span>            :     }
+<span class="lineNum">     764 </span>            :     return false;
+<span class="lineNum">     765 </span>            :   }
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span>            :   const nsTimingFunction &amp;tf =
+<span class="lineNum">     768 </span><span class="lineCov">          2 :     aStyleDisplay.GetTransitionTimingFunction(transitionIdx);</span>
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span><span class="lineCov">          2 :   AnimationValue startForReversingTest = startValue;</span>
+<span class="lineNum">     771 </span><span class="lineCov">          2 :   double reversePortion = 1.0;</span>
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span>            :   // If the new transition reverses an existing one, we'll need to
+<span class="lineNum">     774 </span>            :   // handle the timing differently.
+<span class="lineNum">     775 </span>            :   // FIXME: Move mStartForReversingTest, mReversePortion to CSSTransition,
+<span class="lineNum">     776 </span>            :   //        and set the timing function on transitions as an effect-level
+<span class="lineNum">     777 </span>            :   //        easing (rather than keyframe-level easing). (Bug 1292001)
+<span class="lineNum">     778 </span><span class="lineCov">          2 :   if (haveCurrentTransition &amp;&amp;</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :       aElementTransitions-&gt;mAnimations[currentIndex]-&gt;HasCurrentEffect() &amp;&amp;</span>
+<span class="lineNum">     780 </span><span class="lineCov">          2 :       oldPT &amp;&amp;</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">          0 :       oldPT-&gt;mStartForReversingTest == endValue) {</span>
+<span class="lineNum">     782 </span>            :     // Compute the appropriate negative transition-delay such that right
+<span class="lineNum">     783 </span>            :     // now we'd end up at the current position.
+<span class="lineNum">     784 </span>            :     double valuePortion =
+<span class="lineNum">     785 </span><span class="lineNoCov">          0 :       oldPT-&gt;CurrentValuePortion() * oldPT-&gt;mReversePortion +</span>
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 :       (1.0 - oldPT-&gt;mReversePortion);</span>
+<span class="lineNum">     787 </span>            :     // A timing function with negative y1 (or y2!) might make
+<span class="lineNum">     788 </span>            :     // valuePortion negative.  In this case, we still want to apply our
+<span class="lineNum">     789 </span>            :     // reversing logic based on relative distances, not make duration
+<span class="lineNum">     790 </span>            :     // negative.
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :     if (valuePortion &lt; 0.0) {</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :       valuePortion = -valuePortion;</span>
+<span class="lineNum">     793 </span>            :     }
+<span class="lineNum">     794 </span>            :     // A timing function with y2 (or y1!) greater than one might
+<span class="lineNum">     795 </span>            :     // advance past its terminal value.  It's probably a good idea to
+<span class="lineNum">     796 </span>            :     // clamp valuePortion to be at most one to preserve the invariant
+<span class="lineNum">     797 </span>            :     // that a transition will complete within at most its specified
+<span class="lineNum">     798 </span>            :     // time.
+<span class="lineNum">     799 </span><span class="lineNoCov">          0 :     if (valuePortion &gt; 1.0) {</span>
+<span class="lineNum">     800 </span><span class="lineNoCov">          0 :       valuePortion = 1.0;</span>
+<span class="lineNum">     801 </span>            :     }
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span>            :     // Negative delays are essentially part of the transition
+<span class="lineNum">     804 </span>            :     // function, so reduce them along with the duration, but don't
+<span class="lineNum">     805 </span>            :     // reduce positive delays.
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :     if (delay &lt; 0.0f) {</span>
+<span class="lineNum">     807 </span><span class="lineNoCov">          0 :       delay *= valuePortion;</span>
+<span class="lineNum">     808 </span>            :     }
+<span class="lineNum">     809 </span>            : 
+<span class="lineNum">     810 </span><span class="lineNoCov">          0 :     duration *= valuePortion;</span>
+<span class="lineNum">     811 </span>            : 
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :     startForReversingTest = oldPT-&gt;ToValue();</span>
+<span class="lineNum">     813 </span><span class="lineNoCov">          0 :     reversePortion = valuePortion;</span>
+<span class="lineNum">     814 </span>            :   }
+<span class="lineNum">     815 </span>            : 
+<span class="lineNum">     816 </span>            :   TimingParams timing =
+<span class="lineNum">     817 </span>            :     TimingParamsFromCSSParams(duration, delay,
+<span class="lineNum">     818 </span>            :                               1.0 /* iteration count */,
+<span class="lineNum">     819 </span>            :                               dom::PlaybackDirection::Normal,
+<span class="lineNum">     820 </span><span class="lineCov">          4 :                               dom::FillMode::Backwards);</span>
+<span class="lineNum">     821 </span>            : 
+<span class="lineNum">     822 </span>            :   // aElement is non-null here, so we emplace it directly.
+<span class="lineNum">     823 </span><span class="lineCov">          4 :   Maybe&lt;OwningAnimationTarget&gt; target;</span>
+<span class="lineNum">     824 </span><span class="lineNoCov">          0 :   target.emplace(aElement, aPseudoType);</span>
+<span class="lineNum">     825 </span><span class="lineCov">          2 :   KeyframeEffectParams effectOptions;</span>
+<span class="lineNum">     826 </span>            :   RefPtr&lt;ElementPropertyTransition&gt; pt =
+<span class="lineNum">     827 </span><span class="lineNoCov">          0 :     new ElementPropertyTransition(aElement-&gt;OwnerDoc(), target, timing,</span>
+<span class="lineNum">     828 </span>            :                                   startForReversingTest, reversePortion,
+<span class="lineNum">     829 </span><span class="lineNoCov">          0 :                                   effectOptions);</span>
+<span class="lineNum">     830 </span>            : 
+<span class="lineNum">     831 </span><span class="lineNoCov">          0 :   pt-&gt;SetKeyframes(GetTransitionKeyframes(aProperty,</span>
+<span class="lineNum">     832 </span><span class="lineCov">          2 :                                           std::move(startValue), std::move(endValue), tf),</span>
+<span class="lineNum">     833 </span><span class="lineNoCov">          0 :                    &amp;aNewStyle);</span>
+<span class="lineNum">     834 </span>            : 
+<span class="lineNum">     835 </span>            :   RefPtr&lt;CSSTransition&gt; animation =
+<span class="lineNum">     836 </span><span class="lineNoCov">          0 :     new CSSTransition(mPresContext-&gt;Document()-&gt;GetScopeObject());</span>
+<span class="lineNum">     837 </span><span class="lineNoCov">          0 :   animation-&gt;SetOwningElement(OwningElementRef(*aElement, aPseudoType));</span>
+<span class="lineNum">     838 </span><span class="lineCov">          2 :   animation-&gt;SetTimelineNoUpdate(timeline);</span>
+<span class="lineNum">     839 </span><span class="lineCov">          2 :   animation-&gt;SetCreationSequence(</span>
+<span class="lineNum">     840 </span><span class="lineNoCov">          0 :     mPresContext-&gt;RestyleManager()-&gt;GetAnimationGeneration());</span>
+<span class="lineNum">     841 </span><span class="lineNoCov">          0 :   animation-&gt;SetEffectFromStyle(pt);</span>
+<span class="lineNum">     842 </span><span class="lineNoCov">          0 :   animation-&gt;PlayFromStyle();</span>
+<span class="lineNum">     843 </span>            : 
+<span class="lineNum">     844 </span><span class="lineNoCov">          0 :   if (!aElementTransitions) {</span>
+<span class="lineNum">     845 </span><span class="lineNoCov">          0 :     bool createdCollection = false;</span>
+<span class="lineNum">     846 </span><span class="lineNoCov">          0 :     aElementTransitions =</span>
+<span class="lineNum">     847 </span><span class="lineCov">          2 :       CSSTransitionCollection::GetOrCreateAnimationCollection(</span>
+<span class="lineNum">     848 </span>            :         aElement, aPseudoType, &amp;createdCollection);
+<span class="lineNum">     849 </span><span class="lineNoCov">          0 :     if (!aElementTransitions) {</span>
+<span class="lineNum">     850 </span><span class="lineNoCov">          0 :       MOZ_ASSERT(!createdCollection, &quot;outparam should agree with return value&quot;);</span>
+<span class="lineNum">     851 </span><span class="lineNoCov">          0 :       NS_WARNING(&quot;allocating collection failed&quot;);</span>
+<span class="lineNum">     852 </span><span class="lineNoCov">          0 :       return false;</span>
+<span class="lineNum">     853 </span>            :     }
+<span class="lineNum">     854 </span>            : 
+<span class="lineNum">     855 </span><span class="lineCov">          1 :     if (createdCollection) {</span>
+<span class="lineNum">     856 </span><span class="lineCov">          1 :       AddElementCollection(aElementTransitions);</span>
+<span class="lineNum">     857 </span>            :     }
+<span class="lineNum">     858 </span>            :   }
+<span class="lineNum">     859 </span>            : 
+<span class="lineNum">     860 </span><span class="lineNoCov">          0 :   OwningCSSTransitionPtrArray&amp; animations = aElementTransitions-&gt;mAnimations;</span>
+<span class="lineNum">     861 </span>            : #ifdef DEBUG
+<span class="lineNum">     862 </span><span class="lineCov">          4 :   for (size_t i = 0, i_end = animations.Length(); i &lt; i_end; ++i) {</span>
+<span class="lineNum">     863 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(</span>
+<span class="lineNum">     864 </span>            :       i == currentIndex || animations[i]-&gt;TransitionProperty() != aProperty,
+<span class="lineNum">     865 </span>            :       &quot;duplicate transitions for property&quot;);
+<span class="lineNum">     866 </span>            :   }
+<span class="lineNum">     867 </span>            : #endif
+<span class="lineNum">     868 </span><span class="lineCov">          2 :   if (haveCurrentTransition) {</span>
+<span class="lineNum">     869 </span>            :     // If this new transition is replacing an existing transition that is running
+<span class="lineNum">     870 </span>            :     // on the compositor, we store select parameters from the replaced transition
+<span class="lineNum">     871 </span>            :     // so that later, once all scripts have run, we can update the start value
+<span class="lineNum">     872 </span>            :     // of the transition using TimeStamp::Now(). This allows us to avoid a
+<span class="lineNum">     873 </span>            :     // large jump when starting a new transition when the main thread lags behind
+<span class="lineNum">     874 </span>            :     // the compositor.
+<span class="lineNum">     875 </span><span class="lineNoCov">          0 :     if (oldPT &amp;&amp;</span>
+<span class="lineNum">     876 </span><span class="lineNoCov">          0 :         oldPT-&gt;IsCurrent() &amp;&amp;</span>
+<span class="lineNum">     877 </span><span class="lineNoCov">          0 :         oldPT-&gt;IsRunningOnCompositor() &amp;&amp;</span>
+<span class="lineNum">     878 </span><span class="lineNoCov">          0 :         !oldPT-&gt;GetAnimation()-&gt;GetStartTime().IsNull() &amp;&amp;</span>
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :         timeline == oldPT-&gt;GetAnimation()-&gt;GetTimeline()) {</span>
+<span class="lineNum">     880 </span>            :       const AnimationPropertySegment&amp; segment =
+<span class="lineNum">     881 </span><span class="lineNoCov">          0 :         oldPT-&gt;Properties()[0].mSegments[0];</span>
+<span class="lineNum">     882 </span><span class="lineNoCov">          0 :       pt-&gt;mReplacedTransition.emplace(</span>
+<span class="lineNum">     883 </span><span class="lineNoCov">          0 :         ElementPropertyTransition::ReplacedTransitionProperties({</span>
+<span class="lineNum">     884 </span><span class="lineNoCov">          0 :           oldPT-&gt;GetAnimation()-&gt;GetStartTime().Value(),</span>
+<span class="lineNum">     885 </span><span class="lineNoCov">          0 :           oldPT-&gt;GetAnimation()-&gt;PlaybackRate(),</span>
+<span class="lineNum">     886 </span>            :           oldPT-&gt;SpecifiedTiming(),
+<span class="lineNum">     887 </span>            :           segment.mTimingFunction,
+<span class="lineNum">     888 </span>            :           segment.mFromValue,
+<span class="lineNum">     889 </span>            :           segment.mToValue
+<span class="lineNum">     890 </span>            :         })
+<span class="lineNum">     891 </span><span class="lineNoCov">          0 :       );</span>
+<span class="lineNum">     892 </span>            :     }
+<span class="lineNum">     893 </span><span class="lineNoCov">          0 :     animations[currentIndex]-&gt;CancelFromStyle();</span>
+<span class="lineNum">     894 </span><span class="lineNoCov">          0 :     oldPT = nullptr; // Clear pointer so it doesn't dangle</span>
+<span class="lineNum">     895 </span><span class="lineNoCov">          0 :     animations[currentIndex] = animation;</span>
+<span class="lineNum">     896 </span>            :   } else {
+<span class="lineNum">     897 </span><span class="lineNoCov">          0 :     if (!animations.AppendElement(animation)) {</span>
+<span class="lineNum">     898 </span><span class="lineNoCov">          0 :       NS_WARNING(&quot;out of memory&quot;);</span>
+<span class="lineNum">     899 </span><span class="lineNoCov">          0 :       return false;</span>
+<span class="lineNum">     900 </span>            :     }
+<span class="lineNum">     901 </span>            :   }
+<span class="lineNum">     902 </span>            : 
+<span class="lineNum">     903 </span><span class="lineCov">          1 :   EffectSet* effectSet = EffectSet::GetEffectSet(aElement, aPseudoType);</span>
+<span class="lineNum">     904 </span><span class="lineCov">          2 :   if (effectSet) {</span>
+<span class="lineNum">     905 </span><span class="lineCov">          2 :     effectSet-&gt;UpdateAnimationGeneration(mPresContext);</span>
+<span class="lineNum">     906 </span>            :   }
+<span class="lineNum">     907 </span>            : 
+<span class="lineNum">     908 </span>            :   return true;
+<span class="lineNum">     909 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     910 </span>            : 
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

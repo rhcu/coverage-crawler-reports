@@ -1,0 +1,428 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - /home/assiya/coverage-crawler/mozilla-central/layout/style/ErrorReporter.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../../../index.html">top level</a> - <a href="index.html">home/assiya/coverage-crawler/mozilla-central/layout/style</a> - ErrorReporter.cpp<span style="font-size: 80%;"> (source / <a href="ErrorReporter.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">139</td>
+            <td class="headerCovTableEntryLo">2.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-03 01:26:20</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : /* diagnostic reporting for CSS style sheet parser */
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;mozilla/css/ErrorReporter.h&quot;
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/StaticPrefs.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/StyleSheetInlines.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/css/Loader.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/Preferences.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/Services.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/SystemGroup.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;nsCSSScanner.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;nsIConsoleService.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;nsIDocument.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;nsIDocShell.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;nsIFactory.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;nsINode.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;nsIScriptError.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;nsISensitiveInfoHiddenURI.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;nsIStringBundle.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;nsServiceManagerUtils.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;nsStyleUtil.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;nsThreadUtils.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;nsNetUtil.h&quot;
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : using namespace mozilla;
+<span class="lineNum">      32 </span>            : using namespace mozilla::css;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : namespace {
+<span class="lineNum">      35 </span><span class="lineNoCov">          0 : class ShortTermURISpecCache : public Runnable {</span>
+<span class="lineNum">      36 </span>            : public:
+<span class="lineNum">      37 </span><span class="lineNoCov">          0 :   ShortTermURISpecCache()</span>
+<span class="lineNum">      38 </span><span class="lineNoCov">          0 :    : Runnable(&quot;ShortTermURISpecCache&quot;)</span>
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :    , mPending(false) {}</span>
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 :   nsString const&amp; GetSpec(nsIURI* aURI) {</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :     if (mURI != aURI) {</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :       mURI = aURI;</span>
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span><span class="lineNoCov">          0 :       if (NS_FAILED(NS_GetSanitizedURIStringFromURI(mURI, mSpec))) {</span>
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :         mSpec.AssignLiteral(&quot;[nsIURI::GetSpec failed]&quot;);</span>
+<span class="lineNum">      47 </span>            :       }
+<span class="lineNum">      48 </span>            :     }
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 :     return mSpec;</span>
+<span class="lineNum">      50 </span>            :   }
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :   bool IsInUse() const { return mURI != nullptr; }</span>
+<span class="lineNum">      53 </span>            :   bool IsPending() const { return mPending; }
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :   void SetPending() { mPending = true; }</span>
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            :   // When invoked as a runnable, zap the cache.
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 :   NS_IMETHOD Run() override {</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :     mURI = nullptr;</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :     mSpec.Truncate();</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :     mPending = false;</span>
+<span class="lineNum">      61 </span><span class="lineNoCov">          0 :     return NS_OK;</span>
+<span class="lineNum">      62 </span>            :   }
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            : private:
+<span class="lineNum">      65 </span>            :   nsCOMPtr&lt;nsIURI&gt; mURI;
+<span class="lineNum">      66 </span>            :   nsString mSpec;
+<span class="lineNum">      67 </span>            :   bool mPending;
+<span class="lineNum">      68 </span>            : };
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span>            : } // namespace
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            : bool ErrorReporter::sInitialized = false;
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            : static nsIConsoleService *sConsoleService;
+<span class="lineNum">      75 </span>            : static nsIFactory *sScriptErrorFactory;
+<span class="lineNum">      76 </span>            : static nsIStringBundle *sStringBundle;
+<span class="lineNum">      77 </span>            : static ShortTermURISpecCache *sSpecCache;
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            : void
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 : ErrorReporter::InitGlobals()</span>
+<span class="lineNum">      81 </span>            : {
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :   MOZ_RELEASE_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">      83 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(!sInitialized, &quot;should not have been called&quot;);</span>
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :   sInitialized = true;</span>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIConsoleService&gt; cs = do_GetService(NS_CONSOLESERVICE_CONTRACTID);</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :   if (!cs) {</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">      90 </span>            :   }
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIFactory&gt; sf = do_GetClassObject(NS_SCRIPTERROR_CONTRACTID);</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :   if (!sf) {</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">      95 </span>            :   }
+<span class="lineNum">      96 </span>            : 
+<span class="lineNum">      97 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIStringBundleService&gt; sbs = services::GetStringBundleService();</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :   if (!sbs) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">     100 </span>            :   }
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIStringBundle&gt; sb;</span>
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :   nsresult rv = sbs-&gt;CreateBundle(&quot;chrome://global/locale/css.properties&quot;,</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :                                   getter_AddRefs(sb));</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :   if (NS_FAILED(rv) || !sb) {</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">     107 </span>            :   }
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :   cs.forget(&amp;sConsoleService);</span>
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :   sf.forget(&amp;sScriptErrorFactory);</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :   sb.forget(&amp;sStringBundle);</span>
+<span class="lineNum">     112 </span>            : }
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span>            : namespace mozilla {
+<span class="lineNum">     115 </span>            : namespace css {
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span>            : /* static */ void
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 : ErrorReporter::ReleaseGlobals()</span>
+<span class="lineNum">     119 </span>            : {
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :   NS_IF_RELEASE(sConsoleService);</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :   NS_IF_RELEASE(sScriptErrorFactory);</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :   NS_IF_RELEASE(sStringBundle);</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :   NS_IF_RELEASE(sSpecCache);</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span>            : static uint64_t
+<span class="lineNum">     127 </span><span class="lineNoCov">          0 : FindInnerWindowID(const StyleSheet* aSheet, const Loader* aLoader)</span>
+<span class="lineNum">     128 </span>            : {
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :   uint64_t innerWindowID = 0;</span>
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :   if (aSheet) {</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :     innerWindowID = aSheet-&gt;FindOwningWindowInnerID();</span>
+<span class="lineNum">     132 </span>            :   }
+<span class="lineNum">     133 </span><span class="lineNoCov">          0 :   if (innerWindowID == 0 &amp;&amp; aLoader) {</span>
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :     if (nsIDocument* doc = aLoader-&gt;GetDocument()) {</span>
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :       innerWindowID = doc-&gt;InnerWindowID();</span>
+<span class="lineNum">     136 </span>            :     }
+<span class="lineNum">     137 </span>            :   }
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :   return innerWindowID;</span>
+<span class="lineNum">     139 </span>            : }
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 : ErrorReporter::ErrorReporter(const StyleSheet* aSheet,</span>
+<span class="lineNum">     142 </span>            :                              const Loader* aLoader,
+<span class="lineNum">     143 </span><span class="lineNoCov">          0 :                              nsIURI* aURI)</span>
+<span class="lineNum">     144 </span>            :   : mSheet(aSheet)
+<span class="lineNum">     145 </span>            :   , mLoader(aLoader)
+<span class="lineNum">     146 </span>            :   , mURI(aURI)
+<span class="lineNum">     147 </span>            :   , mErrorLineNumber(0)
+<span class="lineNum">     148 </span>            :   , mPrevErrorLineNumber(0)
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :   , mErrorColNumber(0)</span>
+<span class="lineNum">     150 </span>            : {
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(ShouldReportErrors(mSheet, mLoader));</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :   EnsureGlobalsInitialized();</span>
+<span class="lineNum">     153 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 : ErrorReporter::~ErrorReporter()</span>
+<span class="lineNum">     156 </span>            : {
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     158 </span>            :   // Schedule deferred cleanup for cached data. We want to strike a
+<span class="lineNum">     159 </span>            :   // balance between performance and memory usage, so we only allow
+<span class="lineNum">     160 </span>            :   // short-term caching.
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :   if (sSpecCache &amp;&amp; sSpecCache-&gt;IsInUse() &amp;&amp; !sSpecCache-&gt;IsPending()) {</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :     nsCOMPtr&lt;nsIRunnable&gt; runnable(sSpecCache);</span>
+<span class="lineNum">     163 </span>            :     nsresult rv =
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :       SystemGroup::Dispatch(TaskCategory::Other, runnable.forget());</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :     if (NS_FAILED(rv)) {</span>
+<span class="lineNum">     166 </span>            :       // Peform the &quot;deferred&quot; cleanup immediately if the dispatch fails.
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :       sSpecCache-&gt;Run();</span>
+<span class="lineNum">     168 </span>            :     } else {
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :       sSpecCache-&gt;SetPending();</span>
+<span class="lineNum">     170 </span>            :     }
+<span class="lineNum">     171 </span>            :   }
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span>            : bool
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 : ErrorReporter::ShouldReportErrors(const nsIDocument&amp; aDoc)</span>
+<span class="lineNum">     176 </span>            : {
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     178 </span><span class="lineCov">         15 :   nsIDocShell* shell = aDoc.GetDocShell();</span>
+<span class="lineNum">     179 </span><span class="lineCov">         15 :   if (!shell) {</span>
+<span class="lineNum">     180 </span>            :     return false;
+<span class="lineNum">     181 </span>            :   }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :   bool report = false;</span>
+<span class="lineNum">     184 </span><span class="lineCov">         15 :   shell-&gt;GetCssErrorReportingEnabled(&amp;report);</span>
+<span class="lineNum">     185 </span><span class="lineCov">         15 :   return report;</span>
+<span class="lineNum">     186 </span>            : }
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span>            : static nsINode*
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 : SheetOwner(const StyleSheet&amp; aSheet)</span>
+<span class="lineNum">     190 </span>            : {
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :   if (nsINode* owner = aSheet.GetOwnerNode()) {</span>
+<span class="lineNum">     192 </span>            :     return owner;
+<span class="lineNum">     193 </span>            :   }
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :   auto* associated = aSheet.GetAssociatedDocumentOrShadowRoot();</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :   return associated ? &amp;associated-&gt;AsNode() : nullptr;</span>
+<span class="lineNum">     197 </span>            : }
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span>            : bool
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 : ErrorReporter::ShouldReportErrors(const StyleSheet* aSheet,</span>
+<span class="lineNum">     201 </span>            :                                   const Loader* aLoader)
+<span class="lineNum">     202 </span>            : {
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :   if (!StaticPrefs::layout_css_report_errors()) {</span>
+<span class="lineNum">     206 </span>            :     return false;
+<span class="lineNum">     207 </span>            :   }
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :   if (aSheet) {</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :     nsINode* owner = SheetOwner(*aSheet);</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :     if (owner &amp;&amp; ShouldReportErrors(*owner-&gt;OwnerDoc())) {</span>
+<span class="lineNum">     212 </span>            :       return true;
+<span class="lineNum">     213 </span>            :     }
+<span class="lineNum">     214 </span>            :   }
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :   if (aLoader &amp;&amp; aLoader-&gt;GetDocument() &amp;&amp;</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :       ShouldReportErrors(*aLoader-&gt;GetDocument())) {</span>
+<span class="lineNum">     218 </span>            :     return true;
+<span class="lineNum">     219 </span>            :   }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :   return false;</span>
+<span class="lineNum">     222 </span>            : }
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span>            : void
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 : ErrorReporter::OutputError()</span>
+<span class="lineNum">     226 </span>            : {
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(ShouldReportErrors(mSheet, mLoader));</span>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :   if (mError.IsEmpty()) {</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">     232 </span>            :   }
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :   if (mFileName.IsEmpty()) {</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :     if (mURI) {</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :       if (!sSpecCache) {</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :         sSpecCache = new ShortTermURISpecCache;</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :         NS_ADDREF(sSpecCache);</span>
+<span class="lineNum">     239 </span>            :       }
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :       mFileName = sSpecCache-&gt;GetSpec(mURI);</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :       mURI = nullptr;</span>
+<span class="lineNum">     242 </span>            :     } else {
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :       mFileName.AssignLiteral(&quot;from DOM&quot;);</span>
+<span class="lineNum">     244 </span>            :     }
+<span class="lineNum">     245 </span>            :   }
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            :   nsresult rv;
+<span class="lineNum">     248 </span>            :   nsCOMPtr&lt;nsIScriptError&gt; errorObject =
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :     do_CreateInstance(sScriptErrorFactory, &amp;rv);</span>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :   if (NS_SUCCEEDED(rv)) {</span>
+<span class="lineNum">     252 </span>            :     // It is safe to used InitWithSanitizedSource because mFileName is
+<span class="lineNum">     253 </span>            :     // an already anonymized uri spec.
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :     rv = errorObject-&gt;InitWithSanitizedSource(mError,</span>
+<span class="lineNum">     255 </span>            :                                               mFileName,
+<span class="lineNum">     256 </span>            :                                               mErrorLine,
+<span class="lineNum">     257 </span>            :                                               mErrorLineNumber,
+<span class="lineNum">     258 </span>            :                                               mErrorColNumber,
+<span class="lineNum">     259 </span>            :                                               nsIScriptError::warningFlag,
+<span class="lineNum">     260 </span>            :                                               &quot;CSS Parser&quot;,
+<span class="lineNum">     261 </span>            :                                               FindInnerWindowID(mSheet, mLoader));
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :     if (NS_SUCCEEDED(rv)) {</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :       sConsoleService-&gt;LogMessage(errorObject);</span>
+<span class="lineNum">     264 </span>            :     }
+<span class="lineNum">     265 </span>            :   }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :   ClearError();</span>
+<span class="lineNum">     268 </span>            : }
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span>            : // When Stylo's CSS parser is in use, this reporter does not have access to the CSS parser's
+<span class="lineNum">     271 </span>            : // state. The users of ErrorReporter need to provide:
+<span class="lineNum">     272 </span>            : // - the line number of the error
+<span class="lineNum">     273 </span>            : // - the column number of the error
+<span class="lineNum">     274 </span>            : // - the complete source line containing the invalid CSS
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            : void
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 : ErrorReporter::OutputError(uint32_t aLineNumber,</span>
+<span class="lineNum">     278 </span>            :                            uint32_t aColNumber,
+<span class="lineNum">     279 </span>            :                            const nsACString&amp; aSourceLine)
+<span class="lineNum">     280 </span>            : {
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :   mErrorLineNumber = aLineNumber;</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :   mErrorColNumber = aColNumber;</span>
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span>            :   // Retrieve the error line once per line, and reuse the same nsString
+<span class="lineNum">     285 </span>            :   // for all errors on that line.  That causes the text of the line to
+<span class="lineNum">     286 </span>            :   // be shared among all the nsIScriptError objects.
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :   if (mErrorLine.IsEmpty() || mErrorLineNumber != mPrevErrorLineNumber) {</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :     mErrorLine.Truncate();</span>
+<span class="lineNum">     289 </span>            :     // This could be a really long string for minified CSS; just leave it empty if we OOM.
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :     if (!AppendUTF8toUTF16(aSourceLine, mErrorLine, fallible)) {</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :       mErrorLine.Truncate();</span>
+<span class="lineNum">     292 </span>            :     }
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :     mPrevErrorLineNumber = aLineNumber;</span>
+<span class="lineNum">     295 </span>            :   }
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :   OutputError();</span>
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     299 </span>            : 
+<span class="lineNum">     300 </span>            : void
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 : ErrorReporter::ClearError()</span>
+<span class="lineNum">     302 </span>            : {
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :   mError.Truncate();</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span>            : void
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 : ErrorReporter::AddToError(const nsString &amp;aErrorText)</span>
+<span class="lineNum">     308 </span>            : {
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(ShouldReportErrors(mSheet, mLoader));</span>
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :   if (mError.IsEmpty()) {</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :     mError = aErrorText;</span>
+<span class="lineNum">     313 </span>            :   } else {
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :     mError.AppendLiteral(&quot;  &quot;);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :     mError.Append(aErrorText);</span>
+<span class="lineNum">     316 </span>            :   }
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span>            : void
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 : ErrorReporter::ReportUnexpected(const char *aMessage)</span>
+<span class="lineNum">     321 </span>            : {
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(ShouldReportErrors(mSheet, mLoader));</span>
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :   nsAutoString str;</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :   sStringBundle-&gt;GetStringFromName(aMessage, str);</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :   AddToError(str);</span>
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span>            : void
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 : ErrorReporter::ReportUnexpectedUnescaped(const char *aMessage,</span>
+<span class="lineNum">     331 </span>            :                                          const nsAutoString&amp; aParam)
+<span class="lineNum">     332 </span>            : {
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(ShouldReportErrors(mSheet, mLoader));</span>
+<span class="lineNum">     334 </span>            : 
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :   const char16_t *params[1] = { aParam.get() };</span>
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :   nsAutoString str;</span>
+<span class="lineNum">     338 </span>            :   sStringBundle-&gt;FormatStringFromName(aMessage, params, ArrayLength(params),
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :                                       str);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :   AddToError(str);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span>            : } // namespace css
+<span class="lineNum">     344 </span>            : } // namespace mozilla
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
