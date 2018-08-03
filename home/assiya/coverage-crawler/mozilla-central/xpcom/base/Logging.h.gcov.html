@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - /home/assiya/coverage-crawler/mozilla-central/xpcom/base/Logging.h</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../../../index.html">top level</a> - <a href="index.html">home/assiya/coverage-crawler/mozilla-central/xpcom/base</a> - Logging.h<span style="font-size: 80%;"> (source / <a href="Logging.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">4</td>
+            <td class="headerCovTableEntry">8</td>
+            <td class="headerCovTableEntryLo">50.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-02 18:28:19</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef mozilla_logging_h
+<span class="lineNum">       8 </span>            : #define mozilla_logging_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &lt;string.h&gt;
+<span class="lineNum">      11 </span>            : #include &lt;stdarg.h&gt;
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/Assertions.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/Atomics.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/Attributes.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/Likely.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/Poison.h&quot;
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : // We normally have logging enabled everywhere, but measurements showed that
+<span class="lineNum">      20 </span>            : // having logging enabled on Android is quite expensive (hundreds of kilobytes
+<span class="lineNum">      21 </span>            : // for both the format strings for logging and the code to perform all the
+<span class="lineNum">      22 </span>            : // logging calls).  Because retrieving logs from a mobile device is
+<span class="lineNum">      23 </span>            : // comparatively more difficult for Android than it is for desktop and because
+<span class="lineNum">      24 </span>            : // desktop machines tend to be less space/bandwidth-constrained than Android
+<span class="lineNum">      25 </span>            : // devices, we've chosen to leave logging enabled on desktop, but disabled on
+<span class="lineNum">      26 </span>            : // Android.  Given that logging can still be useful for development purposes,
+<span class="lineNum">      27 </span>            : // however, we leave logging enabled on Android developer builds.
+<span class="lineNum">      28 </span>            : #if !defined(ANDROID) || !defined(RELEASE_OR_BETA)
+<span class="lineNum">      29 </span>            : #define MOZ_LOGGING_ENABLED 1
+<span class="lineNum">      30 </span>            : #else
+<span class="lineNum">      31 </span>            : #define MOZ_LOGGING_ENABLED 0
+<span class="lineNum">      32 </span>            : #endif
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : namespace mozilla {
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : // While not a 100% mapping to PR_LOG's numeric values, mozilla::LogLevel does
+<span class="lineNum">      37 </span>            : // maintain a direct mapping for the Disabled, Debug and Verbose levels.
+<span class="lineNum">      38 </span>            : //
+<span class="lineNum">      39 </span>            : // Mappings of LogLevel to PR_LOG's numeric values:
+<span class="lineNum">      40 </span>            : //
+<span class="lineNum">      41 </span>            : //   +---------+------------------+-----------------+
+<span class="lineNum">      42 </span>            : //   | Numeric | NSPR Logging     | Mozilla Logging |
+<span class="lineNum">      43 </span>            : //   +---------+------------------+-----------------+
+<span class="lineNum">      44 </span>            : //   |       0 | PR_LOG_NONE      | Disabled        |
+<span class="lineNum">      45 </span>            : //   |       1 | PR_LOG_ALWAYS    | Error           |
+<span class="lineNum">      46 </span>            : //   |       2 | PR_LOG_ERROR     | Warning         |
+<span class="lineNum">      47 </span>            : //   |       3 | PR_LOG_WARNING   | Info            |
+<span class="lineNum">      48 </span>            : //   |       4 | PR_LOG_DEBUG     | Debug           |
+<span class="lineNum">      49 </span>            : //   |       5 | PR_LOG_DEBUG + 1 | Verbose         |
+<span class="lineNum">      50 </span>            : //   +---------+------------------+-----------------+
+<span class="lineNum">      51 </span>            : //
+<span class="lineNum">      52 </span>            : enum class LogLevel {
+<span class="lineNum">      53 </span>            :   Disabled = 0,
+<span class="lineNum">      54 </span>            :   Error,
+<span class="lineNum">      55 </span>            :   Warning,
+<span class="lineNum">      56 </span>            :   Info,
+<span class="lineNum">      57 </span>            :   Debug,
+<span class="lineNum">      58 </span>            :   Verbose,
+<span class="lineNum">      59 </span>            : };
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span>            : /**
+<span class="lineNum">      62 </span>            :  * Safely converts an integer into a valid LogLevel.
+<span class="lineNum">      63 </span>            :  */
+<span class="lineNum">      64 </span>            : LogLevel ToLogLevel(int32_t aLevel);
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : class LogModule
+<span class="lineNum">      67 </span>            : {
+<span class="lineNum">      68 </span>            : public:
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :   ~LogModule() { ::free(mName); }</span>
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span>            :   /**
+<span class="lineNum">      72 </span>            :    * Retrieves the module with the given name. If it does not already exist
+<span class="lineNum">      73 </span>            :    * it will be created.
+<span class="lineNum">      74 </span>            :    *
+<span class="lineNum">      75 </span>            :    * @param aName The name of the module.
+<span class="lineNum">      76 </span>            :    * @return A log module for the given name. This may be shared.
+<span class="lineNum">      77 </span>            :    */
+<span class="lineNum">      78 </span>            :   static LogModule* Get(const char* aName);
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            :   /**
+<span class="lineNum">      81 </span>            :    * Logging processes -MOZ_LOG and -MOZ_LOG_FILE command line arguments
+<span class="lineNum">      82 </span>            :    * to override or set modules and the file as if passed through MOZ_LOG
+<span class="lineNum">      83 </span>            :    * and MOZ_LOG_FILE env vars.  It's fine to pass (0, nullptr) if args
+<span class="lineNum">      84 </span>            :    * are not accessible in the caller's context, it will just do nothing.
+<span class="lineNum">      85 </span>            :    * Note that the args take effect (are processed) only when this function
+<span class="lineNum">      86 </span>            :    * is called the first time.
+<span class="lineNum">      87 </span>            :    */
+<span class="lineNum">      88 </span>            :   static void Init(int argc, char* argv[]);
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span>            :   /**
+<span class="lineNum">      91 </span>            :    * Sets the log file to the given filename.
+<span class="lineNum">      92 </span>            :    */
+<span class="lineNum">      93 </span>            :   static void SetLogFile(const char* aFilename);
+<span class="lineNum">      94 </span>            : 
+<span class="lineNum">      95 </span>            :   /**
+<span class="lineNum">      96 </span>            :    * @param aBuffer - pointer to a buffer
+<span class="lineNum">      97 </span>            :    * @param aLength - the length of the buffer
+<span class="lineNum">      98 </span>            :    *
+<span class="lineNum">      99 </span>            :    * @return the actual length of the filepath.
+<span class="lineNum">     100 </span>            :    */
+<span class="lineNum">     101 </span>            :   static uint32_t GetLogFile(char *aBuffer, size_t aLength);
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span>            :   /**
+<span class="lineNum">     104 </span>            :    * @param aAddTimestamp If we should log a time stamp with every message.
+<span class="lineNum">     105 </span>            :    */
+<span class="lineNum">     106 </span>            :   static void SetAddTimestamp(bool aAddTimestamp);
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            :   /**
+<span class="lineNum">     109 </span>            :    * @param aIsSync If we should flush the file after every logged message.
+<span class="lineNum">     110 </span>            :    */
+<span class="lineNum">     111 </span>            :   static void SetIsSync(bool aIsSync);
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span>            :   /**
+<span class="lineNum">     114 </span>            :    * Indicates whether or not the given log level is enabled.
+<span class="lineNum">     115 </span>            :    */
+<span class="lineNum">     116 </span><span class="lineCov">     391766 :   bool ShouldLog(LogLevel aLevel) const { return mLevel &gt;= aLevel; }</span>
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            :   /**
+<span class="lineNum">     119 </span>            :    * Retrieves the log module's current level.
+<span class="lineNum">     120 </span>            :    */
+<span class="lineNum">     121 </span><span class="lineCov">       1470 :   LogLevel Level() const { return mLevel; }</span>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            :   /**
+<span class="lineNum">     124 </span>            :    * Sets the log module's level.
+<span class="lineNum">     125 </span>            :    */
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :   void SetLevel(LogLevel level) { mLevel = level; }</span>
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            :   /**
+<span class="lineNum">     129 </span>            :    * Print a log message for this module.
+<span class="lineNum">     130 </span>            :    */
+<span class="lineNum">     131 </span>            :   void Printv(LogLevel aLevel, const char* aFmt, va_list aArgs) const MOZ_FORMAT_PRINTF(3, 0);
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span>            :   /**
+<span class="lineNum">     134 </span>            :    * Retrieves the module name.
+<span class="lineNum">     135 </span>            :    */
+<span class="lineNum">     136 </span>            :   const char* Name() const { return mName; }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            : private:
+<span class="lineNum">     139 </span>            :   friend class LogModuleManager;
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            :   explicit LogModule(const char* aName, LogLevel aLevel)
+<span class="lineNum">     142 </span><span class="lineCov">        198 :     : mName(strdup(aName)), mLevel(aLevel)</span>
+<span class="lineNum">     143 </span>            :   {
+<span class="lineNum">     144 </span>            :   }
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            :   LogModule(LogModule&amp;) = delete;
+<span class="lineNum">     147 </span>            :   LogModule&amp; operator=(const LogModule&amp;) = delete;
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            :   char* mName;
+<span class="lineNum">     150 </span>            :   Atomic&lt;LogLevel, Relaxed&gt; mLevel;
+<span class="lineNum">     151 </span>            : };
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            : /**
+<span class="lineNum">     154 </span>            :  * Helper class that lazy loads the given log module. This is safe to use for
+<span class="lineNum">     155 </span>            :  * declaring static references to log modules and can be used as a replacement
+<span class="lineNum">     156 </span>            :  * for accessing a LogModule directly.
+<span class="lineNum">     157 </span>            :  *
+<span class="lineNum">     158 </span>            :  * Example usage:
+<span class="lineNum">     159 </span>            :  *   static LazyLogModule sLayoutLog(&quot;layout&quot;);
+<span class="lineNum">     160 </span>            :  *
+<span class="lineNum">     161 </span>            :  *   void Foo() {
+<span class="lineNum">     162 </span>            :  *     MOZ_LOG(sLayoutLog, LogLevel::Verbose, (&quot;Entering foo&quot;));
+<span class="lineNum">     163 </span>            :  *   }
+<span class="lineNum">     164 </span>            :  */
+<span class="lineNum">     165 </span>            : class LazyLogModule final
+<span class="lineNum">     166 </span>            : {
+<span class="lineNum">     167 </span>            : public:
+<span class="lineNum">     168 </span>            :   explicit constexpr LazyLogModule(const char* aLogName)
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :     : mLogName(aLogName)</span>
+<span class="lineNum">     170 </span><span class="lineCov">          3 :     , mLog(nullptr)</span>
+<span class="lineNum">     171 </span>            :   {
+<span class="lineNum">     172 </span>            :   }
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span>            :   operator LogModule*();
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span>            : private:
+<span class="lineNum">     177 </span>            :   const char* const mLogName;
+<span class="lineNum">     178 </span>            :   const CorruptionCanaryForStatics mCanary;
+<span class="lineNum">     179 </span>            :   Atomic&lt;LogModule*, ReleaseAcquire&gt; mLog;
+<span class="lineNum">     180 </span>            : };
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span>            : namespace detail {
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 : inline bool log_test(const LogModule* module, LogLevel level) {</span>
+<span class="lineNum">     185 </span>            :   MOZ_ASSERT(level != LogLevel::Disabled);
+<span class="lineNum">     186 </span>            :   return module &amp;&amp; module-&gt;ShouldLog(level);
+<span class="lineNum">     187 </span>            : }
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span>            : void log_print(const LogModule* aModule,
+<span class="lineNum">     190 </span>            :                LogLevel aLevel,
+<span class="lineNum">     191 </span>            :                const char* aFmt, ...) MOZ_FORMAT_PRINTF(3, 4);
+<span class="lineNum">     192 </span>            : } // namespace detail
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span>            : } // namespace mozilla
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            : // Helper macro used convert MOZ_LOG's third parameter, |_args|, from a
+<span class="lineNum">     197 </span>            : // parenthesized form to a varargs form. For example:
+<span class="lineNum">     198 </span>            : //   (&quot;%s&quot;, &quot;a message&quot;) =&gt; &quot;%s&quot;, &quot;a message&quot;
+<span class="lineNum">     199 </span>            : #define MOZ_LOG_EXPAND_ARGS(...) __VA_ARGS__
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            : #if MOZ_LOGGING_ENABLED
+<span class="lineNum">     202 </span>            : #define MOZ_LOG_TEST(_module,_level) mozilla::detail::log_test(_module, _level)
+<span class="lineNum">     203 </span>            : #else
+<span class="lineNum">     204 </span>            : // Define away MOZ_LOG_TEST here so the compiler will fold away entire
+<span class="lineNum">     205 </span>            : // logging blocks via dead code elimination, e.g.:
+<span class="lineNum">     206 </span>            : //
+<span class="lineNum">     207 </span>            : //   if (MOZ_LOG_TEST(...)) {
+<span class="lineNum">     208 </span>            : //     ...compute things to log and log them...
+<span class="lineNum">     209 </span>            : //   }
+<span class="lineNum">     210 </span>            : #define MOZ_LOG_TEST(_module,_level) false
+<span class="lineNum">     211 </span>            : #endif
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            : // The natural definition of the MOZ_LOG macro would expand to:
+<span class="lineNum">     214 </span>            : //
+<span class="lineNum">     215 </span>            : //   do {
+<span class="lineNum">     216 </span>            : //     if (MOZ_LOG_TEST(_module, _level)) {
+<span class="lineNum">     217 </span>            : //       mozilla::detail::log_print(_module, ...);
+<span class="lineNum">     218 </span>            : //     }
+<span class="lineNum">     219 </span>            : //   } while (0)
+<span class="lineNum">     220 </span>            : //
+<span class="lineNum">     221 </span>            : // However, since _module is a LazyLogModule, and we need to call
+<span class="lineNum">     222 </span>            : // LazyLogModule::operator() to get a LogModule* for the MOZ_LOG_TEST
+<span class="lineNum">     223 </span>            : // macro and for the logging call, we'll wind up doing *two* calls, one
+<span class="lineNum">     224 </span>            : // for each, rather than a single call.  The compiler is not able to
+<span class="lineNum">     225 </span>            : // fold the two calls into one, and the extra call can have a
+<span class="lineNum">     226 </span>            : // significant effect on code size.  (Making LazyLogModule::operator() a
+<span class="lineNum">     227 </span>            : // `const` function does not have any effect.)
+<span class="lineNum">     228 </span>            : //
+<span class="lineNum">     229 </span>            : // Therefore, we will have to make a single call ourselves.  But again,
+<span class="lineNum">     230 </span>            : // the natural definition:
+<span class="lineNum">     231 </span>            : //
+<span class="lineNum">     232 </span>            : //   do {
+<span class="lineNum">     233 </span>            : //     ::mozilla::LogModule* real_module = _module;
+<span class="lineNum">     234 </span>            : //     if (MOZ_LOG_TEST(real_module, _level)) {
+<span class="lineNum">     235 </span>            : //       mozilla::detail::log_print(real_module, ...);
+<span class="lineNum">     236 </span>            : //     }
+<span class="lineNum">     237 </span>            : //   } while (0)
+<span class="lineNum">     238 </span>            : //
+<span class="lineNum">     239 </span>            : // also has a problem: if logging is disabled, then we will call
+<span class="lineNum">     240 </span>            : // LazyLogModule::operator() unnecessarily, and the compiler will not be
+<span class="lineNum">     241 </span>            : // able to optimize away the call as dead code.  We would like to avoid
+<span class="lineNum">     242 </span>            : // such a scenario, as the whole point of disabling logging is for the
+<span class="lineNum">     243 </span>            : // logging statements to not generate any code.
+<span class="lineNum">     244 </span>            : //
+<span class="lineNum">     245 </span>            : // Therefore, we need different definitions of MOZ_LOG, depending on
+<span class="lineNum">     246 </span>            : // whether logging is enabled or not.  (We need an actual definition of
+<span class="lineNum">     247 </span>            : // MOZ_LOG even when logging is disabled to ensure the compiler sees that
+<span class="lineNum">     248 </span>            : // variables only used during logging code are actually used, even if the
+<span class="lineNum">     249 </span>            : // code will never be executed.)  Hence, the following code.
+<span class="lineNum">     250 </span>            : #if MOZ_LOGGING_ENABLED
+<span class="lineNum">     251 </span>            : #define MOZ_LOG(_module,_level,_args)                                         \
+<span class="lineNum">     252 </span>            :   do {                                                                        \
+<span class="lineNum">     253 </span>            :     const ::mozilla::LogModule* moz_real_module = _module;                    \
+<span class="lineNum">     254 </span>            :     if (MOZ_LOG_TEST(moz_real_module,_level)) {                               \
+<span class="lineNum">     255 </span>            :       mozilla::detail::log_print(moz_real_module, _level, MOZ_LOG_EXPAND_ARGS _args); \
+<span class="lineNum">     256 </span>            :     }                                                                         \
+<span class="lineNum">     257 </span>            :   } while (0)
+<span class="lineNum">     258 </span>            : #else
+<span class="lineNum">     259 </span>            : #define MOZ_LOG(_module,_level,_args)                                         \
+<span class="lineNum">     260 </span>            :   do {                                                                        \
+<span class="lineNum">     261 </span>            :     if (MOZ_LOG_TEST(_module,_level)) {                        \
+<span class="lineNum">     262 </span>            :       mozilla::detail::log_print(_module, _level, MOZ_LOG_EXPAND_ARGS _args); \
+<span class="lineNum">     263 </span>            :     }                                                                         \
+<span class="lineNum">     264 </span>            :   } while (0)
+<span class="lineNum">     265 </span>            : #endif
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            : // This #define is a Logging.h-only knob!  Don't encourage people to get fancy
+<span class="lineNum">     268 </span>            : // with their log definitions by exporting it outside of Logging.h.
+<span class="lineNum">     269 </span>            : #undef MOZ_LOGGING_ENABLED
+<span class="lineNum">     270 </span>            : 
+<span class="lineNum">     271 </span>            : #endif // mozilla_logging_h
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

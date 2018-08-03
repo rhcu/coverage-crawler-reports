@@ -1,0 +1,733 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - /home/assiya/coverage-crawler/mozilla-central/dom/clients/manager/ClientManagerService.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../../../../index.html">top level</a> - <a href="index.html">home/assiya/coverage-crawler/mozilla-central/dom/clients/manager</a> - ClientManagerService.cpp<span style="font-size: 80%;"> (source / <a href="ClientManagerService.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">36</td>
+            <td class="headerCovTableEntry">262</td>
+            <td class="headerCovTableEntryLo">13.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-02 18:28:19</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #include &quot;ClientManagerService.h&quot;
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;ClientManagerParent.h&quot;
+<span class="lineNum">      10 </span>            : #include &quot;ClientNavigateOpParent.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;ClientOpenWindowOpParent.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;ClientOpenWindowUtils.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;ClientPrincipalUtils.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;ClientSourceParent.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/dom/ContentParent.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/dom/ServiceWorkerManager.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/dom/ServiceWorkerUtils.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;mozilla/ipc/BackgroundParent.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;mozilla/ipc/PBackgroundSharedTypes.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;mozilla/ClearOnShutdown.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;mozilla/SystemGroup.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;nsIAsyncShutdown.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;nsIXULRuntime.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;nsProxyRelease.h&quot;
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : namespace mozilla {
+<span class="lineNum">      27 </span>            : namespace dom {
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : using mozilla::ipc::AssertIsOnBackgroundThread;
+<span class="lineNum">      30 </span>            : using mozilla::ipc::PrincipalInfo;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : namespace {
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : ClientManagerService* sClientManagerServiceInstance = nullptr;
+<span class="lineNum">      35 </span>            : bool sClientManagerServiceShutdownRegistered = false;
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            : class ClientShutdownBlocker final : public nsIAsyncShutdownBlocker
+<span class="lineNum">      38 </span>            : {
+<span class="lineNum">      39 </span>            :   RefPtr&lt;GenericPromise::Private&gt; mPromise;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 :   ~ClientShutdownBlocker() = default;</span>
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : public:
+<span class="lineNum">      44 </span><span class="lineCov">          1 :   explicit ClientShutdownBlocker(GenericPromise::Private* aPromise)</span>
+<span class="lineNum">      45 </span><span class="lineNoCov">          0 :     : mPromise(aPromise)</span>
+<span class="lineNum">      46 </span>            :   {
+<span class="lineNum">      47 </span><span class="lineCov">          2 :     MOZ_DIAGNOSTIC_ASSERT(mPromise);</span>
+<span class="lineNum">      48 </span><span class="lineCov">          1 :   }</span>
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            :   NS_IMETHOD
+<span class="lineNum">      51 </span><span class="lineCov">          4 :   GetName(nsAString&amp; aNameOut) override</span>
+<span class="lineNum">      52 </span>            :   {
+<span class="lineNum">      53 </span>            :     aNameOut =
+<span class="lineNum">      54 </span><span class="lineCov">          8 :       NS_LITERAL_STRING(&quot;ClientManagerService: start destroying IPC actors early&quot;);</span>
+<span class="lineNum">      55 </span><span class="lineCov">          4 :     return NS_OK;</span>
+<span class="lineNum">      56 </span>            :   }
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            :   NS_IMETHOD
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :   BlockShutdown(nsIAsyncShutdownClient* aClient) override</span>
+<span class="lineNum">      60 </span>            :   {
+<span class="lineNum">      61 </span><span class="lineNoCov">          0 :     mPromise-&gt;Resolve(true, __func__);</span>
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :     aClient-&gt;RemoveBlocker(this);</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :     return NS_OK;</span>
+<span class="lineNum">      64 </span>            :   }
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            :   NS_IMETHOD
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :   GetState(nsIPropertyBag**) override</span>
+<span class="lineNum">      68 </span>            :   {
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :     return NS_OK;</span>
+<span class="lineNum">      70 </span>            :   }
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            :   NS_DECL_ISUPPORTS
+<span class="lineNum">      73 </span>            : };
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineCov">         41 : NS_IMPL_ISUPPORTS(ClientShutdownBlocker, nsIAsyncShutdownBlocker)</span>
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : // Helper function the resolves a MozPromise when we detect that the browser
+<span class="lineNum">      78 </span>            : // has begun to shutdown.
+<span class="lineNum">      79 </span>            : RefPtr&lt;GenericPromise&gt;
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 : OnShutdown()</span>
+<span class="lineNum">      81 </span>            : {
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :   RefPtr&lt;GenericPromise::Private&gt; ref = new GenericPromise::Private(__func__);</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIRunnable&gt; r = NS_NewRunnableFunction(&quot;ClientManagerServer::OnShutdown&quot;,</span>
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :   [ref] () {</span>
+<span class="lineNum">      86 </span><span class="lineCov">          1 :     nsCOMPtr&lt;nsIAsyncShutdownService&gt; svc = services::GetAsyncShutdown();</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :     if (!svc) {</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :       ref-&gt;Resolve(true, __func__);</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :       return;</span>
+<span class="lineNum">      90 </span>            :     }
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :     nsCOMPtr&lt;nsIAsyncShutdownClient&gt; phase;</span>
+<span class="lineNum">      93 </span><span class="lineCov">          1 :     MOZ_ALWAYS_SUCCEEDS(svc-&gt;GetXpcomWillShutdown(getter_AddRefs(phase)));</span>
+<span class="lineNum">      94 </span><span class="lineNoCov">          0 :     if (!phase) {</span>
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :       ref-&gt;Resolve(true, __func__);</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :       return;</span>
+<span class="lineNum">      97 </span>            :     }
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :     nsCOMPtr&lt;nsIAsyncShutdownBlocker&gt; blocker = new ClientShutdownBlocker(ref);</span>
+<span class="lineNum">     100 </span>            :     nsresult rv =
+<span class="lineNum">     101 </span><span class="lineCov">          5 :       phase-&gt;AddBlocker(blocker, NS_LITERAL_STRING(__FILE__), __LINE__,</span>
+<span class="lineNum">     102 </span><span class="lineNoCov">          0 :                         NS_LITERAL_STRING(&quot;ClientManagerService shutdown&quot;));</span>
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :     if (NS_FAILED(rv)) {</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :       ref-&gt;Resolve(true, __func__);</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :       return;</span>
+<span class="lineNum">     107 </span>            :     }
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :   });</span>
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span><span class="lineCov">          1 :   MOZ_ALWAYS_SUCCEEDS(</span>
+<span class="lineNum">     111 </span>            :     SystemGroup::Dispatch(TaskCategory::Other, r.forget()));
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span><span class="lineCov">          3 :   return ref.forget();</span>
+<span class="lineNum">     114 </span>            : }
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            : } // anonymous namespace
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span><span class="lineCov">          1 : ClientManagerService::ClientManagerService()</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :   : mShutdown(false)</span>
+<span class="lineNum">     120 </span>            : {
+<span class="lineNum">     121 </span><span class="lineCov">          1 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            :   // Only register one shutdown handler at a time.  If a previous service
+<span class="lineNum">     124 </span>            :   // instance did this, but shutdown has not come, then we can avoid
+<span class="lineNum">     125 </span>            :   // doing it again.
+<span class="lineNum">     126 </span><span class="lineCov">          1 :   if (!sClientManagerServiceShutdownRegistered) {</span>
+<span class="lineNum">     127 </span><span class="lineCov">          1 :     sClientManagerServiceShutdownRegistered = true;</span>
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            :     // While the ClientManagerService will be gracefully terminated as windows
+<span class="lineNum">     130 </span>            :     // and workers are naturally killed, this can cause us to do extra work
+<span class="lineNum">     131 </span>            :     // relatively late in the shutdown process.  To avoid this we eagerly begin
+<span class="lineNum">     132 </span>            :     // shutdown at the first sign it has begun.  Since we handle normal shutdown
+<span class="lineNum">     133 </span>            :     // gracefully we don't really need to block anything here.  We just begin
+<span class="lineNum">     134 </span>            :     // destroying our IPC actors immediately.
+<span class="lineNum">     135 </span><span class="lineCov">          2 :     OnShutdown()-&gt;Then(GetCurrentThreadSerialEventTarget(), __func__,</span>
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :       [] () {</span>
+<span class="lineNum">     137 </span>            :         // Look up the latest service instance, if it exists.  This may
+<span class="lineNum">     138 </span>            :         // be different from the instance that registered the shutdown
+<span class="lineNum">     139 </span>            :         // handler.
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :         RefPtr&lt;ClientManagerService&gt; svc = ClientManagerService::GetInstance();</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :         if (svc) {</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :           svc-&gt;Shutdown();</span>
+<span class="lineNum">     143 </span>            :         }
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :       });</span>
+<span class="lineNum">     145 </span>            :   }
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 : ClientManagerService::~ClientManagerService()</span>
+<span class="lineNum">     149 </span>            : {
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :   MOZ_DIAGNOSTIC_ASSERT(mSourceTable.Count() == 0);</span>
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 :   MOZ_DIAGNOSTIC_ASSERT(mManagerList.IsEmpty());</span>
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :   MOZ_DIAGNOSTIC_ASSERT(sClientManagerServiceInstance == this);</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :   sClientManagerServiceInstance = nullptr;</span>
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            : void
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 : ClientManagerService::Shutdown()</span>
+<span class="lineNum">     160 </span>            : {
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :   MOZ_DIAGNOSTIC_ASSERT(sClientManagerServiceShutdownRegistered);</span>
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            :   // If many ClientManagerService are created and destroyed quickly we can
+<span class="lineNum">     165 </span>            :   // in theory get more than one shutdown listener calling us.
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :   if (mShutdown) {</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :     return;</span>
+<span class="lineNum">     168 </span>            :   }
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :   mShutdown = true;</span>
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span>            :   // Begin destroying our various manager actors which will in turn destroy
+<span class="lineNum">     172 </span>            :   // all source, handle, and operation actors.
+<span class="lineNum">     173 </span><span class="lineNoCov">          0 :   AutoTArray&lt;ClientManagerParent*, 16&gt; list(mManagerList);</span>
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :   for (auto actor : list) {</span>
+<span class="lineNum">     175 </span><span class="lineNoCov">          0 :     Unused &lt;&lt; PClientManagerParent::Send__delete__(actor);</span>
+<span class="lineNum">     176 </span>            :   }
+<span class="lineNum">     177 </span>            : }
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span>            : // static
+<span class="lineNum">     180 </span>            : already_AddRefed&lt;ClientManagerService&gt;
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 : ClientManagerService::GetOrCreateInstance()</span>
+<span class="lineNum">     182 </span>            : {
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span><span class="lineCov">         34 :   if (!sClientManagerServiceInstance) {</span>
+<span class="lineNum">     186 </span><span class="lineCov">          1 :     sClientManagerServiceInstance = new ClientManagerService();</span>
+<span class="lineNum">     187 </span>            :   }
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineCov">         68 :   RefPtr&lt;ClientManagerService&gt; ref(sClientManagerServiceInstance);</span>
+<span class="lineNum">     190 </span><span class="lineCov">         68 :   return ref.forget();</span>
+<span class="lineNum">     191 </span>            : }
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span>            : // static
+<span class="lineNum">     194 </span>            : already_AddRefed&lt;ClientManagerService&gt;
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 : ClientManagerService::GetInstance()</span>
+<span class="lineNum">     196 </span>            : {
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :   if (!sClientManagerServiceInstance) {</span>
+<span class="lineNum">     200 </span>            :     return nullptr;
+<span class="lineNum">     201 </span>            :   }
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :   RefPtr&lt;ClientManagerService&gt; ref(sClientManagerServiceInstance);</span>
+<span class="lineNum">     204 </span><span class="lineNoCov">          0 :   return ref.forget();</span>
+<span class="lineNum">     205 </span>            : }
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            : bool
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 : ClientManagerService::AddSource(ClientSourceParent* aSource)</span>
+<span class="lineNum">     209 </span>            : {
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     211 </span><span class="lineCov">         28 :   MOZ_ASSERT(aSource);</span>
+<span class="lineNum">     212 </span><span class="lineCov">         84 :   auto entry = mSourceTable.LookupForAdd(aSource-&gt;Info().Id());</span>
+<span class="lineNum">     213 </span>            :   // Do not permit overwriting an existing ClientSource with the same
+<span class="lineNum">     214 </span>            :   // UUID.  This would allow a spoofed ClientParentSource actor to
+<span class="lineNum">     215 </span>            :   // intercept postMessage() intended for the real actor.
+<span class="lineNum">     216 </span><span class="lineCov">         28 :   if (NS_WARN_IF(!!entry)) {</span>
+<span class="lineNum">     217 </span>            :     return false;
+<span class="lineNum">     218 </span>            :   }
+<span class="lineNum">     219 </span><span class="lineCov">         56 :   entry.OrInsert([&amp;] { return aSource; });</span>
+<span class="lineNum">     220 </span><span class="lineCov">         28 :   return true;</span>
+<span class="lineNum">     221 </span>            : }
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            : bool
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 : ClientManagerService::RemoveSource(ClientSourceParent* aSource)</span>
+<span class="lineNum">     225 </span>            : {
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(aSource);</span>
+<span class="lineNum">     228 </span><span class="lineCov">         42 :   auto entry = mSourceTable.Lookup(aSource-&gt;Info().Id());</span>
+<span class="lineNum">     229 </span><span class="lineCov">         14 :   if (NS_WARN_IF(!entry)) {</span>
+<span class="lineNum">     230 </span>            :     return false;
+<span class="lineNum">     231 </span>            :   }
+<span class="lineNum">     232 </span><span class="lineCov">         14 :   entry.Remove();</span>
+<span class="lineNum">     233 </span><span class="lineCov">         14 :   return true;</span>
+<span class="lineNum">     234 </span>            : }
+<span class="lineNum">     235 </span>            : 
+<span class="lineNum">     236 </span>            : ClientSourceParent*
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 : ClientManagerService::FindSource(const nsID&amp; aID, const PrincipalInfo&amp; aPrincipalInfo)</span>
+<span class="lineNum">     238 </span>            : {
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :   auto entry = mSourceTable.Lookup(aID);</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :   if (!entry) {</span>
+<span class="lineNum">     243 </span>            :     return nullptr;
+<span class="lineNum">     244 </span>            :   }
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :   ClientSourceParent* source = entry.Data();</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :   if (source-&gt;IsFrozen() ||</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :       !ClientMatchPrincipalInfo(source-&gt;Info().PrincipalInfo(), aPrincipalInfo)) {</span>
+<span class="lineNum">     249 </span>            :     return nullptr;
+<span class="lineNum">     250 </span>            :   }
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :   return source;</span>
+<span class="lineNum">     253 </span>            : }
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            : void
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 : ClientManagerService::AddManager(ClientManagerParent* aManager)</span>
+<span class="lineNum">     257 </span>            : {
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :   MOZ_DIAGNOSTIC_ASSERT(aManager);</span>
+<span class="lineNum">     260 </span><span class="lineCov">          6 :   MOZ_ASSERT(!mManagerList.Contains(aManager));</span>
+<span class="lineNum">     261 </span><span class="lineCov">          6 :   mManagerList.AppendElement(aManager);</span>
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span>            :   // If shutdown has already begun then immediately destroy the actor.
+<span class="lineNum">     264 </span><span class="lineCov">          6 :   if (mShutdown) {</span>
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :     Unused &lt;&lt; PClientManagerParent::Send__delete__(aManager);</span>
+<span class="lineNum">     266 </span>            :   }
+<span class="lineNum">     267 </span><span class="lineCov">          6 : }</span>
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span>            : void
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 : ClientManagerService::RemoveManager(ClientManagerParent* aManager)</span>
+<span class="lineNum">     271 </span>            : {
+<span class="lineNum">     272 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :   MOZ_DIAGNOSTIC_ASSERT(aManager);</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :   DebugOnly&lt;bool&gt; removed = mManagerList.RemoveElement(aManager);</span>
+<span class="lineNum">     275 </span><span class="lineCov">          1 :   MOZ_ASSERT(removed);</span>
+<span class="lineNum">     276 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            : RefPtr&lt;ClientOpPromise&gt;
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 : ClientManagerService::Navigate(const ClientNavigateArgs&amp; aArgs)</span>
+<span class="lineNum">     280 </span>            : {
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :   RefPtr&lt;ClientOpPromise&gt; ref;</span>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :   ClientSourceParent* source = FindSource(aArgs.target().id(),</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :                                           aArgs.target().principalInfo());</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :   if (!source) {</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :     ref = ClientOpPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);</span>
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :     return ref.forget();</span>
+<span class="lineNum">     288 </span>            :   }
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :   PClientManagerParent* manager = source-&gt;Manager();</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :   MOZ_DIAGNOSTIC_ASSERT(manager);</span>
+<span class="lineNum">     292 </span>            : 
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :   ClientNavigateOpConstructorArgs args;</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :   args.url() = aArgs.url();</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :   args.baseURL() = aArgs.baseURL();</span>
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span>            :   // This is safe to do because the ClientSourceChild cannot directly delete
+<span class="lineNum">     298 </span>            :   // itself.  Instead it sends a Teardown message to the parent which then
+<span class="lineNum">     299 </span>            :   // calls delete.  That means we can be sure that we are not racing with
+<span class="lineNum">     300 </span>            :   // source destruction here.
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :   args.targetParent() = source;</span>
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span>            :   RefPtr&lt;ClientOpPromise::Private&gt; promise =
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :     new ClientOpPromise::Private(__func__);</span>
+<span class="lineNum">     305 </span>            : 
+<span class="lineNum">     306 </span><span class="lineNoCov">          0 :   ClientNavigateOpParent* op = new ClientNavigateOpParent(args, promise);</span>
+<span class="lineNum">     307 </span>            :   PClientNavigateOpParent* result =
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :     manager-&gt;SendPClientNavigateOpConstructor(op, args);</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :   if (!result) {</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :     promise-&gt;Reject(NS_ERROR_FAILURE, __func__);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :     ref = promise;</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :     return ref.forget();</span>
+<span class="lineNum">     313 </span>            :   }
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :   ref = promise;</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :   return ref.forget();</span>
+<span class="lineNum">     317 </span>            : }
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span>            : namespace
+<span class="lineNum">     320 </span>            : {
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span>            : class PromiseListHolder final
+<span class="lineNum">     323 </span>            : {
+<span class="lineNum">     324 </span>            :   RefPtr&lt;ClientOpPromise::Private&gt; mResultPromise;
+<span class="lineNum">     325 </span>            :   nsTArray&lt;RefPtr&lt;ClientOpPromise&gt;&gt; mPromiseList;
+<span class="lineNum">     326 </span>            :   nsTArray&lt;ClientInfoAndState&gt; mResultList;
+<span class="lineNum">     327 </span>            :   uint32_t mOutstandingPromiseCount;
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span>            :   void
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :   ProcessSuccess(const ClientInfoAndState&amp; aResult)</span>
+<span class="lineNum">     331 </span>            :   {
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :     mResultList.AppendElement(aResult);</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :     ProcessCompletion();</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span>            :   void
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :   ProcessCompletion()</span>
+<span class="lineNum">     338 </span>            :   {
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :     MOZ_DIAGNOSTIC_ASSERT(mOutstandingPromiseCount &gt; 0);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :     mOutstandingPromiseCount -= 1;</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :     MaybeFinish();</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :   ~PromiseListHolder() = default;</span>
+<span class="lineNum">     345 </span>            : public:
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :   PromiseListHolder()</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :     : mResultPromise(new ClientOpPromise::Private(__func__))</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :     , mOutstandingPromiseCount(0)</span>
+<span class="lineNum">     349 </span>            :   {
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span>            :   already_AddRefed&lt;ClientOpPromise&gt;
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :   GetResultPromise()</span>
+<span class="lineNum">     354 </span>            :   {
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :     RefPtr&lt;PromiseListHolder&gt; kungFuDeathGrip = this;</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :     mResultPromise-&gt;Then(</span>
+<span class="lineNum">     357 </span>            :       GetCurrentThreadSerialEventTarget(), __func__,
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :       [kungFuDeathGrip] (const ClientOpResult&amp; aResult) { },</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :       [kungFuDeathGrip] (nsresult aResult) { });</span>
+<span class="lineNum">     360 </span>            : 
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :     RefPtr&lt;ClientOpPromise&gt; ref = mResultPromise;</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :     return ref.forget();</span>
+<span class="lineNum">     363 </span>            :   }
+<span class="lineNum">     364 </span>            : 
+<span class="lineNum">     365 </span>            :   void
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :   AddPromise(RefPtr&lt;ClientOpPromise&gt;&amp;&amp; aPromise)</span>
+<span class="lineNum">     367 </span>            :   {
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :     mPromiseList.AppendElement(std::move(aPromise));</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :     MOZ_DIAGNOSTIC_ASSERT(mPromiseList.LastElement());</span>
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :     mOutstandingPromiseCount += 1;</span>
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :     RefPtr&lt;PromiseListHolder&gt; self(this);</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :     mPromiseList.LastElement()-&gt;Then(</span>
+<span class="lineNum">     374 </span>            :       GetCurrentThreadSerialEventTarget(), __func__,
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :       [self] (const ClientOpResult&amp; aResult) {</span>
+<span class="lineNum">     376 </span>            :         // TODO: This is pretty clunky.  Try to figure out a better
+<span class="lineNum">     377 </span>            :         //       wait for MatchAll() and Claim() to share this code
+<span class="lineNum">     378 </span>            :         //       even though they expect different return values.
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         if (aResult.type() == ClientOpResult::TClientInfoAndState) {</span>
+<span class="lineNum">     380 </span><span class="lineNoCov">          0 :           self-&gt;ProcessSuccess(aResult.get_ClientInfoAndState());</span>
+<span class="lineNum">     381 </span>            :         } else {
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :           self-&gt;ProcessCompletion();</span>
+<span class="lineNum">     383 </span>            :         }
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :       }, [self] (nsresult aResult) {</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :         self-&gt;ProcessCompletion();</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :       });</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span>            :   void
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :   MaybeFinish()</span>
+<span class="lineNum">     391 </span>            :   {
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :     if (!mOutstandingPromiseCount) {</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :       mResultPromise-&gt;Resolve(mResultList, __func__);</span>
+<span class="lineNum">     394 </span>            :     }
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :   NS_INLINE_DECL_REFCOUNTING(PromiseListHolder)</span>
+<span class="lineNum">     398 </span>            : };
+<span class="lineNum">     399 </span>            : 
+<span class="lineNum">     400 </span>            : } // anonymous namespace
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span>            : RefPtr&lt;ClientOpPromise&gt;
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 : ClientManagerService::MatchAll(const ClientMatchAllArgs&amp; aArgs)</span>
+<span class="lineNum">     404 </span>            : {
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     406 </span>            : 
+<span class="lineNum">     407 </span><span class="lineNoCov">          0 :   ServiceWorkerDescriptor swd(aArgs.serviceWorker());</span>
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :   const PrincipalInfo&amp; principalInfo = swd.PrincipalInfo();</span>
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :   RefPtr&lt;PromiseListHolder&gt; promiseList = new PromiseListHolder();</span>
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span><span class="lineNoCov">          0 :   for (auto iter = mSourceTable.Iter(); !iter.Done(); iter.Next()) {</span>
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :     ClientSourceParent* source = iter.UserData();</span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :     MOZ_DIAGNOSTIC_ASSERT(source);</span>
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span><span class="lineNoCov">          0 :     if (source-&gt;IsFrozen() || !source-&gt;ExecutionReady()) {</span>
+<span class="lineNum">     417 </span>            :       continue;
+<span class="lineNum">     418 </span>            :     }
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :     if (aArgs.type() != ClientType::All &amp;&amp;</span>
+<span class="lineNum">     421 </span><span class="lineNoCov">          0 :         source-&gt;Info().Type() != aArgs.type()) {</span>
+<span class="lineNum">     422 </span>            :       continue;
+<span class="lineNum">     423 </span>            :     }
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :     if (!ClientMatchPrincipalInfo(source-&gt;Info().PrincipalInfo(), principalInfo)) {</span>
+<span class="lineNum">     426 </span>            :       continue;
+<span class="lineNum">     427 </span>            :     }
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :     if (!aArgs.includeUncontrolled()) {</span>
+<span class="lineNum">     430 </span>            :       const Maybe&lt;ServiceWorkerDescriptor&gt;&amp; controller =
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :         source-&gt;GetController();</span>
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :       if (controller.isNothing()) {</span>
+<span class="lineNum">     433 </span>            :         continue;
+<span class="lineNum">     434 </span>            :       }
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span><span class="lineNoCov">          0 :       if(controller.ref().Id() != swd.Id() ||</span>
+<span class="lineNum">     437 </span><span class="lineNoCov">          0 :          controller.ref().Scope() != swd.Scope()) {</span>
+<span class="lineNum">     438 </span>            :         continue;
+<span class="lineNum">     439 </span>            :       }
+<span class="lineNum">     440 </span>            :     }
+<span class="lineNum">     441 </span>            : 
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :     promiseList-&gt;AddPromise(</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :       source-&gt;StartOp(ClientGetInfoAndStateArgs(source-&gt;Info().Id(),</span>
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 :                                                 source-&gt;Info().PrincipalInfo())));</span>
+<span class="lineNum">     445 </span>            :   }
+<span class="lineNum">     446 </span>            : 
+<span class="lineNum">     447 </span>            :   // Maybe finish the promise now in case we didn't find any matching clients.
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :   promiseList-&gt;MaybeFinish();</span>
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :   return promiseList-&gt;GetResultPromise();</span>
+<span class="lineNum">     451 </span>            : }
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span>            : namespace {
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span>            : RefPtr&lt;ClientOpPromise&gt;
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 : ClaimOnMainThread(const ClientInfo&amp; aClientInfo,</span>
+<span class="lineNum">     457 </span>            :                   const ServiceWorkerDescriptor&amp; aDescriptor)
+<span class="lineNum">     458 </span>            : {
+<span class="lineNum">     459 </span>            :   RefPtr&lt;ClientOpPromise::Private&gt; promise =
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :     new ClientOpPromise::Private(__func__);</span>
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIRunnable&gt; r = NS_NewRunnableFunction(__func__,</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :     [promise, clientInfo = std::move(aClientInfo), desc = std::move(aDescriptor)] () {</span>
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :       auto scopeExit = MakeScopeExit([&amp;] {</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :         promise-&gt;Reject(NS_ERROR_DOM_INVALID_STATE_ERR, __func__);</span>
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :       });</span>
+<span class="lineNum">     467 </span>            : 
+<span class="lineNum">     468 </span><span class="lineNoCov">          0 :       RefPtr&lt;ServiceWorkerManager&gt; swm = ServiceWorkerManager::GetInstance();</span>
+<span class="lineNum">     469 </span><span class="lineNoCov">          0 :       NS_ENSURE_TRUE_VOID(swm);</span>
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :       RefPtr&lt;GenericPromise&gt; inner = swm-&gt;MaybeClaimClient(clientInfo, desc);</span>
+<span class="lineNum">     472 </span>            :       inner-&gt;Then(SystemGroup::EventTargetFor(TaskCategory::Other), __func__,
+<span class="lineNum">     473 </span><span class="lineNoCov">          0 :         [promise] (bool aResult) {</span>
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :           promise-&gt;Resolve(NS_OK, __func__);</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :         }, [promise] (nsresult aRv) {</span>
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :           promise-&gt;Reject(aRv, __func__);</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :         });</span>
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :     });</span>
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :   MOZ_ALWAYS_SUCCEEDS(SystemGroup::Dispatch(TaskCategory::Other, r.forget()));</span>
+<span class="lineNum">     481 </span>            : 
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :   return promise.forget();</span>
+<span class="lineNum">     483 </span>            : }
+<span class="lineNum">     484 </span>            : 
+<span class="lineNum">     485 </span>            : } // anonymous namespace
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span>            : RefPtr&lt;ClientOpPromise&gt;
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 : ClientManagerService::Claim(const ClientClaimArgs&amp; aArgs)</span>
+<span class="lineNum">     489 </span>            : {
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :   AssertIsOnBackgroundThread();</span>
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineNoCov">          0 :   const IPCServiceWorkerDescriptor&amp; serviceWorker = aArgs.serviceWorker();</span>
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 :   const PrincipalInfo&amp; principalInfo = serviceWorker.principalInfo();</span>
+<span class="lineNum">     494 </span>            : 
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :   RefPtr&lt;PromiseListHolder&gt; promiseList = new PromiseListHolder();</span>
+<span class="lineNum">     496 </span>            : 
+<span class="lineNum">     497 </span><span class="lineNoCov">          0 :   for (auto iter = mSourceTable.Iter(); !iter.Done(); iter.Next()) {</span>
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :     ClientSourceParent* source = iter.UserData();</span>
+<span class="lineNum">     499 </span><span class="lineNoCov">          0 :     MOZ_DIAGNOSTIC_ASSERT(source);</span>
+<span class="lineNum">     500 </span>            : 
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :     if (source-&gt;IsFrozen()) {</span>
+<span class="lineNum">     502 </span>            :       continue;
+<span class="lineNum">     503 </span>            :     }
+<span class="lineNum">     504 </span>            : 
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :     if (!ClientMatchPrincipalInfo(source-&gt;Info().PrincipalInfo(), principalInfo)) {</span>
+<span class="lineNum">     506 </span>            :       continue;
+<span class="lineNum">     507 </span>            :     }
+<span class="lineNum">     508 </span>            : 
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :     const Maybe&lt;ServiceWorkerDescriptor&gt;&amp; controller = source-&gt;GetController();</span>
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :     if (controller.isSome() &amp;&amp;</span>
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :         controller.ref().Scope() == serviceWorker.scope() &amp;&amp;</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :         controller.ref().Id() == serviceWorker.id()) {</span>
+<span class="lineNum">     513 </span>            :       continue;
+<span class="lineNum">     514 </span>            :     }
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span>            :     // TODO: This logic to determine if a service worker should control
+<span class="lineNum">     517 </span>            :     //       a particular client should be moved to the ServiceWorkerManager.
+<span class="lineNum">     518 </span>            :     //       This can't happen until the SWM is moved to the parent process,
+<span class="lineNum">     519 </span>            :     //       though.
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :     if (!source-&gt;ExecutionReady() ||</span>
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 :         source-&gt;Info().Type() == ClientType::Serviceworker ||</span>
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :         source-&gt;Info().URL().Find(serviceWorker.scope()) != 0) {</span>
+<span class="lineNum">     523 </span>            :       continue;
+<span class="lineNum">     524 </span>            :     }
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :     if (ServiceWorkerParentInterceptEnabled()) {</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :       promiseList-&gt;AddPromise(</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :         ClaimOnMainThread(source-&gt;Info(),</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :                           ServiceWorkerDescriptor(serviceWorker)));</span>
+<span class="lineNum">     530 </span>            :     } else {
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :       promiseList-&gt;AddPromise(source-&gt;StartOp(aArgs));</span>
+<span class="lineNum">     532 </span>            :     }
+<span class="lineNum">     533 </span>            :   }
+<span class="lineNum">     534 </span>            : 
+<span class="lineNum">     535 </span>            :   // Maybe finish the promise now in case we didn't find any matching clients.
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :   promiseList-&gt;MaybeFinish();</span>
+<span class="lineNum">     537 </span>            : 
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :   return promiseList-&gt;GetResultPromise();</span>
+<span class="lineNum">     539 </span>            : }
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span>            : RefPtr&lt;ClientOpPromise&gt;
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 : ClientManagerService::GetInfoAndState(const ClientGetInfoAndStateArgs&amp; aArgs)</span>
+<span class="lineNum">     543 </span>            : {
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :   RefPtr&lt;ClientOpPromise&gt; ref;</span>
+<span class="lineNum">     545 </span>            : 
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :   ClientSourceParent* source = FindSource(aArgs.id(), aArgs.principalInfo());</span>
+<span class="lineNum">     547 </span><span class="lineNoCov">          0 :   if (!source || !source-&gt;ExecutionReady()) {</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :     ref = ClientOpPromise::CreateAndReject(NS_ERROR_FAILURE, __func__);</span>
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :     return ref.forget();</span>
+<span class="lineNum">     550 </span>            :   }
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 :   return source-&gt;StartOp(aArgs);</span>
+<span class="lineNum">     553 </span>            : }
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span>            : namespace {
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span>            : class OpenWindowRunnable final : public Runnable
+<span class="lineNum">     558 </span>            : {
+<span class="lineNum">     559 </span>            :   RefPtr&lt;ClientOpPromise::Private&gt; mPromise;
+<span class="lineNum">     560 </span>            :   const ClientOpenWindowArgs mArgs;
+<span class="lineNum">     561 </span>            :   RefPtr&lt;ContentParent&gt; mSourceProcess;
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :   ~OpenWindowRunnable()</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :   {</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :     NS_ReleaseOnMainThreadSystemGroup(mSourceProcess.forget());</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span>            : public:
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :   OpenWindowRunnable(ClientOpPromise::Private* aPromise,</span>
+<span class="lineNum">     570 </span>            :                      const ClientOpenWindowArgs&amp; aArgs,
+<span class="lineNum">     571 </span>            :                      already_AddRefed&lt;ContentParent&gt; aSourceProcess)
+<span class="lineNum">     572 </span><span class="lineNoCov">          0 :     : Runnable(&quot;ClientManagerService::OpenWindowRunnable&quot;)</span>
+<span class="lineNum">     573 </span>            :     , mPromise(aPromise)
+<span class="lineNum">     574 </span>            :     , mArgs(aArgs)
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :     , mSourceProcess(aSourceProcess)</span>
+<span class="lineNum">     576 </span>            :   {
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :     MOZ_DIAGNOSTIC_ASSERT(mPromise);</span>
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     579 </span>            : 
+<span class="lineNum">     580 </span>            :   NS_IMETHOD
+<span class="lineNum">     581 </span><span class="lineNoCov">          0 :   Run() override</span>
+<span class="lineNum">     582 </span>            :   {
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :     if (!BrowserTabsRemoteAutostart()) {</span>
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 :       RefPtr&lt;ClientOpPromise&gt; p = ClientOpenWindowInCurrentProcess(mArgs);</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :       p-&gt;ChainTo(mPromise.forget(), __func__);</span>
+<span class="lineNum">     588 </span>            :       return NS_OK;
+<span class="lineNum">     589 </span>            :     }
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :     RefPtr&lt;ContentParent&gt; targetProcess;</span>
+<span class="lineNum">     592 </span>            : 
+<span class="lineNum">     593 </span>            :     // Possibly try to open the window in the same process that called
+<span class="lineNum">     594 </span>            :     // openWindow().  This is a temporary compat setting until the
+<span class="lineNum">     595 </span>            :     // multi-e10s service worker refactor is complete.
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :     if (Preferences::GetBool(&quot;dom.clients.openwindow_favors_same_process&quot;,</span>
+<span class="lineNum">     597 </span>            :                              false)) {
+<span class="lineNum">     598 </span><span class="lineNoCov">          0 :       targetProcess = mSourceProcess;</span>
+<span class="lineNum">     599 </span>            :     }
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span>            :     // Otherwise, use our normal remote process selection mechanism for
+<span class="lineNum">     602 </span>            :     // opening the window.  This will start a process if one is not
+<span class="lineNum">     603 </span>            :     // present.
+<span class="lineNum">     604 </span>            :     if (!targetProcess) {
+<span class="lineNum">     605 </span>            :       targetProcess =
+<span class="lineNum">     606 </span>            :         ContentParent::GetNewOrUsedBrowserProcess(NS_LITERAL_STRING(DEFAULT_REMOTE_TYPE),
+<span class="lineNum">     607 </span>            :                                                   ContentParent::GetInitialProcessPriority(nullptr),
+<span class="lineNum">     608 </span>            :                                                   nullptr);
+<span class="lineNum">     609 </span>            :     }
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span>            :     // But starting a process can failure for any number of reasons. Reject the
+<span class="lineNum">     612 </span>            :     // promise if we could not.
+<span class="lineNum">     613 </span>            :     if (!targetProcess) {
+<span class="lineNum">     614 </span>            :       mPromise-&gt;Reject(NS_ERROR_ABORT, __func__);
+<span class="lineNum">     615 </span>            :       mPromise = nullptr;
+<span class="lineNum">     616 </span>            :       return NS_OK;
+<span class="lineNum">     617 </span>            :     }
+<span class="lineNum">     618 </span>            : 
+<span class="lineNum">     619 </span>            :     ClientOpenWindowOpParent* actor =
+<span class="lineNum">     620 </span>            :       new ClientOpenWindowOpParent(mArgs, mPromise);
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            :     // If this fails the actor will be automatically destroyed which will
+<span class="lineNum">     623 </span>            :     // reject the promise.
+<span class="lineNum">     624 </span>            :     Unused &lt;&lt; targetProcess-&gt;SendPClientOpenWindowOpConstructor(actor, mArgs);
+<span class="lineNum">     625 </span>            : 
+<span class="lineNum">     626 </span>            :     return NS_OK;
+<span class="lineNum">     627 </span>            :   }
+<span class="lineNum">     628 </span>            : };
+<span class="lineNum">     629 </span>            : 
+<span class="lineNum">     630 </span>            : } // anonymous namespace
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span>            : RefPtr&lt;ClientOpPromise&gt;
+<span class="lineNum">     633 </span>            : ClientManagerService::OpenWindow(const ClientOpenWindowArgs&amp; aArgs,
+<span class="lineNum">     634 </span>            :                                  already_AddRefed&lt;ContentParent&gt; aSourceProcess)
+<span class="lineNum">     635 </span>            : {
+<span class="lineNum">     636 </span>            :   RefPtr&lt;ClientOpPromise::Private&gt; promise =
+<span class="lineNum">     637 </span>            :     new ClientOpPromise::Private(__func__);
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span>            :   nsCOMPtr&lt;nsIRunnable&gt; r = new OpenWindowRunnable(promise, aArgs,
+<span class="lineNum">     640 </span>            :                                                    std::move(aSourceProcess));
+<span class="lineNum">     641 </span>            :   MOZ_ALWAYS_SUCCEEDS(SystemGroup::Dispatch(TaskCategory::Other,
+<span class="lineNum">     642 </span>            :                                             r.forget()));
+<span class="lineNum">     643 </span>            : 
+<span class="lineNum">     644 </span>            :   RefPtr&lt;ClientOpPromise&gt; ref = promise;
+<span class="lineNum">     645 </span>            :   return ref.forget();
+<span class="lineNum">     646 </span>            : }
+<span class="lineNum">     647 </span>            : 
+<span class="lineNum">     648 </span>            : } // namespace dom
+<span class="lineNum">     649 </span>            : } // namespace mozilla
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

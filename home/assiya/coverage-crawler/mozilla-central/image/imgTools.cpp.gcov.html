@@ -1,0 +1,648 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - /home/assiya/coverage-crawler/mozilla-central/image/imgTools.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../../index.html">top level</a> - <a href="index.html">home/assiya/coverage-crawler/mozilla-central/image</a> - imgTools.cpp<span style="font-size: 80%;"> (source / <a href="imgTools.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">34</td>
+            <td class="headerCovTableEntry">214</td>
+            <td class="headerCovTableEntryLo">15.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-02 18:28:19</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-</a>
+<span class="lineNum">       2 </span>            :  *
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #include &quot;imgTools.h&quot;
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;DecodePool.h&quot;
+<span class="lineNum">      10 </span>            : #include &quot;gfxUtils.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/gfx/2D.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/gfx/Logging.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/RefPtr.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;nsCOMPtr.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;nsIDocument.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;nsError.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;imgLoader.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;imgICache.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;imgIContainer.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;imgIEncoder.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;nsNetUtil.h&quot; // for NS_NewBufferedInputStream
+<span class="lineNum">      22 </span>            : #include &quot;nsStreamUtils.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;nsStringStream.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;nsContentUtils.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;nsProxyRelease.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;ImageFactory.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;Image.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;ScriptedNotificationObserver.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;imgIScriptedNotificationObserver.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;gfxPlatform.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;jsfriendapi.h&quot;
+<span class="lineNum">      32 </span>            : 
+<span class="lineNum">      33 </span>            : using namespace mozilla::gfx;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : namespace mozilla {
+<span class="lineNum">      36 </span>            : namespace image {
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : namespace {
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : class ImageDecoderHelper final : public Runnable
+<span class="lineNum">      41 </span>            :                                , public nsIInputStreamCallback
+<span class="lineNum">      42 </span>            : {
+<span class="lineNum">      43 </span>            : public:
+<span class="lineNum">      44 </span>            :   NS_DECL_ISUPPORTS_INHERITED
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 :   ImageDecoderHelper(already_AddRefed&lt;image::Image&gt; aImage,</span>
+<span class="lineNum">      47 </span>            :                      already_AddRefed&lt;nsIInputStream&gt; aInputStream,
+<span class="lineNum">      48 </span>            :                      nsIEventTarget* aEventTarget,
+<span class="lineNum">      49 </span>            :                      imgIContainerCallback* aCallback,
+<span class="lineNum">      50 </span>            :                      nsIEventTarget* aCallbackEventTarget)
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :     : Runnable(&quot;ImageDecoderHelper&quot;)</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :     , mImage(std::move(aImage))</span>
+<span class="lineNum">      53 </span><span class="lineNoCov">          0 :     , mInputStream(std::move(aInputStream))</span>
+<span class="lineNum">      54 </span>            :     , mEventTarget(aEventTarget)
+<span class="lineNum">      55 </span>            :     , mCallback(aCallback)
+<span class="lineNum">      56 </span>            :     , mCallbackEventTarget(aCallbackEventTarget)
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 :     , mStatus(NS_OK)</span>
+<span class="lineNum">      58 </span>            :   {
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span>            :   NS_IMETHOD
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :   Run() override</span>
+<span class="lineNum">      64 </span>            :   {
+<span class="lineNum">      65 </span>            :     // This runnable is dispatched on the Image thread when reading data, but
+<span class="lineNum">      66 </span>            :     // at the end, it goes back to the main-thread in order to complete the
+<span class="lineNum">      67 </span>            :     // operation.
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :     if (NS_IsMainThread()) {</span>
+<span class="lineNum">      69 </span>            :       // Let the Image know we've sent all the data.
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :       mImage-&gt;OnImageDataComplete(nullptr, nullptr, mStatus, true);</span>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :       RefPtr&lt;ProgressTracker&gt; tracker = mImage-&gt;GetProgressTracker();</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">          0 :       tracker-&gt;SyncNotifyProgress(FLAG_LOAD_COMPLETE);</span>
+<span class="lineNum">      74 </span>            : 
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :       nsCOMPtr&lt;imgIContainer&gt; container;</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :       if (NS_SUCCEEDED(mStatus)) {</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 :         container = do_QueryInterface(mImage);</span>
+<span class="lineNum">      78 </span>            :       }
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :       mCallback-&gt;OnImageReady(container, mStatus);</span>
+<span class="lineNum">      81 </span>            :       return NS_OK;
+<span class="lineNum">      82 </span>            :     }
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span>            :     uint64_t length;
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 :     nsresult rv = mInputStream-&gt;Available(&amp;length);</span>
+<span class="lineNum">      86 </span><span class="lineNoCov">          0 :     if (rv == NS_BASE_STREAM_CLOSED) {</span>
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :       return OperationCompleted(NS_OK);</span>
+<span class="lineNum">      88 </span>            :     }
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :     if (NS_WARN_IF(NS_FAILED(rv))) {</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :       return OperationCompleted(rv);</span>
+<span class="lineNum">      92 </span>            :     }
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span>            :     // Nothing else to read, but maybe we just need to wait.
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :     if (length == 0) {</span>
+<span class="lineNum">      96 </span>            :       nsCOMPtr&lt;nsIAsyncInputStream&gt; asyncInputStream =
+<span class="lineNum">      97 </span><span class="lineNoCov">          0 :         do_QueryInterface(mInputStream);</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :       if (asyncInputStream) {</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :         rv = asyncInputStream-&gt;AsyncWait(this, 0, 0, mEventTarget);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         if (NS_WARN_IF(NS_FAILED(rv))) {</span>
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :           return OperationCompleted(rv);</span>
+<span class="lineNum">     102 </span>            :         }
+<span class="lineNum">     103 </span>            :         return NS_OK;
+<span class="lineNum">     104 </span>            :       }
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            :       // We really have nothing else to read.
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 :       if (length == 0) {</span>
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         return OperationCompleted(NS_OK);</span>
+<span class="lineNum">     109 </span>            :       }
+<span class="lineNum">     110 </span>            :     }
+<span class="lineNum">     111 </span>            : 
+<span class="lineNum">     112 </span>            :     // Send the source data to the Image.
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :     rv = mImage-&gt;OnImageDataAvailable(nullptr, nullptr, mInputStream, 0,</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :                                       uint32_t(length));</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :     if (NS_WARN_IF(NS_FAILED(rv))) {</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :       return OperationCompleted(rv);</span>
+<span class="lineNum">     117 </span>            :     }
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :     rv = mEventTarget-&gt;Dispatch(this, NS_DISPATCH_NORMAL);</span>
+<span class="lineNum">     120 </span><span class="lineNoCov">          0 :     if (NS_WARN_IF(NS_FAILED(rv))) {</span>
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :       return OperationCompleted(rv);</span>
+<span class="lineNum">     122 </span>            :     }
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            :     return NS_OK;
+<span class="lineNum">     125 </span>            :   }
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            :   NS_IMETHOD
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :   OnInputStreamReady(nsIAsyncInputStream* aAsyncInputStream) override</span>
+<span class="lineNum">     129 </span>            :   {
+<span class="lineNum">     130 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!NS_IsMainThread());</span>
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :     return Run();</span>
+<span class="lineNum">     132 </span>            :   }
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span>            :   nsresult
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :   OperationCompleted(nsresult aStatus)</span>
+<span class="lineNum">     136 </span>            :   {
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!NS_IsMainThread());</span>
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span><span class="lineNoCov">          0 :     mStatus = aStatus;</span>
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :     mCallbackEventTarget-&gt;Dispatch(this, NS_DISPATCH_NORMAL);</span>
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :     return NS_OK;</span>
+<span class="lineNum">     142 </span>            :   }
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span>            : private:
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :   ~ImageDecoderHelper()</span>
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 :   {</span>
+<span class="lineNum">     147 </span>            :     NS_ReleaseOnMainThreadSystemGroup(&quot;ImageDecoderHelper::mImage&quot;,
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :                                       mImage.forget());</span>
+<span class="lineNum">     149 </span>            :     NS_ReleaseOnMainThreadSystemGroup(&quot;ImageDecoderHelper::mCallback&quot;,
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                                       mCallback.forget());</span>
+<span class="lineNum">     151 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            :   RefPtr&lt;image::Image&gt; mImage;
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            :   nsCOMPtr&lt;nsIInputStream&gt; mInputStream;
+<span class="lineNum">     156 </span>            :   nsCOMPtr&lt;nsIEventTarget&gt; mEventTarget;
+<span class="lineNum">     157 </span>            :   nsCOMPtr&lt;imgIContainerCallback&gt; mCallback;
+<span class="lineNum">     158 </span>            :   nsCOMPtr&lt;nsIEventTarget&gt; mCallbackEventTarget;
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span>            :   nsresult mStatus;
+<span class="lineNum">     161 </span>            : };
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 : NS_IMPL_ISUPPORTS_INHERITED(ImageDecoderHelper, Runnable,</span>
+<span class="lineNum">     164 </span>            :                             nsIInputStreamCallback)
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span>            : } // anonymous
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span>            : /* ========== imgITools implementation ========== */
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span><span class="lineCov">         43 : NS_IMPL_ISUPPORTS(imgTools, imgITools)</span>
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span><span class="lineCov">          6 : imgTools::imgTools()</span>
+<span class="lineNum">     175 </span>            : {
+<span class="lineNum">     176 </span>            :   /* member initializers and constructor code */
+<span class="lineNum">     177 </span><span class="lineCov">          2 : }</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 : imgTools::~imgTools()</span>
+<span class="lineNum">     180 </span>            : {
+<span class="lineNum">     181 </span>            :   /* destructor code */
+<span class="lineNum">     182 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     183 </span>            : 
+<span class="lineNum">     184 </span>            : NS_IMETHODIMP
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 : imgTools::DecodeImageFromArrayBuffer(JS::HandleValue aArrayBuffer,</span>
+<span class="lineNum">     186 </span>            :                                      const nsACString&amp; aMimeType,
+<span class="lineNum">     187 </span>            :                                      JSContext* aCx,
+<span class="lineNum">     188 </span>            :                                      imgIContainer** aContainer)
+<span class="lineNum">     189 </span>            : {
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :   if (!aArrayBuffer.isObject()) {</span>
+<span class="lineNum">     191 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     192 </span>            :   }
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span>            :   JS::Rooted&lt;JSObject*&gt; obj(aCx,
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :                             js::UnwrapArrayBuffer(&amp;aArrayBuffer.toObject()));</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :   if (!obj) {</span>
+<span class="lineNum">     197 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     198 </span>            :   }
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :   uint8_t* bufferData = nullptr;</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :   uint32_t bufferLength = 0;</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :   bool isSharedMemory = false;</span>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span>            :   js::GetArrayBufferLengthAndData(obj, &amp;bufferLength, &amp;isSharedMemory,
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :                                   &amp;bufferData);</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :   return DecodeImageFromBuffer((char*)bufferData, bufferLength, aMimeType,</span>
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :                                aContainer);</span>
+<span class="lineNum">     208 </span>            : }
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span>            : NS_IMETHODIMP
+<span class="lineNum">     211 </span><span class="lineCov">          4 : imgTools::DecodeImageFromBuffer(const char* aBuffer, uint32_t aSize,</span>
+<span class="lineNum">     212 </span>            :                                 const nsACString&amp; aMimeType,
+<span class="lineNum">     213 </span>            :                                 imgIContainer** aContainer)
+<span class="lineNum">     214 </span>            : {
+<span class="lineNum">     215 </span><span class="lineCov">          4 :   MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     216 </span>            : 
+<span class="lineNum">     217 </span><span class="lineCov">          4 :   NS_ENSURE_ARG_POINTER(aBuffer);</span>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span>            :   // Create a new image container to hold the decoded data.
+<span class="lineNum">     220 </span><span class="lineCov">          4 :   nsAutoCString mimeType(aMimeType);</span>
+<span class="lineNum">     221 </span>            :   RefPtr&lt;image::Image&gt; image =
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :     ImageFactory::CreateAnonymousImage(mimeType, aSize);</span>
+<span class="lineNum">     223 </span><span class="lineCov">         12 :   RefPtr&lt;ProgressTracker&gt; tracker = image-&gt;GetProgressTracker();</span>
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span><span class="lineCov">          4 :   if (image-&gt;HasError()) {</span>
+<span class="lineNum">     226 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     227 </span>            :   }
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span>            :   // Let's create a temporary inputStream.
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIInputStream&gt; stream;</span>
+<span class="lineNum">     231 </span><span class="lineCov">         12 :   nsresult rv = NS_NewByteInputStream(getter_AddRefs(stream),</span>
+<span class="lineNum">     232 </span>            :                                       aBuffer, aSize,
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :                                       NS_ASSIGNMENT_DEPEND);</span>
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 :   NS_ENSURE_SUCCESS(rv, rv);</span>
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(stream);</span>
+<span class="lineNum">     236 </span><span class="lineCov">          4 :   MOZ_ASSERT(NS_InputStreamIsBuffered(stream));</span>
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :   rv = image-&gt;OnImageDataAvailable(nullptr, nullptr, stream, 0,</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :                                    aSize);</span>
+<span class="lineNum">     240 </span><span class="lineCov">          4 :   NS_ENSURE_SUCCESS(rv, rv);</span>
+<span class="lineNum">     241 </span>            : 
+<span class="lineNum">     242 </span>            :   // Let the Image know we've sent all the data.
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :   rv = image-&gt;OnImageDataComplete(nullptr, nullptr, NS_OK, true);</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :   tracker-&gt;SyncNotifyProgress(FLAG_LOAD_COMPLETE);</span>
+<span class="lineNum">     245 </span><span class="lineCov">          4 :   NS_ENSURE_SUCCESS(rv, rv);</span>
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            :   // All done.
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :   image.forget(aContainer);</span>
+<span class="lineNum">     249 </span><span class="lineCov">          4 :   return NS_OK;</span>
+<span class="lineNum">     250 </span>            : }
+<span class="lineNum">     251 </span>            : 
+<span class="lineNum">     252 </span>            : NS_IMETHODIMP
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 : imgTools::DecodeImageAsync(nsIInputStream* aInStr,</span>
+<span class="lineNum">     254 </span>            :                            const nsACString&amp; aMimeType,
+<span class="lineNum">     255 </span>            :                            imgIContainerCallback* aCallback,
+<span class="lineNum">     256 </span>            :                            nsIEventTarget* aEventTarget)
+<span class="lineNum">     257 </span>            : {
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :   NS_ENSURE_ARG_POINTER(aInStr);</span>
+<span class="lineNum">     261 </span><span class="lineNoCov">          0 :   NS_ENSURE_ARG_POINTER(aCallback);</span>
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :   NS_ENSURE_ARG_POINTER(aEventTarget);</span>
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            :   nsresult rv;
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span>            :   // Let's continuing the reading on a separate thread.
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :   DecodePool* decodePool = DecodePool::Singleton();</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(decodePool);</span>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :   RefPtr&lt;nsIEventTarget&gt; target = decodePool-&gt;GetIOEventTarget();</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :   NS_ENSURE_TRUE(target, NS_ERROR_FAILURE);</span>
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span>            :   // Prepare the input stream.
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIInputStream&gt; stream = aInStr;</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :   if (!NS_InputStreamIsBuffered(aInStr)) {</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :     nsCOMPtr&lt;nsIInputStream&gt; bufStream;</span>
+<span class="lineNum">     277 </span><span class="lineNoCov">          0 :     rv = NS_NewBufferedInputStream(getter_AddRefs(bufStream),</span>
+<span class="lineNum">     278 </span><span class="lineNoCov">          0 :                                    stream.forget(), 1024);</span>
+<span class="lineNum">     279 </span><span class="lineNoCov">          0 :     NS_ENSURE_SUCCESS(rv, rv);</span>
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :     stream = bufStream.forget();</span>
+<span class="lineNum">     281 </span>            :   }
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            :   // Create a new image container to hold the decoded data.
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :   nsAutoCString mimeType(aMimeType);</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :   RefPtr&lt;image::Image&gt; image = ImageFactory::CreateAnonymousImage(mimeType, 0);</span>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span>            :   // Already an error?
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :   if (image-&gt;HasError()) {</span>
+<span class="lineNum">     289 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     290 </span>            :   }
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span>            :   RefPtr&lt;ImageDecoderHelper&gt; helper =
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :     new ImageDecoderHelper(image.forget(), stream.forget(), target, aCallback,</span>
+<span class="lineNum">     294 </span><span class="lineNoCov">          0 :                            aEventTarget);</span>
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :   rv = target-&gt;Dispatch(helper.forget(), NS_DISPATCH_NORMAL);</span>
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :   NS_ENSURE_SUCCESS(rv, rv);</span>
+<span class="lineNum">     297 </span>            : 
+<span class="lineNum">     298 </span>            :   return NS_OK;
+<span class="lineNum">     299 </span>            : }
+<span class="lineNum">     300 </span>            : 
+<span class="lineNum">     301 </span>            : /**
+<span class="lineNum">     302 </span>            :  * This takes a DataSourceSurface rather than a SourceSurface because some
+<span class="lineNum">     303 </span>            :  * of the callers have a DataSourceSurface and we don't want to call
+<span class="lineNum">     304 </span>            :  * GetDataSurface on such surfaces since that may incure a conversion to
+<span class="lineNum">     305 </span>            :  * SurfaceType::DATA which we don't need.
+<span class="lineNum">     306 </span>            :  */
+<span class="lineNum">     307 </span>            : static nsresult
+<span class="lineNum">     308 </span><span class="lineCov">          1 : EncodeImageData(DataSourceSurface* aDataSurface,</span>
+<span class="lineNum">     309 </span>            :                 DataSourceSurface::ScopedMap&amp; aMap,
+<span class="lineNum">     310 </span>            :                 const nsACString&amp; aMimeType,
+<span class="lineNum">     311 </span>            :                 const nsAString&amp; aOutputOptions,
+<span class="lineNum">     312 </span>            :                 nsIInputStream** aStream)
+<span class="lineNum">     313 </span>            : {
+<span class="lineNum">     314 </span><span class="lineCov">          1 :   MOZ_ASSERT(aDataSurface-&gt;GetFormat() == SurfaceFormat::B8G8R8A8 ||</span>
+<span class="lineNum">     315 </span>            :              aDataSurface-&gt;GetFormat() == SurfaceFormat::B8G8R8X8,
+<span class="lineNum">     316 </span>            :              &quot;We're assuming B8G8R8A8/X8&quot;);
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span>            :   // Get an image encoder for the media type
+<span class="lineNum">     319 </span>            :   nsAutoCString encoderCID(
+<span class="lineNum">     320 </span><span class="lineCov">          4 :     NS_LITERAL_CSTRING(&quot;@mozilla.org/image/encoder;2?type=&quot;) + aMimeType);</span>
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;imgIEncoder&gt; encoder = do_CreateInstance(encoderCID.get());</span>
+<span class="lineNum">     323 </span><span class="lineCov">          1 :   if (!encoder) {</span>
+<span class="lineNum">     324 </span>            :     return NS_IMAGELIB_ERROR_NO_ENCODER;
+<span class="lineNum">     325 </span>            :   }
+<span class="lineNum">     326 </span>            : 
+<span class="lineNum">     327 </span><span class="lineNoCov">          0 :   IntSize size = aDataSurface-&gt;GetSize();</span>
+<span class="lineNum">     328 </span><span class="lineCov">          1 :   uint32_t dataLength = aMap.GetStride() * size.height;</span>
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span>            :   // Encode the bitmap
+<span class="lineNum">     331 </span><span class="lineCov">          3 :   nsresult rv = encoder-&gt;InitFromData(aMap.GetData(),</span>
+<span class="lineNum">     332 </span>            :                                       dataLength,
+<span class="lineNum">     333 </span><span class="lineCov">          1 :                                       size.width,</span>
+<span class="lineNum">     334 </span>            :                                       size.height,
+<span class="lineNum">     335 </span><span class="lineCov">          1 :                                       aMap.GetStride(),</span>
+<span class="lineNum">     336 </span>            :                                       imgIEncoder::INPUT_FORMAT_HOSTARGB,
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :                                       aOutputOptions);</span>
+<span class="lineNum">     338 </span><span class="lineCov">          1 :   NS_ENSURE_SUCCESS(rv, rv);</span>
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :   encoder.forget(aStream);</span>
+<span class="lineNum">     341 </span><span class="lineCov">          1 :   return NS_OK;</span>
+<span class="lineNum">     342 </span>            : }
+<span class="lineNum">     343 </span>            : 
+<span class="lineNum">     344 </span>            : static nsresult
+<span class="lineNum">     345 </span><span class="lineCov">          1 : EncodeImageData(DataSourceSurface* aDataSurface,</span>
+<span class="lineNum">     346 </span>            :                 const nsACString&amp; aMimeType,
+<span class="lineNum">     347 </span>            :                 const nsAString&amp; aOutputOptions,
+<span class="lineNum">     348 </span>            :                 nsIInputStream** aStream)
+<span class="lineNum">     349 </span>            : {
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :   DataSourceSurface::ScopedMap map(aDataSurface, DataSourceSurface::READ);</span>
+<span class="lineNum">     351 </span><span class="lineCov">          1 :   if (!map.IsMapped()) {</span>
+<span class="lineNum">     352 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     353 </span>            :   }
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineCov">          1 :   return EncodeImageData(aDataSurface, map, aMimeType, aOutputOptions, aStream);</span>
+<span class="lineNum">     356 </span>            : }
+<span class="lineNum">     357 </span>            : 
+<span class="lineNum">     358 </span>            : NS_IMETHODIMP
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 : imgTools::EncodeImage(imgIContainer* aContainer,</span>
+<span class="lineNum">     360 </span>            :                       const nsACString&amp; aMimeType,
+<span class="lineNum">     361 </span>            :                       const nsAString&amp; aOutputOptions,
+<span class="lineNum">     362 </span>            :                       nsIInputStream** aStream)
+<span class="lineNum">     363 </span>            : {
+<span class="lineNum">     364 </span>            :   // Use frame 0 from the image container.
+<span class="lineNum">     365 </span>            :   RefPtr&lt;SourceSurface&gt; frame =
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :     aContainer-&gt;GetFrame(imgIContainer::FRAME_FIRST,</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :                          imgIContainer::FLAG_SYNC_DECODE);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :   NS_ENSURE_TRUE(frame, NS_ERROR_FAILURE);</span>
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :   RefPtr&lt;DataSourceSurface&gt; dataSurface;</span>
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :   if (frame-&gt;GetFormat() == SurfaceFormat::B8G8R8A8 ||</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :       frame-&gt;GetFormat() == SurfaceFormat::B8G8R8X8) {</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :     dataSurface = frame-&gt;GetDataSurface();</span>
+<span class="lineNum">     375 </span>            :   } else {
+<span class="lineNum">     376 </span>            :     // Convert format to SurfaceFormat::B8G8R8A8
+<span class="lineNum">     377 </span>            :     dataSurface = gfxUtils::
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :       CopySurfaceToDataSourceSurfaceWithFormat(frame,</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :                                                SurfaceFormat::B8G8R8A8);</span>
+<span class="lineNum">     380 </span>            :   }
+<span class="lineNum">     381 </span>            : 
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :   NS_ENSURE_TRUE(dataSurface, NS_ERROR_FAILURE);</span>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :   return EncodeImageData(dataSurface, aMimeType, aOutputOptions, aStream);</span>
+<span class="lineNum">     385 </span>            : }
+<span class="lineNum">     386 </span>            : 
+<span class="lineNum">     387 </span>            : NS_IMETHODIMP
+<span class="lineNum">     388 </span><span class="lineCov">          1 : imgTools::EncodeScaledImage(imgIContainer* aContainer,</span>
+<span class="lineNum">     389 </span>            :                             const nsACString&amp; aMimeType,
+<span class="lineNum">     390 </span>            :                             int32_t aScaledWidth,
+<span class="lineNum">     391 </span>            :                             int32_t aScaledHeight,
+<span class="lineNum">     392 </span>            :                             const nsAString&amp; aOutputOptions,
+<span class="lineNum">     393 </span>            :                             nsIInputStream** aStream)
+<span class="lineNum">     394 </span>            : {
+<span class="lineNum">     395 </span><span class="lineCov">          1 :   NS_ENSURE_ARG(aScaledWidth &gt;= 0 &amp;&amp; aScaledHeight &gt;= 0);</span>
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span>            :   // If no scaled size is specified, we'll just encode the image at its
+<span class="lineNum">     398 </span>            :   // original size (no scaling).
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :   if (aScaledWidth == 0 &amp;&amp; aScaledHeight == 0) {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :     return EncodeImage(aContainer, aMimeType, aOutputOptions, aStream);</span>
+<span class="lineNum">     401 </span>            :   }
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span>            :   // Retrieve the image's size.
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :   int32_t imageWidth = 0;</span>
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 :   int32_t imageHeight = 0;</span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :   aContainer-&gt;GetWidth(&amp;imageWidth);</span>
+<span class="lineNum">     407 </span><span class="lineCov">          1 :   aContainer-&gt;GetHeight(&amp;imageHeight);</span>
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span>            :   // If the given width or height is zero we'll replace it with the image's
+<span class="lineNum">     410 </span>            :   // original dimensions.
+<span class="lineNum">     411 </span>            :   IntSize scaledSize(aScaledWidth == 0 ? imageWidth : aScaledWidth,
+<span class="lineNum">     412 </span><span class="lineCov">          4 :                      aScaledHeight == 0 ? imageHeight : aScaledHeight);</span>
+<span class="lineNum">     413 </span>            : 
+<span class="lineNum">     414 </span>            :   // Use frame 0 from the image container.
+<span class="lineNum">     415 </span>            :   RefPtr&lt;SourceSurface&gt; frame =
+<span class="lineNum">     416 </span><span class="lineCov">          2 :     aContainer-&gt;GetFrameAtSize(scaledSize,</span>
+<span class="lineNum">     417 </span>            :                                imgIContainer::FRAME_FIRST,
+<span class="lineNum">     418 </span>            :                                imgIContainer::FLAG_HIGH_QUALITY_SCALING |
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :                                imgIContainer::FLAG_SYNC_DECODE);</span>
+<span class="lineNum">     420 </span><span class="lineCov">          1 :   NS_ENSURE_TRUE(frame, NS_ERROR_FAILURE);</span>
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span>            :   // If the given surface is the right size/format, we can encode it directly.
+<span class="lineNum">     423 </span><span class="lineNoCov">          0 :   if (scaledSize == frame-&gt;GetSize() &amp;&amp;</span>
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :       (frame-&gt;GetFormat() == SurfaceFormat::B8G8R8A8 ||</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :        frame-&gt;GetFormat() == SurfaceFormat::B8G8R8X8)) {</span>
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :     RefPtr&lt;DataSourceSurface&gt; dataSurface = frame-&gt;GetDataSurface();</span>
+<span class="lineNum">     427 </span><span class="lineNoCov">          0 :     if (dataSurface) {</span>
+<span class="lineNum">     428 </span><span class="lineCov">          1 :       return EncodeImageData(dataSurface, aMimeType, aOutputOptions, aStream);</span>
+<span class="lineNum">     429 </span>            :     }
+<span class="lineNum">     430 </span>            :   }
+<span class="lineNum">     431 </span>            : 
+<span class="lineNum">     432 </span>            :   // Otherwise we need to scale it using a draw target.
+<span class="lineNum">     433 </span>            :   RefPtr&lt;DataSourceSurface&gt; dataSurface =
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :     Factory::CreateDataSourceSurface(scaledSize, SurfaceFormat::B8G8R8A8);</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :   if (NS_WARN_IF(!dataSurface)) {</span>
+<span class="lineNum">     436 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     437 </span>            :   }
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :   DataSourceSurface::ScopedMap map(dataSurface, DataSourceSurface::READ_WRITE);</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :   if (!map.IsMapped()) {</span>
+<span class="lineNum">     441 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     442 </span>            :   }
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span>            :   RefPtr&lt;DrawTarget&gt; dt =
+<span class="lineNum">     445 </span><span class="lineNoCov">          0 :     Factory::CreateDrawTargetForData(BackendType::SKIA,</span>
+<span class="lineNum">     446 </span>            :                                      map.GetData(),
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :                                      dataSurface-&gt;GetSize(),</span>
+<span class="lineNum">     448 </span>            :                                      map.GetStride(),
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :                                      SurfaceFormat::B8G8R8A8);</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :   if (!dt) {</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :     gfxWarning() &lt;&lt; &quot;imgTools::EncodeImage failed in CreateDrawTargetForData&quot;;</span>
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :     return NS_ERROR_OUT_OF_MEMORY;</span>
+<span class="lineNum">     453 </span>            :   }
+<span class="lineNum">     454 </span>            : 
+<span class="lineNum">     455 </span><span class="lineNoCov">          0 :   IntSize frameSize = frame-&gt;GetSize();</span>
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :   dt-&gt;DrawSurface(frame,</span>
+<span class="lineNum">     457 </span><span class="lineNoCov">          0 :                   Rect(0, 0, scaledSize.width, scaledSize.height),</span>
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                   Rect(0, 0, frameSize.width, frameSize.height),</span>
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                   DrawSurfaceOptions(),</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                   DrawOptions(1.0f, CompositionOp::OP_SOURCE));</span>
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :   return EncodeImageData(dataSurface, map, aMimeType, aOutputOptions, aStream);</span>
+<span class="lineNum">     463 </span>            : }
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span>            : NS_IMETHODIMP
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 : imgTools::EncodeCroppedImage(imgIContainer* aContainer,</span>
+<span class="lineNum">     467 </span>            :                              const nsACString&amp; aMimeType,
+<span class="lineNum">     468 </span>            :                              int32_t aOffsetX,
+<span class="lineNum">     469 </span>            :                              int32_t aOffsetY,
+<span class="lineNum">     470 </span>            :                              int32_t aWidth,
+<span class="lineNum">     471 </span>            :                              int32_t aHeight,
+<span class="lineNum">     472 </span>            :                              const nsAString&amp; aOutputOptions,
+<span class="lineNum">     473 </span>            :                              nsIInputStream** aStream)
+<span class="lineNum">     474 </span>            : {
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :   NS_ENSURE_ARG(aOffsetX &gt;= 0 &amp;&amp; aOffsetY &gt;= 0 &amp;&amp; aWidth &gt;= 0 &amp;&amp; aHeight &gt;= 0);</span>
+<span class="lineNum">     476 </span>            : 
+<span class="lineNum">     477 </span>            :   // Offsets must be zero when no width and height are given or else we're out
+<span class="lineNum">     478 </span>            :   // of bounds.
+<span class="lineNum">     479 </span><span class="lineNoCov">          0 :   NS_ENSURE_ARG(aWidth + aHeight &gt; 0 || aOffsetX + aOffsetY == 0);</span>
+<span class="lineNum">     480 </span>            : 
+<span class="lineNum">     481 </span>            :   // If no size is specified then we'll preserve the image's original dimensions
+<span class="lineNum">     482 </span>            :   // and don't need to crop.
+<span class="lineNum">     483 </span><span class="lineNoCov">          0 :   if (aWidth == 0 &amp;&amp; aHeight == 0) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :     return EncodeImage(aContainer, aMimeType, aOutputOptions, aStream);</span>
+<span class="lineNum">     485 </span>            :   }
+<span class="lineNum">     486 </span>            : 
+<span class="lineNum">     487 </span>            :   // Use frame 0 from the image container.
+<span class="lineNum">     488 </span>            :   RefPtr&lt;SourceSurface&gt; frame =
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :     aContainer-&gt;GetFrame(imgIContainer::FRAME_FIRST,</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :                          imgIContainer::FLAG_SYNC_DECODE);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :   NS_ENSURE_TRUE(frame, NS_ERROR_FAILURE);</span>
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span><span class="lineNoCov">          0 :   int32_t frameWidth = frame-&gt;GetSize().width;</span>
+<span class="lineNum">     494 </span><span class="lineNoCov">          0 :   int32_t frameHeight = frame-&gt;GetSize().height;</span>
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span>            :   // If the given width or height is zero we'll replace it with the image's
+<span class="lineNum">     497 </span>            :   // original dimensions.
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :   if (aWidth == 0) {</span>
+<span class="lineNum">     499 </span>            :     aWidth = frameWidth;
+<span class="lineNum">     500 </span><span class="lineNoCov">          0 :   } else if (aHeight == 0) {</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :     aHeight = frameHeight;</span>
+<span class="lineNum">     502 </span>            :   }
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span>            :   // Check that the given crop rectangle is within image bounds.
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :   NS_ENSURE_ARG(frameWidth &gt;= aOffsetX + aWidth &amp;&amp;</span>
+<span class="lineNum">     506 </span>            :                 frameHeight &gt;= aOffsetY + aHeight);
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span>            :   RefPtr&lt;DataSourceSurface&gt; dataSurface =
+<span class="lineNum">     509 </span><span class="lineNoCov">          0 :     Factory::CreateDataSourceSurface(IntSize(aWidth, aHeight),</span>
+<span class="lineNum">     510 </span>            :                                      SurfaceFormat::B8G8R8A8,
+<span class="lineNum">     511 </span><span class="lineNoCov">          0 :                                      /* aZero = */ true);</span>
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :   if (NS_WARN_IF(!dataSurface)) {</span>
+<span class="lineNum">     513 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     514 </span>            :   }
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :   DataSourceSurface::ScopedMap map(dataSurface, DataSourceSurface::READ_WRITE);</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :   if (!map.IsMapped()) {</span>
+<span class="lineNum">     518 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     519 </span>            :   }
+<span class="lineNum">     520 </span>            : 
+<span class="lineNum">     521 </span>            :   RefPtr&lt;DrawTarget&gt; dt =
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :     Factory::CreateDrawTargetForData(BackendType::SKIA,</span>
+<span class="lineNum">     523 </span>            :                                      map.GetData(),
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :                                      dataSurface-&gt;GetSize(),</span>
+<span class="lineNum">     525 </span>            :                                      map.GetStride(),
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :                                      SurfaceFormat::B8G8R8A8);</span>
+<span class="lineNum">     527 </span><span class="lineNoCov">          0 :   if (!dt) {</span>
+<span class="lineNum">     528 </span><span class="lineNoCov">          0 :     gfxWarning() &lt;&lt;</span>
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :       &quot;imgTools::EncodeCroppedImage failed in CreateDrawTargetForData&quot;;</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :     return NS_ERROR_OUT_OF_MEMORY;</span>
+<span class="lineNum">     531 </span>            :   }
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :   dt-&gt;CopySurface(frame,</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :                   IntRect(aOffsetX, aOffsetY, aWidth, aHeight),</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :                   IntPoint(0, 0));</span>
+<span class="lineNum">     535 </span>            : 
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :   return EncodeImageData(dataSurface, map, aMimeType, aOutputOptions, aStream);</span>
+<span class="lineNum">     537 </span>            : }
+<span class="lineNum">     538 </span>            : 
+<span class="lineNum">     539 </span>            : NS_IMETHODIMP
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 : imgTools::CreateScriptedObserver(imgIScriptedNotificationObserver* aInner,</span>
+<span class="lineNum">     541 </span>            :                                  imgINotificationObserver** aObserver)
+<span class="lineNum">     542 </span>            : {
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :   NS_ADDREF(*aObserver = new ScriptedNotificationObserver(aInner));</span>
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :   return NS_OK;</span>
+<span class="lineNum">     545 </span>            : }
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span>            : NS_IMETHODIMP
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 : imgTools::GetImgLoaderForDocument(nsIDocument* aDoc, imgILoader** aLoader)</span>
+<span class="lineNum">     549 </span>            : {
+<span class="lineNum">     550 </span><span class="lineNoCov">          0 :   NS_IF_ADDREF(*aLoader = nsContentUtils::GetImgLoaderForDocument(aDoc));</span>
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :   return NS_OK;</span>
+<span class="lineNum">     552 </span>            : }
+<span class="lineNum">     553 </span>            : 
+<span class="lineNum">     554 </span>            : NS_IMETHODIMP
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 : imgTools::GetImgCacheForDocument(nsIDocument* aDoc, imgICache** aCache)</span>
+<span class="lineNum">     556 </span>            : {
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;imgILoader&gt; loader;</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :   nsresult rv = GetImgLoaderForDocument(aDoc, getter_AddRefs(loader));</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :   NS_ENSURE_SUCCESS(rv, rv);</span>
+<span class="lineNum">     560 </span>            :   return CallQueryInterface(loader, aCache);
+<span class="lineNum">     561 </span>            : }
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span>            : } // namespace image
+<span class="lineNum">     564 </span>            : } // namespace mozilla
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
