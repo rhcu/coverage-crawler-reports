@@ -1,0 +1,1555 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - js/src/vm/Iteration.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">js/src/vm</a> - Iteration.cpp<span style="font-size: 80%;"> (source / <a href="Iteration.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">198</td>
+            <td class="headerCovTableEntry">502</td>
+            <td class="headerCovTableEntryLo">39.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:42:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-</a>
+<span class="lineNum">       2 </span>            :  * vim: set ts=8 sts=4 et sw=4 tw=99:
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : /* JavaScript iterators. */
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;vm/Iteration.h&quot;
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/DebugOnly.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/Likely.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/Maybe.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/MemoryReporting.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/PodOperations.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/Unused.h&quot;
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : #include &lt;algorithm&gt;
+<span class="lineNum">      19 </span>            : #include &lt;new&gt;
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : #include &quot;jstypes.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;jsutil.h&quot;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : #include &quot;builtin/Array.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;ds/Sort.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;gc/FreeOp.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;gc/Marking.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;js/Proxy.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;vm/BytecodeUtil.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;vm/GeneratorObject.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;vm/GlobalObject.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;vm/Interpreter.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;vm/JSAtom.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;vm/JSContext.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;vm/JSObject.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;vm/JSScript.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;vm/Shape.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;vm/TypedArrayObject.h&quot;
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : #include &quot;vm/Compartment-inl.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;vm/JSScript-inl.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;vm/NativeObject-inl.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;vm/ReceiverGuard-inl.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;vm/Stack-inl.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;vm/StringType-inl.h&quot;
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : using namespace js;
+<span class="lineNum">      48 </span>            : using namespace js::gc;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : using mozilla::DebugOnly;
+<span class="lineNum">      51 </span>            : using mozilla::Maybe;
+<span class="lineNum">      52 </span>            : using mozilla::PodCopy;
+<span class="lineNum">      53 </span>            : using mozilla::PodEqual;
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : typedef Rooted&lt;PropertyIteratorObject*&gt; RootedPropertyIteratorObject;
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span>            : static const gc::AllocKind ITERATOR_FINALIZE_KIND = gc::AllocKind::OBJECT2_BACKGROUND;
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : void
+<span class="lineNum">      60 </span><span class="lineCov">          3 : NativeIterator::trace(JSTracer* trc)</span>
+<span class="lineNum">      61 </span>            : {
+<span class="lineNum">      62 </span><span class="lineCov">          6 :     TraceNullableEdge(trc, &amp;objectBeingIterated_, &quot;objectBeingIterated_&quot;);</span>
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            :     // The SuppressDeletedPropertyHelper loop can GC, so make sure that if the
+<span class="lineNum">      65 </span>            :     // GC removes any elements from the list, it won't remove this one.
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 :     if (iterObj_)</span>
+<span class="lineNum">      67 </span><span class="lineCov">          3 :         TraceManuallyBarrieredEdge(trc, &amp;iterObj_, &quot;iterObj&quot;);</span>
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span>            :     std::for_each(guardsBegin(), guardsEnd(),
+<span class="lineNum">      70 </span>            :                   [trc](HeapReceiverGuard&amp; guard) {
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :                       guard.trace(trc);</span>
+<span class="lineNum">      72 </span><span class="lineCov">          9 :                   });</span>
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span><span class="lineCov">          6 :     GCPtrFlatString* begin = MOZ_LIKELY(isInitialized()) ? propertiesBegin() : propertyCursor_;</span>
+<span class="lineNum">      75 </span>            :     std::for_each(begin, propertiesEnd(),
+<span class="lineNum">      76 </span><span class="lineCov">         24 :                   [trc](GCPtrFlatString&amp; prop) {</span>
+<span class="lineNum">      77 </span>            :                       // Properties begin life non-null and never *become*
+<span class="lineNum">      78 </span>            :                       // null.  (Deletion-suppression will shift trailing
+<span class="lineNum">      79 </span>            :                       // properties over a deleted property in the properties
+<span class="lineNum">      80 </span>            :                       // array, but it doesn't null them out.)
+<span class="lineNum">      81 </span><span class="lineNoCov">          0 :                       TraceEdge(trc, &amp;prop, &quot;prop&quot;);</span>
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 :                   });</span>
+<span class="lineNum">      83 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span>            : typedef HashSet&lt;jsid, DefaultHasher&lt;jsid&gt;&gt; IdSet;
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : template &lt;bool CheckForDuplicates&gt;
+<span class="lineNum">      88 </span>            : static inline bool
+<span class="lineNum">      89 </span><span class="lineCov">      18034 : Enumerate(JSContext* cx, HandleObject pobj, jsid id,</span>
+<span class="lineNum">      90 </span>            :           bool enumerable, unsigned flags, Maybe&lt;IdSet&gt;&amp; ht, AutoIdVector* props)
+<span class="lineNum">      91 </span>            : {
+<span class="lineNum">      92 </span>            :     if (CheckForDuplicates) {
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :         if (!ht) {</span>
+<span class="lineNum">      94 </span><span class="lineCov">         95 :             ht.emplace(cx);</span>
+<span class="lineNum">      95 </span>            :             // Most of the time there are only a handful of entries.
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :             if (!ht-&gt;init(5))</span>
+<span class="lineNum">      97 </span><span class="lineCov">          5 :                 return false;</span>
+<span class="lineNum">      98 </span>            :         }
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            :         // If we've already seen this, we definitely won't add it.
+<span class="lineNum">     101 </span><span class="lineNoCov">          0 :         IdSet::AddPtr p = ht-&gt;lookupForAdd(id);</span>
+<span class="lineNum">     102 </span><span class="lineCov">       1870 :         if (MOZ_UNLIKELY(!!p))</span>
+<span class="lineNum">     103 </span>            :             return true;
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span>            :         // It's not necessary to add properties to the hash table at the end of
+<span class="lineNum">     106 </span>            :         // the prototype chain, but custom enumeration behaviors might return
+<span class="lineNum">     107 </span>            :         // duplicated properties, so always add in such cases.
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :         if (pobj-&gt;is&lt;ProxyObject&gt;() ||</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :             pobj-&gt;staticPrototype() ||</span>
+<span class="lineNum">     110 </span><span class="lineCov">       2468 :             pobj-&gt;getClass()-&gt;getNewEnumerate())</span>
+<span class="lineNum">     111 </span>            :         {
+<span class="lineNum">     112 </span><span class="lineCov">       1262 :             if (!ht-&gt;add(p, id))</span>
+<span class="lineNum">     113 </span>            :                 return false;
+<span class="lineNum">     114 </span>            :         }
+<span class="lineNum">     115 </span>            :     }
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineCov">      19265 :     if (!enumerable &amp;&amp; !(flags &amp; JSITER_HIDDEN))</span>
+<span class="lineNum">     118 </span>            :         return true;
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            :     // Symbol-keyed properties and nonenumerable properties are skipped unless
+<span class="lineNum">     121 </span>            :     // the caller specifically asks for them. A caller can also filter out
+<span class="lineNum">     122 </span>            :     // non-symbols by asking for JSITER_SYMBOLSONLY.
+<span class="lineNum">     123 </span>            :     if (JSID_IS_SYMBOL(id) ? !(flags &amp; JSITER_SYMBOLS) : (flags &amp; JSITER_SYMBOLSONLY))
+<span class="lineNum">     124 </span>            :         return true;
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">      18546 :     return props-&gt;append(id);</span>
+<span class="lineNum">     127 </span>            : }
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            : template &lt;bool CheckForDuplicates&gt;
+<span class="lineNum">     130 </span>            : static bool
+<span class="lineNum">     131 </span><span class="lineCov">        181 : EnumerateExtraProperties(JSContext* cx, HandleObject obj, unsigned flags, Maybe&lt;IdSet&gt;&amp; ht,</span>
+<span class="lineNum">     132 </span>            :                          AutoIdVector* props)
+<span class="lineNum">     133 </span>            : {
+<span class="lineNum">     134 </span><span class="lineCov">        543 :     MOZ_ASSERT(obj-&gt;getClass()-&gt;getNewEnumerate());</span>
+<span class="lineNum">     135 </span>            : 
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :     AutoIdVector properties(cx);</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :     bool enumerableOnly = !(flags &amp; JSITER_HIDDEN);</span>
+<span class="lineNum">     138 </span><span class="lineCov">        543 :     if (!obj-&gt;getClass()-&gt;getNewEnumerate()(cx, obj, properties, enumerableOnly))</span>
+<span class="lineNum">     139 </span>            :         return false;
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :     RootedId id(cx);</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :     for (size_t n = 0; n &lt; properties.length(); n++) {</span>
+<span class="lineNum">     143 </span><span class="lineCov">       1173 :         id = properties[n];</span>
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span>            :         // The enumerate hook does not indicate whether the properties
+<span class="lineNum">     146 </span>            :         // it returns are enumerable or not. Since we already passed
+<span class="lineNum">     147 </span>            :         // `enumerableOnly` to the hook to filter out non-enumerable
+<span class="lineNum">     148 </span>            :         // properties, it doesn't really matter what we pass here.
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :         bool enumerable = true;</span>
+<span class="lineNum">     150 </span><span class="lineCov">        782 :         if (!Enumerate&lt;CheckForDuplicates&gt;(cx, obj, id, enumerable, flags, ht, props))</span>
+<span class="lineNum">     151 </span>            :             return false;
+<span class="lineNum">     152 </span>            :     }
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span>            :     return true;
+<span class="lineNum">     155 </span>            : }
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span>            : static bool
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 : SortComparatorIntegerIds(jsid a, jsid b, bool* lessOrEqualp)</span>
+<span class="lineNum">     159 </span>            : {
+<span class="lineNum">     160 </span>            :     uint32_t indexA, indexB;
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :     MOZ_ALWAYS_TRUE(IdIsIndex(a, &amp;indexA));</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :     MOZ_ALWAYS_TRUE(IdIsIndex(b, &amp;indexB));</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :     *lessOrEqualp = (indexA &lt;= indexB);</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :     return true;</span>
+<span class="lineNum">     165 </span>            : }
+<span class="lineNum">     166 </span>            : 
+<span class="lineNum">     167 </span>            : template &lt;bool CheckForDuplicates&gt;
+<span class="lineNum">     168 </span>            : static bool
+<span class="lineNum">     169 </span><span class="lineCov">       6529 : EnumerateNativeProperties(JSContext* cx, HandleNativeObject pobj, unsigned flags, Maybe&lt;IdSet&gt;&amp; ht,</span>
+<span class="lineNum">     170 </span>            :                           AutoIdVector* props, Handle&lt;UnboxedPlainObject*&gt; unboxed = nullptr)
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span>            :     bool enumerateSymbols;
+<span class="lineNum">     173 </span><span class="lineCov">       6529 :     if (flags &amp; JSITER_SYMBOLSONLY) {</span>
+<span class="lineNum">     174 </span>            :         enumerateSymbols = true;
+<span class="lineNum">     175 </span>            :     } else {
+<span class="lineNum">     176 </span>            :         /* Collect any dense elements from this object. */
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :         size_t firstElemIndex = props-&gt;length();</span>
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :         size_t initlen = pobj-&gt;getDenseInitializedLength();</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :         const Value* vp = pobj-&gt;getDenseElements();</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :         bool hasHoles = false;</span>
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :         for (size_t i = 0; i &lt; initlen; ++i, ++vp) {</span>
+<span class="lineNum">     182 </span><span class="lineCov">       2689 :             if (vp-&gt;isMagic(JS_ELEMENTS_HOLE)) {</span>
+<span class="lineNum">     183 </span>            :                 hasHoles = true;
+<span class="lineNum">     184 </span>            :             } else {
+<span class="lineNum">     185 </span>            :                 /* Dense arrays never get so large that i would not fit into an integer id. */
+<span class="lineNum">     186 </span><span class="lineCov">       7779 :                 if (!Enumerate&lt;CheckForDuplicates&gt;(cx, pobj, INT_TO_JSID(i),</span>
+<span class="lineNum">     187 </span>            :                                                    /* enumerable = */ true, flags, ht, props))
+<span class="lineNum">     188 </span>            :                 {
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :                     return false;</span>
+<span class="lineNum">     190 </span>            :                 }
+<span class="lineNum">     191 </span>            :             }
+<span class="lineNum">     192 </span>            :         }
+<span class="lineNum">     193 </span>            : 
+<span class="lineNum">     194 </span>            :         /* Collect any typed array or shared typed array elements from this object. */
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         if (pobj-&gt;is&lt;TypedArrayObject&gt;()) {</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :             size_t len = pobj-&gt;as&lt;TypedArrayObject&gt;().length();</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :             for (size_t i = 0; i &lt; len; i++) {</span>
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :                 if (!Enumerate&lt;CheckForDuplicates&gt;(cx, pobj, INT_TO_JSID(i),</span>
+<span class="lineNum">     199 </span>            :                                                    /* enumerable = */ true, flags, ht, props))
+<span class="lineNum">     200 </span>            :                 {
+<span class="lineNum">     201 </span>            :                     return false;
+<span class="lineNum">     202 </span>            :                 }
+<span class="lineNum">     203 </span>            :             }
+<span class="lineNum">     204 </span>            :         }
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span>            :         // Collect any sparse elements from this object.
+<span class="lineNum">     207 </span><span class="lineNoCov">          0 :         bool isIndexed = pobj-&gt;isIndexed();</span>
+<span class="lineNum">     208 </span><span class="lineCov">       6529 :         if (isIndexed) {</span>
+<span class="lineNum">     209 </span>            :             // If the dense elements didn't have holes, we don't need to include
+<span class="lineNum">     210 </span>            :             // them in the sort.
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :             if (!hasHoles)</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :                 firstElemIndex = props-&gt;length();</span>
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :             for (Shape::Range&lt;NoGC&gt; r(pobj-&gt;lastProperty()); !r.empty(); r.popFront()) {</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :                 Shape&amp; shape = r.front();</span>
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :                 jsid id = shape.propid();</span>
+<span class="lineNum">     217 </span>            :                 uint32_t dummy;
+<span class="lineNum">     218 </span><span class="lineNoCov">          0 :                 if (IdIsIndex(id, &amp;dummy)) {</span>
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :                     if (!Enumerate&lt;CheckForDuplicates&gt;(cx, pobj, id, shape.enumerable(), flags, ht,</span>
+<span class="lineNum">     220 </span>            :                                                        props))
+<span class="lineNum">     221 </span>            :                     {
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :                         return false;</span>
+<span class="lineNum">     223 </span>            :                     }
+<span class="lineNum">     224 </span>            :                 }
+<span class="lineNum">     225 </span>            :             }
+<span class="lineNum">     226 </span>            : 
+<span class="lineNum">     227 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(firstElemIndex &lt;= props-&gt;length());</span>
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :             jsid* ids = props-&gt;begin() + firstElemIndex;</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :             size_t n = props-&gt;length() - firstElemIndex;</span>
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :             AutoIdVector tmp(cx);</span>
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :             if (!tmp.resize(n))</span>
+<span class="lineNum">     234 </span>            :                 return false;
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :             PodCopy(tmp.begin(), ids, n);</span>
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :             if (!MergeSort(ids, n, tmp.begin(), SortComparatorIntegerIds))</span>
+<span class="lineNum">     238 </span>            :                 return false;
+<span class="lineNum">     239 </span>            :         }
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span><span class="lineCov">       6529 :         if (unboxed) {</span>
+<span class="lineNum">     242 </span>            :             // If |unboxed| is set then |pobj| is the expando for an unboxed
+<span class="lineNum">     243 </span>            :             // plain object we are enumerating. Add the unboxed properties
+<span class="lineNum">     244 </span>            :             // themselves here since they are all property names that were
+<span class="lineNum">     245 </span>            :             // given to the object before any of the expando's properties.
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(pobj-&gt;is&lt;UnboxedExpandoObject&gt;());</span>
+<span class="lineNum">     247 </span><span class="lineCov">         33 :             if (!EnumerateExtraProperties&lt;CheckForDuplicates&gt;(cx, unboxed, flags, ht, props))</span>
+<span class="lineNum">     248 </span>            :                 return false;
+<span class="lineNum">     249 </span>            :         }
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineCov">       6529 :         size_t initialLength = props-&gt;length();</span>
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            :         /* Collect all unique property names from this object's shape. */
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         bool symbolsFound = false;</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :         Shape::Range&lt;NoGC&gt; r(pobj-&gt;lastProperty());</span>
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :         for (; !r.empty(); r.popFront()) {</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :             Shape&amp; shape = r.front();</span>
+<span class="lineNum">     258 </span><span class="lineCov">      34924 :             jsid id = shape.propid();</span>
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span><span class="lineCov">      17462 :             if (JSID_IS_SYMBOL(id)) {</span>
+<span class="lineNum">     261 </span>            :                 symbolsFound = true;
+<span class="lineNum">     262 </span><span class="lineCov">          1 :                 continue;</span>
+<span class="lineNum">     263 </span>            :             }
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span>            :             uint32_t dummy;
+<span class="lineNum">     266 </span><span class="lineCov">      17461 :             if (isIndexed &amp;&amp; IdIsIndex(id, &amp;dummy))</span>
+<span class="lineNum">     267 </span>            :                 continue;
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :             if (!Enumerate&lt;CheckForDuplicates&gt;(cx, pobj, id, shape.enumerable(), flags, ht, props))</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :                 return false;</span>
+<span class="lineNum">     271 </span>            :         }
+<span class="lineNum">     272 </span><span class="lineCov">      19587 :         ::Reverse(props-&gt;begin() + initialLength, props-&gt;end());</span>
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineCov">       6529 :         enumerateSymbols = symbolsFound &amp;&amp; (flags &amp; JSITER_SYMBOLS);</span>
+<span class="lineNum">     275 </span>            :     }
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span><span class="lineCov">       6529 :     if (enumerateSymbols) {</span>
+<span class="lineNum">     278 </span>            :         // Do a second pass to collect symbols. ES6 draft rev 25 (2014 May 22)
+<span class="lineNum">     279 </span>            :         // 9.1.12 requires that all symbols appear after all strings in the
+<span class="lineNum">     280 </span>            :         // result.
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :         size_t initialLength = props-&gt;length();</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         for (Shape::Range&lt;NoGC&gt; r(pobj-&gt;lastProperty()); !r.empty(); r.popFront()) {</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :             Shape&amp; shape = r.front();</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :             jsid id = shape.propid();</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :             if (JSID_IS_SYMBOL(id)) {</span>
+<span class="lineNum">     286 </span><span class="lineNoCov">          0 :                 if (!Enumerate&lt;CheckForDuplicates&gt;(cx, pobj, id, shape.enumerable(), flags, ht,</span>
+<span class="lineNum">     287 </span>            :                                                    props))
+<span class="lineNum">     288 </span>            :                 {
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :                     return false;</span>
+<span class="lineNum">     290 </span>            :                 }
+<span class="lineNum">     291 </span>            :             }
+<span class="lineNum">     292 </span>            :         }
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :         ::Reverse(props-&gt;begin() + initialLength, props-&gt;end());</span>
+<span class="lineNum">     294 </span>            :     }
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span>            :     return true;
+<span class="lineNum">     297 </span>            : }
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span>            : static bool
+<span class="lineNum">     300 </span><span class="lineCov">       6529 : EnumerateNativeProperties(JSContext* cx, HandleNativeObject pobj, unsigned flags, Maybe&lt;IdSet&gt;&amp; ht,</span>
+<span class="lineNum">     301 </span>            :                           AutoIdVector* props, bool checkForDuplicates,
+<span class="lineNum">     302 </span>            :                           Handle&lt;UnboxedPlainObject*&gt; unboxed = nullptr)
+<span class="lineNum">     303 </span>            : {
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :     if (checkForDuplicates)</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :         return EnumerateNativeProperties&lt;true&gt;(cx, pobj, flags, ht, props, unboxed);</span>
+<span class="lineNum">     306 </span><span class="lineCov">       6334 :     return EnumerateNativeProperties&lt;false&gt;(cx, pobj, flags, ht, props, unboxed);</span>
+<span class="lineNum">     307 </span>            : }
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span>            : template &lt;bool CheckForDuplicates&gt;
+<span class="lineNum">     310 </span>            : static bool
+<span class="lineNum">     311 </span><span class="lineCov">        192 : EnumerateProxyProperties(JSContext* cx, HandleObject pobj, unsigned flags, Maybe&lt;IdSet&gt;&amp; ht,</span>
+<span class="lineNum">     312 </span>            :                          AutoIdVector* props)
+<span class="lineNum">     313 </span>            : {
+<span class="lineNum">     314 </span><span class="lineCov">        384 :     MOZ_ASSERT(pobj-&gt;is&lt;ProxyObject&gt;());</span>
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineCov">        384 :     AutoIdVector proxyProps(cx);</span>
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span><span class="lineCov">        192 :     if (flags &amp; JSITER_HIDDEN || flags &amp; JSITER_SYMBOLS) {</span>
+<span class="lineNum">     319 </span>            :         // This gets all property keys, both strings and symbols. The call to
+<span class="lineNum">     320 </span>            :         // Enumerate in the loop below will filter out unwanted keys, per the
+<span class="lineNum">     321 </span>            :         // flags.
+<span class="lineNum">     322 </span><span class="lineCov">         24 :         if (!Proxy::ownPropertyKeys(cx, pobj, proxyProps))</span>
+<span class="lineNum">     323 </span>            :             return false;
+<span class="lineNum">     324 </span>            : 
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :         Rooted&lt;PropertyDescriptor&gt; desc(cx);</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         for (size_t n = 0, len = proxyProps.length(); n &lt; len; n++) {</span>
+<span class="lineNum">     327 </span><span class="lineCov">        182 :             bool enumerable = false;</span>
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span>            :             // We need to filter, if the caller just wants enumerable symbols.
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :             if (!(flags &amp; JSITER_HIDDEN)) {</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :                 if (!Proxy::getOwnPropertyDescriptor(cx, pobj, proxyProps[n], &amp;desc))</span>
+<span class="lineNum">     332 </span>            :                     return false;
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :                 enumerable = desc.enumerable();</span>
+<span class="lineNum">     334 </span>            :             }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">        546 :             if (!Enumerate&lt;CheckForDuplicates&gt;(cx, pobj, proxyProps[n], enumerable, flags, ht,</span>
+<span class="lineNum">     337 </span>            :                                                props))
+<span class="lineNum">     338 </span>            :             {
+<span class="lineNum">     339 </span>            :                 return false;
+<span class="lineNum">     340 </span>            :             }
+<span class="lineNum">     341 </span>            :         }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span>            :         return true;
+<span class="lineNum">     344 </span>            :     }
+<span class="lineNum">     345 </span>            : 
+<span class="lineNum">     346 </span>            :     // Returns enumerable property names (no symbols).
+<span class="lineNum">     347 </span><span class="lineCov">        168 :     if (!Proxy::getOwnEnumerablePropertyKeys(cx, pobj, proxyProps))</span>
+<span class="lineNum">     348 </span>            :         return false;
+<span class="lineNum">     349 </span>            : 
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :     for (size_t n = 0, len = proxyProps.length(); n &lt; len; n++) {</span>
+<span class="lineNum">     351 </span><span class="lineCov">       1608 :         if (!Enumerate&lt;CheckForDuplicates&gt;(cx, pobj, proxyProps[n], true, flags, ht, props))</span>
+<span class="lineNum">     352 </span>            :             return false;
+<span class="lineNum">     353 </span>            :     }
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span>            :     return true;
+<span class="lineNum">     356 </span>            : }
+<span class="lineNum">     357 </span>            : 
+<span class="lineNum">     358 </span>            : #ifdef JS_MORE_DETERMINISTIC
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span>            : struct SortComparatorIds
+<span class="lineNum">     361 </span>            : {
+<span class="lineNum">     362 </span>            :     JSContext*  const cx;
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span>            :     SortComparatorIds(JSContext* cx)
+<span class="lineNum">     365 </span>            :       : cx(cx) {}
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span>            :     bool operator()(jsid a, jsid b, bool* lessOrEqualp)
+<span class="lineNum">     368 </span>            :     {
+<span class="lineNum">     369 </span>            :         // Pick an arbitrary order on jsids that is as stable as possible
+<span class="lineNum">     370 </span>            :         // across executions.
+<span class="lineNum">     371 </span>            :         if (a == b) {
+<span class="lineNum">     372 </span>            :             *lessOrEqualp = true;
+<span class="lineNum">     373 </span>            :             return true;
+<span class="lineNum">     374 </span>            :         }
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span>            :         size_t ta = JSID_BITS(a) &amp; JSID_TYPE_MASK;
+<span class="lineNum">     377 </span>            :         size_t tb = JSID_BITS(b) &amp; JSID_TYPE_MASK;
+<span class="lineNum">     378 </span>            :         if (ta != tb) {
+<span class="lineNum">     379 </span>            :             *lessOrEqualp = (ta &lt;= tb);
+<span class="lineNum">     380 </span>            :             return true;
+<span class="lineNum">     381 </span>            :         }
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span>            :         if (JSID_IS_INT(a)) {
+<span class="lineNum">     384 </span>            :             *lessOrEqualp = (JSID_TO_INT(a) &lt;= JSID_TO_INT(b));
+<span class="lineNum">     385 </span>            :             return true;
+<span class="lineNum">     386 </span>            :         }
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span>            :         RootedString astr(cx), bstr(cx);
+<span class="lineNum">     389 </span>            :         if (JSID_IS_SYMBOL(a)) {
+<span class="lineNum">     390 </span>            :             MOZ_ASSERT(JSID_IS_SYMBOL(b));
+<span class="lineNum">     391 </span>            :             JS::SymbolCode ca = JSID_TO_SYMBOL(a)-&gt;code();
+<span class="lineNum">     392 </span>            :             JS::SymbolCode cb = JSID_TO_SYMBOL(b)-&gt;code();
+<span class="lineNum">     393 </span>            :             if (ca != cb) {
+<span class="lineNum">     394 </span>            :                 *lessOrEqualp = uint32_t(ca) &lt;= uint32_t(cb);
+<span class="lineNum">     395 </span>            :                 return true;
+<span class="lineNum">     396 </span>            :             }
+<span class="lineNum">     397 </span>            :             MOZ_ASSERT(ca == JS::SymbolCode::InSymbolRegistry || ca == JS::SymbolCode::UniqueSymbol);
+<span class="lineNum">     398 </span>            :             astr = JSID_TO_SYMBOL(a)-&gt;description();
+<span class="lineNum">     399 </span>            :             bstr = JSID_TO_SYMBOL(b)-&gt;description();
+<span class="lineNum">     400 </span>            :             if (!astr || !bstr) {
+<span class="lineNum">     401 </span>            :                 *lessOrEqualp = !astr;
+<span class="lineNum">     402 </span>            :                 return true;
+<span class="lineNum">     403 </span>            :             }
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span>            :             // Fall through to string comparison on the descriptions. The sort
+<span class="lineNum">     406 </span>            :             // order is nondeterministic if two different unique symbols have
+<span class="lineNum">     407 </span>            :             // the same description.
+<span class="lineNum">     408 </span>            :         } else {
+<span class="lineNum">     409 </span>            :             astr = IdToString(cx, a);
+<span class="lineNum">     410 </span>            :             if (!astr)
+<span class="lineNum">     411 </span>            :                 return false;
+<span class="lineNum">     412 </span>            :             bstr = IdToString(cx, b);
+<span class="lineNum">     413 </span>            :             if (!bstr)
+<span class="lineNum">     414 </span>            :                 return false;
+<span class="lineNum">     415 </span>            :         }
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span>            :         int32_t result;
+<span class="lineNum">     418 </span>            :         if (!CompareStrings(cx, astr, bstr, &amp;result))
+<span class="lineNum">     419 </span>            :             return false;
+<span class="lineNum">     420 </span>            : 
+<span class="lineNum">     421 </span>            :         *lessOrEqualp = (result &lt;= 0);
+<span class="lineNum">     422 </span>            :         return true;
+<span class="lineNum">     423 </span>            :     }
+<span class="lineNum">     424 </span>            : };
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span>            : #endif /* JS_MORE_DETERMINISTIC */
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span>            : static bool
+<span class="lineNum">     429 </span><span class="lineCov">       6769 : Snapshot(JSContext* cx, HandleObject pobj_, unsigned flags, AutoIdVector* props)</span>
+<span class="lineNum">     430 </span>            : {
+<span class="lineNum">     431 </span>            :     // We initialize |ht| lazily (in Enumerate()) because it ends up unused
+<span class="lineNum">     432 </span>            :     // anywhere from 67--99.9% of the time.
+<span class="lineNum">     433 </span><span class="lineNoCov">          0 :     Maybe&lt;IdSet&gt; ht;</span>
+<span class="lineNum">     434 </span><span class="lineCov">      13538 :     RootedObject pobj(cx, pobj_);</span>
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span>            :     // Don't check for duplicates if we're only interested in own properties.
+<span class="lineNum">     437 </span>            :     // This does the right thing for most objects: native objects don't have
+<span class="lineNum">     438 </span>            :     // duplicate property ids and we allow the [[OwnPropertyKeys]] proxy trap to
+<span class="lineNum">     439 </span>            :     // return duplicates.
+<span class="lineNum">     440 </span>            :     //
+<span class="lineNum">     441 </span>            :     // The only special case is when the object has a newEnumerate hook: it
+<span class="lineNum">     442 </span>            :     // can return duplicate properties and we have to filter them. This is
+<span class="lineNum">     443 </span>            :     // handled below.
+<span class="lineNum">     444 </span><span class="lineCov">       6769 :     bool checkForDuplicates = !(flags &amp; JSITER_OWNONLY);</span>
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span><span class="lineNoCov">          0 :     do {</span>
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :         if (pobj-&gt;getClass()-&gt;getNewEnumerate()) {</span>
+<span class="lineNum">     448 </span><span class="lineCov">        543 :             if (pobj-&gt;is&lt;UnboxedPlainObject&gt;() &amp;&amp; pobj-&gt;as&lt;UnboxedPlainObject&gt;().maybeExpando()) {</span>
+<span class="lineNum">     449 </span>            :                 // Special case unboxed objects with an expando object.
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :                 RootedNativeObject expando(cx, pobj-&gt;as&lt;UnboxedPlainObject&gt;().maybeExpando());</span>
+<span class="lineNum">     451 </span><span class="lineCov">         66 :                 if (!EnumerateNativeProperties(cx, expando, flags, ht, props, checkForDuplicates,</span>
+<span class="lineNum">     452 </span>            :                                                pobj.as&lt;UnboxedPlainObject&gt;()))
+<span class="lineNum">     453 </span>            :                 {
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                     return false;</span>
+<span class="lineNum">     455 </span>            :                 }
+<span class="lineNum">     456 </span>            :             } else {
+<span class="lineNum">     457 </span>            :                 // The newEnumerate hook may return duplicates. Whitelist the
+<span class="lineNum">     458 </span>            :                 // unboxed object hooks because we know they are well-behaved.
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :                 if (!pobj-&gt;is&lt;UnboxedPlainObject&gt;())</span>
+<span class="lineNum">     460 </span><span class="lineNoCov">          0 :                     checkForDuplicates = true;</span>
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                 if (checkForDuplicates) {</span>
+<span class="lineNum">     463 </span><span class="lineNoCov">          0 :                     if (!EnumerateExtraProperties&lt;true&gt;(cx, pobj, flags, ht, props))</span>
+<span class="lineNum">     464 </span>            :                         return false;
+<span class="lineNum">     465 </span>            :                 } else {
+<span class="lineNum">     466 </span><span class="lineCov">        148 :                     if (!EnumerateExtraProperties&lt;false&gt;(cx, pobj, flags, ht, props))</span>
+<span class="lineNum">     467 </span>            :                         return false;
+<span class="lineNum">     468 </span>            :                 }
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span><span class="lineNoCov">          0 :                 if (pobj-&gt;isNative()) {</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :                     if (!EnumerateNativeProperties(cx, pobj.as&lt;NativeObject&gt;(), flags, ht, props,</span>
+<span class="lineNum">     472 </span>            :                                                    checkForDuplicates))
+<span class="lineNum">     473 </span>            :                     {
+<span class="lineNum">     474 </span>            :                         return false;
+<span class="lineNum">     475 </span>            :                     }
+<span class="lineNum">     476 </span>            :                 }
+<span class="lineNum">     477 </span>            :             }
+<span class="lineNum">     478 </span><span class="lineCov">      13376 :         } else if (pobj-&gt;isNative()) {</span>
+<span class="lineNum">     479 </span>            :             // Give the object a chance to resolve all lazy properties
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :             if (JSEnumerateOp enumerate = pobj-&gt;getClass()-&gt;getEnumerate()) {</span>
+<span class="lineNum">     481 </span><span class="lineCov">         14 :                 if (!enumerate(cx, pobj.as&lt;NativeObject&gt;()))</span>
+<span class="lineNum">     482 </span>            :                     return false;
+<span class="lineNum">     483 </span>            :             }
+<span class="lineNum">     484 </span><span class="lineCov">       6496 :             if (!EnumerateNativeProperties(cx, pobj.as&lt;NativeObject&gt;(), flags, ht, props,</span>
+<span class="lineNum">     485 </span>            :                                            checkForDuplicates))
+<span class="lineNum">     486 </span>            :             {
+<span class="lineNum">     487 </span>            :                 return false;
+<span class="lineNum">     488 </span>            :             }
+<span class="lineNum">     489 </span><span class="lineNoCov">          0 :         } else if (pobj-&gt;is&lt;ProxyObject&gt;()) {</span>
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :             if (checkForDuplicates) {</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :                 if (!EnumerateProxyProperties&lt;true&gt;(cx, pobj, flags, ht, props))</span>
+<span class="lineNum">     492 </span>            :                     return false;
+<span class="lineNum">     493 </span>            :             } else {
+<span class="lineNum">     494 </span><span class="lineCov">        192 :                 if (!EnumerateProxyProperties&lt;false&gt;(cx, pobj, flags, ht, props))</span>
+<span class="lineNum">     495 </span>            :                     return false;
+<span class="lineNum">     496 </span>            :             }
+<span class="lineNum">     497 </span>            :         } else {
+<span class="lineNum">     498 </span><span class="lineNoCov">          0 :             MOZ_CRASH(&quot;non-native objects must have an enumerate op&quot;);</span>
+<span class="lineNum">     499 </span>            :         }
+<span class="lineNum">     500 </span>            : 
+<span class="lineNum">     501 </span><span class="lineCov">       6869 :         if (flags &amp; JSITER_OWNONLY)</span>
+<span class="lineNum">     502 </span>            :             break;
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span><span class="lineCov">        390 :         if (!GetPrototype(cx, pobj, &amp;pobj))</span>
+<span class="lineNum">     505 </span>            :             return false;
+<span class="lineNum">     506 </span>            : 
+<span class="lineNum">     507 </span>            :     } while (pobj != nullptr);
+<span class="lineNum">     508 </span>            : 
+<span class="lineNum">     509 </span>            : #ifdef JS_MORE_DETERMINISTIC
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span>            :     /*
+<span class="lineNum">     512 </span>            :      * In some cases the enumeration order for an object depends on the
+<span class="lineNum">     513 </span>            :      * execution mode (interpreter vs. JIT), especially for native objects
+<span class="lineNum">     514 </span>            :      * with a class enumerate hook (where resolving a property changes the
+<span class="lineNum">     515 </span>            :      * resulting enumeration order). These aren't really bugs, but the
+<span class="lineNum">     516 </span>            :      * differences can change the generated output and confuse correctness
+<span class="lineNum">     517 </span>            :      * fuzzers, so we sort the ids if such a fuzzer is running.
+<span class="lineNum">     518 </span>            :      *
+<span class="lineNum">     519 </span>            :      * We don't do this in the general case because (a) doing so is slow,
+<span class="lineNum">     520 </span>            :      * and (b) it also breaks the web, which expects enumeration order to
+<span class="lineNum">     521 </span>            :      * follow the order in which properties are added, in certain cases.
+<span class="lineNum">     522 </span>            :      * Since ECMA does not specify an enumeration order for objects, both
+<span class="lineNum">     523 </span>            :      * behaviors are technically correct to do.
+<span class="lineNum">     524 </span>            :      */
+<span class="lineNum">     525 </span>            : 
+<span class="lineNum">     526 </span>            :     jsid* ids = props-&gt;begin();
+<span class="lineNum">     527 </span>            :     size_t n = props-&gt;length();
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span>            :     AutoIdVector tmp(cx);
+<span class="lineNum">     530 </span>            :     if (!tmp.resize(n))
+<span class="lineNum">     531 </span>            :         return false;
+<span class="lineNum">     532 </span>            :     PodCopy(tmp.begin(), ids, n);
+<span class="lineNum">     533 </span>            : 
+<span class="lineNum">     534 </span>            :     if (!MergeSort(ids, n, tmp.begin(), SortComparatorIds(cx)))
+<span class="lineNum">     535 </span>            :         return false;
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span>            : #endif /* JS_MORE_DETERMINISTIC */
+<span class="lineNum">     538 </span>            : 
+<span class="lineNum">     539 </span>            :     return true;
+<span class="lineNum">     540 </span>            : }
+<span class="lineNum">     541 </span>            : 
+<span class="lineNum">     542 </span>            : JS_FRIEND_API(bool)
+<span class="lineNum">     543 </span><span class="lineCov">       6664 : js::GetPropertyKeys(JSContext* cx, HandleObject obj, unsigned flags, AutoIdVector* props)</span>
+<span class="lineNum">     544 </span>            : {
+<span class="lineNum">     545 </span><span class="lineCov">       6664 :     return Snapshot(cx, obj,</span>
+<span class="lineNum">     546 </span>            :                     flags &amp; (JSITER_OWNONLY | JSITER_HIDDEN | JSITER_SYMBOLS | JSITER_SYMBOLSONLY),
+<span class="lineNum">     547 </span><span class="lineCov">       6674 :                     props);</span>
+<span class="lineNum">     548 </span>            : }
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span>            : static inline void
+<span class="lineNum">     551 </span><span class="lineCov">        171 : RegisterEnumerator(ObjectRealm&amp; realm, NativeIterator* ni)</span>
+<span class="lineNum">     552 </span>            : {
+<span class="lineNum">     553 </span>            :     /* Register non-escaping native enumerators (for-in) with the current context. */
+<span class="lineNum">     554 </span><span class="lineCov">        171 :     ni-&gt;link(realm.enumerators);</span>
+<span class="lineNum">     555 </span>            : 
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!ni-&gt;isActive());</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :     ni-&gt;markActive();</span>
+<span class="lineNum">     558 </span><span class="lineCov">        171 : }</span>
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span>            : static PropertyIteratorObject*
+<span class="lineNum">     561 </span><span class="lineCov">        124 : NewPropertyIteratorObject(JSContext* cx)</span>
+<span class="lineNum">     562 </span>            : {
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :     RootedObjectGroup group(cx, ObjectGroup::defaultNewGroup(cx, &amp;PropertyIteratorObject::class_,</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :                                                              TaggedProto(nullptr)));</span>
+<span class="lineNum">     565 </span><span class="lineCov">        124 :     if (!group)</span>
+<span class="lineNum">     566 </span>            :         return nullptr;
+<span class="lineNum">     567 </span>            : 
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 :     const Class* clasp = &amp;PropertyIteratorObject::class_;</span>
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :     RootedShape shape(cx, EmptyShape::getInitialShape(cx, clasp, TaggedProto(nullptr),</span>
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :                                                       ITERATOR_FINALIZE_KIND));</span>
+<span class="lineNum">     571 </span><span class="lineCov">        124 :     if (!shape)</span>
+<span class="lineNum">     572 </span>            :         return nullptr;
+<span class="lineNum">     573 </span>            : 
+<span class="lineNum">     574 </span>            :     JSObject* obj;
+<span class="lineNum">     575 </span><span class="lineCov">        372 :     JS_TRY_VAR_OR_RETURN_NULL(cx, obj, NativeObject::create(cx, ITERATOR_FINALIZE_KIND,</span>
+<span class="lineNum">     576 </span>            :                                                             GetInitialHeap(GenericObject, clasp),
+<span class="lineNum">     577 </span>            :                                                             shape, group));
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span><span class="lineCov">        124 :     PropertyIteratorObject* res = &amp;obj-&gt;as&lt;PropertyIteratorObject&gt;();</span>
+<span class="lineNum">     580 </span>            : 
+<span class="lineNum">     581 </span>            :     // CodeGenerator::visitIteratorStartO assumes the iterator object is not
+<span class="lineNum">     582 </span>            :     // inside the nursery when deciding whether a barrier is necessary.
+<span class="lineNum">     583 </span><span class="lineCov">        124 :     MOZ_ASSERT(!js::gc::IsInsideNursery(res));</span>
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span><span class="lineCov">        248 :     MOZ_ASSERT(res-&gt;numFixedSlots() == JSObject::ITER_CLASS_NFIXED_SLOTS);</span>
+<span class="lineNum">     586 </span>            :     return res;
+<span class="lineNum">     587 </span>            : }
+<span class="lineNum">     588 </span>            : 
+<span class="lineNum">     589 </span>            : static PropertyIteratorObject*
+<span class="lineNum">     590 </span><span class="lineCov">        124 : CreatePropertyIterator(JSContext* cx, Handle&lt;JSObject*&gt; objBeingIterated,</span>
+<span class="lineNum">     591 </span>            :                        const AutoIdVector&amp; props, uint32_t numGuards, uint32_t guardKey)
+<span class="lineNum">     592 </span>            : {
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :     Rooted&lt;PropertyIteratorObject*&gt; propIter(cx, NewPropertyIteratorObject(cx));</span>
+<span class="lineNum">     594 </span><span class="lineCov">        124 :     if (!propIter)</span>
+<span class="lineNum">     595 </span>            :         return nullptr;
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span>            :     static_assert(sizeof(ReceiverGuard) == 2 * sizeof(GCPtrFlatString),
+<span class="lineNum">     598 </span>            :                   &quot;NativeIterators are allocated in space for 1) themselves, &quot;
+<span class="lineNum">     599 </span>            :                   &quot;2) the properties a NativeIterator iterates (as &quot;
+<span class="lineNum">     600 </span>            :                   &quot;GCPtrFlatStrings), and 3) |numGuards| HeapReceiverGuard &quot;
+<span class="lineNum">     601 </span>            :                   &quot;objects; the additional-length calculation below assumes &quot;
+<span class="lineNum">     602 </span>            :                   &quot;this size-relationship when determining the extra space to &quot;
+<span class="lineNum">     603 </span>            :                   &quot;allocate&quot;);
+<span class="lineNum">     604 </span>            : 
+<span class="lineNum">     605 </span><span class="lineCov">        124 :     size_t extraCount = props.length() + numGuards * 2;</span>
+<span class="lineNum">     606 </span>            :     void* mem =
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :         cx-&gt;zone()-&gt;pod_malloc_with_extra&lt;NativeIterator, GCPtrFlatString&gt;(extraCount);</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :     if (!mem) {</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :         ReportOutOfMemory(cx);</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :         return nullptr;</span>
+<span class="lineNum">     611 </span>            :     }
+<span class="lineNum">     612 </span>            : 
+<span class="lineNum">     613 </span>            :     // This also registers |ni| with |propIter|.
+<span class="lineNum">     614 </span><span class="lineCov">        124 :     bool hadError = false;</span>
+<span class="lineNum">     615 </span>            :     NativeIterator* ni =
+<span class="lineNum">     616 </span>            :         new (mem) NativeIterator(cx, propIter, objBeingIterated, props, numGuards, guardKey,
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :                                  &amp;hadError);</span>
+<span class="lineNum">     618 </span><span class="lineCov">        124 :     if (hadError)</span>
+<span class="lineNum">     619 </span>            :         return nullptr;
+<span class="lineNum">     620 </span>            : 
+<span class="lineNum">     621 </span>            :     ObjectRealm&amp; realm =
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :         objBeingIterated ? ObjectRealm::get(objBeingIterated) : ObjectRealm::get(propIter);</span>
+<span class="lineNum">     623 </span><span class="lineCov">        124 :     RegisterEnumerator(realm, ni);</span>
+<span class="lineNum">     624 </span>            : 
+<span class="lineNum">     625 </span><span class="lineCov">        124 :     return propIter;</span>
+<span class="lineNum">     626 </span>            : }
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span>            : /**
+<span class="lineNum">     629 </span>            :  * Initialize a sentinel NativeIterator whose purpose is only to act as the
+<span class="lineNum">     630 </span>            :  * start/end of the circular linked list of NativeIterators in
+<span class="lineNum">     631 </span>            :  * ObjectRealm::enumerators.
+<span class="lineNum">     632 </span>            :  */
+<span class="lineNum">     633 </span><span class="lineCov">         94 : NativeIterator::NativeIterator()</span>
+<span class="lineNum">     634 </span>            : {
+<span class="lineNum">     635 </span>            :     // Do our best to enforce that nothing in |this| except the two fields set
+<span class="lineNum">     636 </span>            :     // below is ever observed.
+<span class="lineNum">     637 </span><span class="lineCov">         47 :     JS_POISON(static_cast&lt;void*&gt;(this), 0xCC, sizeof(*this), MemCheckKind::MakeUndefined);</span>
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span>            :     // These are the only two fields in sentinel NativeIterators that are
+<span class="lineNum">     640 </span>            :     // examined, in ObjectRealm::sweepNativeIterators.  Everything else is
+<span class="lineNum">     641 </span>            :     // only examined *if* it's a NativeIterator being traced by a
+<span class="lineNum">     642 </span>            :     // PropertyIteratorObject that owns it, and nothing owns this iterator.
+<span class="lineNum">     643 </span><span class="lineCov">          1 :     prev_ = next_ = this;</span>
+<span class="lineNum">     644 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     645 </span>            : 
+<span class="lineNum">     646 </span>            : NativeIterator*
+<span class="lineNum">     647 </span><span class="lineCov">         47 : NativeIterator::allocateSentinel(JSContext* maybecx)</span>
+<span class="lineNum">     648 </span>            : {
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :     NativeIterator* ni = js_new&lt;NativeIterator&gt;();</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :     if (!ni) {</span>
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :         if (maybecx)</span>
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :             ReportOutOfMemory(maybecx);</span>
+<span class="lineNum">     653 </span>            :     }
+<span class="lineNum">     654 </span>            : 
+<span class="lineNum">     655 </span><span class="lineCov">         47 :     return ni;</span>
+<span class="lineNum">     656 </span>            : }
+<span class="lineNum">     657 </span>            : 
+<span class="lineNum">     658 </span>            : /**
+<span class="lineNum">     659 </span>            :  * Initialize a fresh NativeIterator.
+<span class="lineNum">     660 </span>            :  *
+<span class="lineNum">     661 </span>            :  * This definition is a bit tricky: some parts of initializing are fallible, so
+<span class="lineNum">     662 </span>            :  * as we initialize, we must carefully keep this in GC-safe state (see
+<span class="lineNum">     663 </span>            :  * NativeIterator::trace).
+<span class="lineNum">     664 </span>            :  */
+<span class="lineNum">     665 </span><span class="lineCov">        124 : NativeIterator::NativeIterator(JSContext* cx, Handle&lt;PropertyIteratorObject*&gt; propIter,</span>
+<span class="lineNum">     666 </span>            :                                Handle&lt;JSObject*&gt; objBeingIterated, const AutoIdVector&amp; props,
+<span class="lineNum">     667 </span><span class="lineCov">        124 :                                uint32_t numGuards, uint32_t guardKey, bool* hadError)</span>
+<span class="lineNum">     668 </span>            :   : objectBeingIterated_(objBeingIterated),
+<span class="lineNum">     669 </span>            :     iterObj_(propIter),
+<span class="lineNum">     670 </span>            :     // NativeIterator initially acts (before full initialization) as if it
+<span class="lineNum">     671 </span>            :     // contains no guards...
+<span class="lineNum">     672 </span><span class="lineCov">        124 :     guardsEnd_(guardsBegin()),</span>
+<span class="lineNum">     673 </span>            :     // ...and no properties.
+<span class="lineNum">     674 </span><span class="lineCov">        124 :     propertyCursor_(reinterpret_cast&lt;GCPtrFlatString*&gt;(guardsBegin() + numGuards)),</span>
+<span class="lineNum">     675 </span>            :     propertiesEnd_(propertyCursor_),
+<span class="lineNum">     676 </span>            :     guardKey_(guardKey),
+<span class="lineNum">     677 </span><span class="lineCov">        620 :     flags_(0)</span>
+<span class="lineNum">     678 </span>            : {
+<span class="lineNum">     679 </span><span class="lineCov">        124 :     MOZ_ASSERT(!*hadError);</span>
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span>            :     // NOTE: This must be done first thing: PropertyIteratorObject::finalize
+<span class="lineNum">     682 </span>            :     //       can only free |this| (and not leak it) if this has happened.
+<span class="lineNum">     683 </span><span class="lineCov">        248 :     propIter-&gt;setNativeIterator(this);</span>
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :     for (size_t i = 0, len = props.length(); i &lt; len; i++) {</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :         JSFlatString* str = IdToString(cx, props[i]);</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :         if (!str) {</span>
+<span class="lineNum">     688 </span><span class="lineNoCov">          0 :             *hadError = true;</span>
+<span class="lineNum">     689 </span><span class="lineNoCov">          0 :             return;</span>
+<span class="lineNum">     690 </span>            :         }
+<span class="lineNum">     691 </span>            : 
+<span class="lineNum">     692 </span>            :         // Placement-new the next property string at the end of the currently
+<span class="lineNum">     693 </span>            :         // computed property strings.
+<span class="lineNum">     694 </span><span class="lineCov">        746 :         GCPtrFlatString* loc = propertiesEnd_;</span>
+<span class="lineNum">     695 </span>            : 
+<span class="lineNum">     696 </span>            :         // Increase the overall property string count before initializing the
+<span class="lineNum">     697 </span>            :         // property string, so this construction isn't on a location not known
+<span class="lineNum">     698 </span>            :         // to the GC yet.
+<span class="lineNum">     699 </span><span class="lineCov">        746 :         propertiesEnd_++;</span>
+<span class="lineNum">     700 </span>            : 
+<span class="lineNum">     701 </span><span class="lineCov">       1492 :         new (loc) GCPtrFlatString(str);</span>
+<span class="lineNum">     702 </span>            :     }
+<span class="lineNum">     703 </span>            : 
+<span class="lineNum">     704 </span><span class="lineCov">        124 :     if (numGuards &gt; 0) {</span>
+<span class="lineNum">     705 </span>            :         // Construct guards into the guard array.  Also recompute the guard key,
+<span class="lineNum">     706 </span>            :         // which incorporates Shape* and ObjectGroup* addresses that could have
+<span class="lineNum">     707 </span>            :         // changed during a GC triggered in (among other places) |IdToString|
+<span class="lineNum">     708 </span>            :         //. above.
+<span class="lineNum">     709 </span><span class="lineCov">         94 :         JSObject* pobj = objBeingIterated;</span>
+<span class="lineNum">     710 </span>            : #ifdef DEBUG
+<span class="lineNum">     711 </span><span class="lineCov">         94 :         uint32_t i = 0;</span>
+<span class="lineNum">     712 </span>            : #endif
+<span class="lineNum">     713 </span><span class="lineCov">         94 :         uint32_t key = 0;</span>
+<span class="lineNum">     714 </span>            :         do {
+<span class="lineNum">     715 </span><span class="lineCov">        192 :             ReceiverGuard guard(pobj);</span>
+<span class="lineNum">     716 </span>            : 
+<span class="lineNum">     717 </span>            :             // Placement-new the next HeapReceiverGuard at the end of the
+<span class="lineNum">     718 </span>            :             // currently initialized HeapReceiverGuards.
+<span class="lineNum">     719 </span><span class="lineCov">        192 :             HeapReceiverGuard* loc = guardsEnd_;</span>
+<span class="lineNum">     720 </span>            : 
+<span class="lineNum">     721 </span>            :             // Increase the overall guard-count before initializing the
+<span class="lineNum">     722 </span>            :             // HeapReceiverGuard, so this construction isn't on a location not
+<span class="lineNum">     723 </span>            :             // known to the GC.
+<span class="lineNum">     724 </span><span class="lineCov">        192 :             guardsEnd_++;</span>
+<span class="lineNum">     725 </span>            : #ifdef DEBUG
+<span class="lineNum">     726 </span><span class="lineCov">        192 :             i++;</span>
+<span class="lineNum">     727 </span>            : #endif
+<span class="lineNum">     728 </span>            : 
+<span class="lineNum">     729 </span><span class="lineCov">        384 :             new (loc) HeapReceiverGuard(guard);</span>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineCov">        384 :             key = mozilla::AddToHash(key, guard.hash());</span>
+<span class="lineNum">     732 </span>            : 
+<span class="lineNum">     733 </span>            :             // The one caller of this method that passes |numGuards &gt; 0|, does
+<span class="lineNum">     734 </span>            :             // so only if the entire chain consists of cacheable objects (that
+<span class="lineNum">     735 </span>            :             // necessarily have static prototypes).
+<span class="lineNum">     736 </span><span class="lineNoCov">          0 :             pobj = pobj-&gt;staticPrototype();</span>
+<span class="lineNum">     737 </span><span class="lineCov">        192 :         } while (pobj);</span>
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :         guardKey_ = key;</span>
+<span class="lineNum">     740 </span><span class="lineCov">         94 :         MOZ_ASSERT(i == numGuards);</span>
+<span class="lineNum">     741 </span>            :     }
+<span class="lineNum">     742 </span>            : 
+<span class="lineNum">     743 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(static_cast&lt;void*&gt;(guardsEnd_) == propertyCursor_);</span>
+<span class="lineNum">     744 </span><span class="lineCov">        124 :     markInitialized();</span>
+<span class="lineNum">     745 </span>            : 
+<span class="lineNum">     746 </span><span class="lineCov">        124 :     MOZ_ASSERT(!*hadError);</span>
+<span class="lineNum">     747 </span>            : }
+<span class="lineNum">     748 </span>            : 
+<span class="lineNum">     749 </span>            : static inline PropertyIteratorObject*
+<span class="lineNum">     750 </span><span class="lineCov">        119 : VectorToKeyIterator(JSContext* cx, HandleObject obj, AutoIdVector&amp; props, uint32_t numGuards)</span>
+<span class="lineNum">     751 </span>            : {
+<span class="lineNum">     752 </span><span class="lineCov">        270 :     if (obj-&gt;isSingleton() &amp;&amp; !JSObject::setIteratedSingleton(cx, obj))</span>
+<span class="lineNum">     753 </span>            :         return nullptr;
+<span class="lineNum">     754 </span><span class="lineCov">        119 :     MarkObjectGroupFlags(cx, obj, OBJECT_FLAG_ITERATED);</span>
+<span class="lineNum">     755 </span>            : 
+<span class="lineNum">     756 </span><span class="lineCov">        119 :     return CreatePropertyIterator(cx, obj, props, numGuards, 0);</span>
+<span class="lineNum">     757 </span>            : }
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span>            : 
+<span class="lineNum">     760 </span>            : JSObject*
+<span class="lineNum">     761 </span><span class="lineCov">         24 : js::EnumeratedIdVectorToIterator(JSContext* cx, HandleObject obj, AutoIdVector&amp; props)</span>
+<span class="lineNum">     762 </span>            : {
+<span class="lineNum">     763 </span><span class="lineCov">         24 :     return VectorToKeyIterator(cx, obj, props, 0);</span>
+<span class="lineNum">     764 </span>            : }
+<span class="lineNum">     765 </span>            : 
+<span class="lineNum">     766 </span>            : // Mainly used for .. in over null/undefined
+<span class="lineNum">     767 </span>            : JSObject*
+<span class="lineNum">     768 </span><span class="lineCov">          5 : js::NewEmptyPropertyIterator(JSContext* cx)</span>
+<span class="lineNum">     769 </span>            : {
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :     AutoIdVector props(cx); // Empty</span>
+<span class="lineNum">     771 </span><span class="lineCov">         10 :     return CreatePropertyIterator(cx, nullptr, props, 0, 0);</span>
+<span class="lineNum">     772 </span>            : }
+<span class="lineNum">     773 </span>            : 
+<span class="lineNum">     774 </span>            : /* static */ bool
+<span class="lineNum">     775 </span><span class="lineCov">         78 : IteratorHashPolicy::match(PropertyIteratorObject* obj, const Lookup&amp; lookup)</span>
+<span class="lineNum">     776 </span>            : {
+<span class="lineNum">     777 </span><span class="lineNoCov">          0 :     NativeIterator* ni = obj-&gt;getNativeIterator();</span>
+<span class="lineNum">     778 </span><span class="lineCov">        156 :     if (ni-&gt;guardKey() != lookup.key || ni-&gt;guardCount() != lookup.numGuards)</span>
+<span class="lineNum">     779 </span>            :         return false;
+<span class="lineNum">     780 </span>            : 
+<span class="lineNum">     781 </span><span class="lineNoCov">          0 :     return PodEqual(reinterpret_cast&lt;ReceiverGuard*&gt;(ni-&gt;guardsBegin()), lookup.guards,</span>
+<span class="lineNum">     782 </span><span class="lineCov">        156 :                     ni-&gt;guardCount());</span>
+<span class="lineNum">     783 </span>            : }
+<span class="lineNum">     784 </span>            : 
+<span class="lineNum">     785 </span>            : static inline bool
+<span class="lineNum">     786 </span><span class="lineCov">        465 : CanCompareIterableObjectToCache(JSObject* obj)</span>
+<span class="lineNum">     787 </span>            : {
+<span class="lineNum">     788 </span><span class="lineNoCov">          0 :     if (obj-&gt;isNative())</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">          0 :         return obj-&gt;as&lt;NativeObject&gt;().hasEmptyElements();</span>
+<span class="lineNum">     790 </span><span class="lineNoCov">          0 :     if (obj-&gt;is&lt;UnboxedPlainObject&gt;()) {</span>
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :         if (UnboxedExpandoObject* expando = obj-&gt;as&lt;UnboxedPlainObject&gt;().maybeExpando())</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :             return expando-&gt;hasEmptyElements();</span>
+<span class="lineNum">     793 </span>            :         return true;
+<span class="lineNum">     794 </span>            :     }
+<span class="lineNum">     795 </span>            :     return false;
+<span class="lineNum">     796 </span>            : }
+<span class="lineNum">     797 </span>            : 
+<span class="lineNum">     798 </span>            : using ReceiverGuardVector = Vector&lt;ReceiverGuard, 8&gt;;
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span>            : static MOZ_ALWAYS_INLINE PropertyIteratorObject*
+<span class="lineNum">     801 </span><span class="lineCov">        247 : LookupInIteratorCache(JSContext* cx, JSObject* obj, uint32_t* numGuards)</span>
+<span class="lineNum">     802 </span>            : {
+<span class="lineNum">     803 </span><span class="lineCov">        247 :     MOZ_ASSERT(*numGuards == 0);</span>
+<span class="lineNum">     804 </span>            : 
+<span class="lineNum">     805 </span><span class="lineNoCov">          0 :     ReceiverGuardVector guards(cx);</span>
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 :     uint32_t key = 0;</span>
+<span class="lineNum">     807 </span><span class="lineCov">        247 :     JSObject* pobj = obj;</span>
+<span class="lineNum">     808 </span>            :     do {
+<span class="lineNum">     809 </span><span class="lineNoCov">          0 :         if (!CanCompareIterableObjectToCache(pobj))</span>
+<span class="lineNum">     810 </span><span class="lineCov">         44 :             return nullptr;</span>
+<span class="lineNum">     811 </span>            : 
+<span class="lineNum">     812 </span><span class="lineNoCov">          0 :         ReceiverGuard guard(pobj);</span>
+<span class="lineNum">     813 </span><span class="lineCov">        842 :         key = mozilla::AddToHash(key, guard.hash());</span>
+<span class="lineNum">     814 </span>            : 
+<span class="lineNum">     815 </span><span class="lineCov">          1 :         if (MOZ_UNLIKELY(!guards.append(guard))) {</span>
+<span class="lineNum">     816 </span><span class="lineNoCov">          0 :             cx-&gt;recoverFromOutOfMemory();</span>
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 :             return nullptr;</span>
+<span class="lineNum">     818 </span>            :         }
+<span class="lineNum">     819 </span>            : 
+<span class="lineNum">     820 </span><span class="lineNoCov">          0 :         pobj = pobj-&gt;staticPrototype();</span>
+<span class="lineNum">     821 </span><span class="lineCov">        421 :     } while (pobj);</span>
+<span class="lineNum">     822 </span>            : 
+<span class="lineNum">     823 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!guards.empty());</span>
+<span class="lineNum">     824 </span><span class="lineCov">        203 :     *numGuards = guards.length();</span>
+<span class="lineNum">     825 </span>            : 
+<span class="lineNum">     826 </span><span class="lineNoCov">          0 :     IteratorHashPolicy::Lookup lookup(guards.begin(), guards.length(), key);</span>
+<span class="lineNum">     827 </span><span class="lineNoCov">          0 :     auto p = ObjectRealm::get(obj).iteratorCache.lookup(lookup);</span>
+<span class="lineNum">     828 </span><span class="lineCov">        203 :     if (!p)</span>
+<span class="lineNum">     829 </span>            :         return nullptr;
+<span class="lineNum">     830 </span>            : 
+<span class="lineNum">     831 </span><span class="lineNoCov">          0 :     PropertyIteratorObject* iterobj = *p;</span>
+<span class="lineNum">     832 </span><span class="lineCov">        228 :     MOZ_ASSERT(iterobj-&gt;compartment() == cx-&gt;compartment());</span>
+<span class="lineNum">     833 </span>            : 
+<span class="lineNum">     834 </span><span class="lineNoCov">          0 :     NativeIterator* ni = iterobj-&gt;getNativeIterator();</span>
+<span class="lineNum">     835 </span><span class="lineCov">         76 :     if (!ni-&gt;isReusable())</span>
+<span class="lineNum">     836 </span>            :         return nullptr;
+<span class="lineNum">     837 </span>            : 
+<span class="lineNum">     838 </span><span class="lineCov">         75 :     return iterobj;</span>
+<span class="lineNum">     839 </span>            : }
+<span class="lineNum">     840 </span>            : 
+<span class="lineNum">     841 </span>            : static bool
+<span class="lineNum">     842 </span><span class="lineCov">        189 : CanStoreInIteratorCache(JSObject* obj)</span>
+<span class="lineNum">     843 </span>            : {
+<span class="lineNum">     844 </span>            :     do {
+<span class="lineNum">     845 </span><span class="lineNoCov">          0 :         if (obj-&gt;isNative()) {</span>
+<span class="lineNum">     846 </span><span class="lineCov">        770 :             MOZ_ASSERT(obj-&gt;as&lt;NativeObject&gt;().hasEmptyElements());</span>
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span>            :             // Typed arrays have indexed properties not captured by the Shape guard.
+<span class="lineNum">     849 </span>            :             // Enumerate hooks may add extra properties.
+<span class="lineNum">     850 </span><span class="lineNoCov">          0 :             const Class* clasp = obj-&gt;getClass();</span>
+<span class="lineNum">     851 </span><span class="lineCov">        385 :             if (MOZ_UNLIKELY(IsTypedArrayClass(clasp)))</span>
+<span class="lineNum">     852 </span>            :                 return false;
+<span class="lineNum">     853 </span><span class="lineCov">        770 :             if (MOZ_UNLIKELY(clasp-&gt;getNewEnumerate() || clasp-&gt;getEnumerate()))</span>
+<span class="lineNum">     854 </span>            :                 return false;
+<span class="lineNum">     855 </span>            :         } else {
+<span class="lineNum">     856 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(obj-&gt;is&lt;UnboxedPlainObject&gt;());</span>
+<span class="lineNum">     857 </span>            :         }
+<span class="lineNum">     858 </span>            : 
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 :         obj = obj-&gt;staticPrototype();</span>
+<span class="lineNum">     860 </span><span class="lineCov">        384 :     } while (obj);</span>
+<span class="lineNum">     861 </span>            : 
+<span class="lineNum">     862 </span>            :     return true;
+<span class="lineNum">     863 </span>            : }
+<span class="lineNum">     864 </span>            : 
+<span class="lineNum">     865 </span>            : static MOZ_MUST_USE bool
+<span class="lineNum">     866 </span><span class="lineCov">         94 : StoreInIteratorCache(JSContext* cx, JSObject* obj, PropertyIteratorObject* iterobj)</span>
+<span class="lineNum">     867 </span>            : {
+<span class="lineNum">     868 </span><span class="lineCov">         94 :     MOZ_ASSERT(CanStoreInIteratorCache(obj));</span>
+<span class="lineNum">     869 </span>            : 
+<span class="lineNum">     870 </span><span class="lineNoCov">          0 :     NativeIterator* ni = iterobj-&gt;getNativeIterator();</span>
+<span class="lineNum">     871 </span><span class="lineCov">         94 :     MOZ_ASSERT(ni-&gt;guardCount() &gt; 0);</span>
+<span class="lineNum">     872 </span>            : 
+<span class="lineNum">     873 </span><span class="lineNoCov">          0 :     IteratorHashPolicy::Lookup lookup(reinterpret_cast&lt;ReceiverGuard*&gt;(ni-&gt;guardsBegin()),</span>
+<span class="lineNum">     874 </span><span class="lineNoCov">          0 :                                       ni-&gt;guardCount(),</span>
+<span class="lineNum">     875 </span><span class="lineCov">        282 :                                       ni-&gt;guardKey());</span>
+<span class="lineNum">     876 </span>            : 
+<span class="lineNum">     877 </span><span class="lineCov">         94 :     ObjectRealm::IteratorCache&amp; cache = ObjectRealm::get(obj).iteratorCache;</span>
+<span class="lineNum">     878 </span>            :     bool ok;
+<span class="lineNum">     879 </span><span class="lineNoCov">          0 :     auto p = cache.lookupForAdd(lookup);</span>
+<span class="lineNum">     880 </span><span class="lineNoCov">          0 :     if (MOZ_LIKELY(!p)) {</span>
+<span class="lineNum">     881 </span><span class="lineCov">         92 :         ok = cache.add(p, iterobj);</span>
+<span class="lineNum">     882 </span>            :     } else {
+<span class="lineNum">     883 </span>            :         // If we weren't able to use an existing cached iterator, just
+<span class="lineNum">     884 </span>            :         // replace it.
+<span class="lineNum">     885 </span><span class="lineNoCov">          0 :         cache.remove(p);</span>
+<span class="lineNum">     886 </span><span class="lineCov">          2 :         ok = cache.relookupOrAdd(p, lookup, iterobj);</span>
+<span class="lineNum">     887 </span>            :     }
+<span class="lineNum">     888 </span><span class="lineCov">          1 :     if (!ok) {</span>
+<span class="lineNum">     889 </span><span class="lineNoCov">          0 :         ReportOutOfMemory(cx);</span>
+<span class="lineNum">     890 </span><span class="lineNoCov">          0 :         return false;</span>
+<span class="lineNum">     891 </span>            :     }
+<span class="lineNum">     892 </span>            : 
+<span class="lineNum">     893 </span>            :     return true;
+<span class="lineNum">     894 </span>            : }
+<span class="lineNum">     895 </span>            : 
+<span class="lineNum">     896 </span>            : JSObject*
+<span class="lineNum">     897 </span><span class="lineCov">        166 : js::GetIterator(JSContext* cx, HandleObject obj)</span>
+<span class="lineNum">     898 </span>            : {
+<span class="lineNum">     899 </span><span class="lineNoCov">          0 :     uint32_t numGuards = 0;</span>
+<span class="lineNum">     900 </span><span class="lineNoCov">          0 :     if (PropertyIteratorObject* iterobj = LookupInIteratorCache(cx, obj, &amp;numGuards)) {</span>
+<span class="lineNum">     901 </span><span class="lineNoCov">          0 :         NativeIterator* ni = iterobj-&gt;getNativeIterator();</span>
+<span class="lineNum">     902 </span><span class="lineNoCov">          0 :         ni-&gt;changeObjectBeingIterated(*obj);</span>
+<span class="lineNum">     903 </span><span class="lineNoCov">          0 :         RegisterEnumerator(ObjectRealm::get(obj), ni);</span>
+<span class="lineNum">     904 </span><span class="lineCov">         47 :         return iterobj;</span>
+<span class="lineNum">     905 </span>            :     }
+<span class="lineNum">     906 </span>            : 
+<span class="lineNum">     907 </span><span class="lineNoCov">          0 :     if (numGuards &gt; 0 &amp;&amp; !CanStoreInIteratorCache(obj))</span>
+<span class="lineNum">     908 </span><span class="lineCov">          1 :         numGuards = 0;</span>
+<span class="lineNum">     909 </span>            : 
+<span class="lineNum">     910 </span><span class="lineCov">        238 :     MOZ_ASSERT(!obj-&gt;is&lt;PropertyIteratorObject&gt;());</span>
+<span class="lineNum">     911 </span>            : 
+<span class="lineNum">     912 </span><span class="lineNoCov">          0 :     if (MOZ_UNLIKELY(obj-&gt;is&lt;ProxyObject&gt;()))</span>
+<span class="lineNum">     913 </span><span class="lineCov">         24 :         return Proxy::enumerate(cx, obj);</span>
+<span class="lineNum">     914 </span>            : 
+<span class="lineNum">     915 </span><span class="lineNoCov">          0 :     AutoIdVector keys(cx);</span>
+<span class="lineNum">     916 </span><span class="lineCov">         95 :     if (!Snapshot(cx, obj, 0, &amp;keys))</span>
+<span class="lineNum">     917 </span>            :         return nullptr;
+<span class="lineNum">     918 </span>            : 
+<span class="lineNum">     919 </span><span class="lineNoCov">          0 :     JSObject* res = VectorToKeyIterator(cx, obj, keys, numGuards);</span>
+<span class="lineNum">     920 </span><span class="lineCov">         95 :     if (!res)</span>
+<span class="lineNum">     921 </span>            :         return nullptr;
+<span class="lineNum">     922 </span>            : 
+<span class="lineNum">     923 </span><span class="lineNoCov">          0 :     PropertyIteratorObject* iterobj = &amp;res-&gt;as&lt;PropertyIteratorObject&gt;();</span>
+<span class="lineNum">     924 </span><span class="lineCov">         95 :     assertSameCompartment(cx, iterobj);</span>
+<span class="lineNum">     925 </span>            : 
+<span class="lineNum">     926 </span>            :     // Cache the iterator object.
+<span class="lineNum">     927 </span><span class="lineNoCov">          0 :     if (numGuards &gt; 0) {</span>
+<span class="lineNum">     928 </span><span class="lineCov">        188 :         if (!StoreInIteratorCache(cx, obj, iterobj))</span>
+<span class="lineNum">     929 </span>            :             return nullptr;
+<span class="lineNum">     930 </span>            :     }
+<span class="lineNum">     931 </span>            : 
+<span class="lineNum">     932 </span><span class="lineCov">         95 :     return iterobj;</span>
+<span class="lineNum">     933 </span>            : }
+<span class="lineNum">     934 </span>            : 
+<span class="lineNum">     935 </span>            : PropertyIteratorObject*
+<span class="lineNum">     936 </span><span class="lineCov">         81 : js::LookupInIteratorCache(JSContext* cx, HandleObject obj)</span>
+<span class="lineNum">     937 </span>            : {
+<span class="lineNum">     938 </span><span class="lineNoCov">          0 :     uint32_t numGuards = 0;</span>
+<span class="lineNum">     939 </span><span class="lineCov">         81 :     return LookupInIteratorCache(cx, obj, &amp;numGuards);</span>
+<span class="lineNum">     940 </span>            : }
+<span class="lineNum">     941 </span>            : 
+<span class="lineNum">     942 </span>            : // ES 2017 draft 7.4.7.
+<span class="lineNum">     943 </span>            : JSObject*
+<span class="lineNum">     944 </span><span class="lineNoCov">          0 : js::CreateIterResultObject(JSContext* cx, HandleValue value, bool done)</span>
+<span class="lineNum">     945 </span>            : {
+<span class="lineNum">     946 </span>            :     // Step 1 (implicit).
+<span class="lineNum">     947 </span>            : 
+<span class="lineNum">     948 </span>            :     // Step 2.
+<span class="lineNum">     949 </span><span class="lineNoCov">          0 :     RootedObject templateObject(cx, cx-&gt;realm()-&gt;getOrCreateIterResultTemplateObject(cx));</span>
+<span class="lineNum">     950 </span><span class="lineNoCov">          0 :     if (!templateObject)</span>
+<span class="lineNum">     951 </span>            :         return nullptr;
+<span class="lineNum">     952 </span>            : 
+<span class="lineNum">     953 </span>            :     NativeObject* resultObj;
+<span class="lineNum">     954 </span><span class="lineNoCov">          0 :     JS_TRY_VAR_OR_RETURN_NULL(cx, resultObj, NativeObject::createWithTemplate(cx, gc::DefaultHeap,</span>
+<span class="lineNum">     955 </span>            :                                                                               templateObject));
+<span class="lineNum">     956 </span>            : 
+<span class="lineNum">     957 </span>            :     // Step 3.
+<span class="lineNum">     958 </span><span class="lineNoCov">          0 :     resultObj-&gt;setSlot(Realm::IterResultObjectValueSlot, value);</span>
+<span class="lineNum">     959 </span>            : 
+<span class="lineNum">     960 </span>            :     // Step 4.
+<span class="lineNum">     961 </span><span class="lineNoCov">          0 :     resultObj-&gt;setSlot(Realm::IterResultObjectDoneSlot,</span>
+<span class="lineNum">     962 </span><span class="lineNoCov">          0 :                        done ? TrueHandleValue : FalseHandleValue);</span>
+<span class="lineNum">     963 </span>            : 
+<span class="lineNum">     964 </span>            :     // Step 5.
+<span class="lineNum">     965 </span><span class="lineNoCov">          0 :     return resultObj;</span>
+<span class="lineNum">     966 </span>            : }
+<span class="lineNum">     967 </span>            : 
+<span class="lineNum">     968 </span>            : NativeObject*
+<span class="lineNum">     969 </span><span class="lineNoCov">          0 : Realm::getOrCreateIterResultTemplateObject(JSContext* cx)</span>
+<span class="lineNum">     970 </span>            : {
+<span class="lineNum">     971 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(cx-&gt;realm() == this);</span>
+<span class="lineNum">     972 </span>            : 
+<span class="lineNum">     973 </span><span class="lineNoCov">          0 :     if (iterResultTemplate_)</span>
+<span class="lineNum">     974 </span><span class="lineNoCov">          0 :         return iterResultTemplate_;</span>
+<span class="lineNum">     975 </span>            : 
+<span class="lineNum">     976 </span>            :     // Create template plain object
+<span class="lineNum">     977 </span><span class="lineNoCov">          0 :     RootedNativeObject templateObject(cx, NewBuiltinClassInstance&lt;PlainObject&gt;(cx, TenuredObject));</span>
+<span class="lineNum">     978 </span><span class="lineNoCov">          0 :     if (!templateObject)</span>
+<span class="lineNum">     979 </span><span class="lineNoCov">          0 :         return iterResultTemplate_; // = nullptr</span>
+<span class="lineNum">     980 </span>            : 
+<span class="lineNum">     981 </span>            :     // Create a new group for the template.
+<span class="lineNum">     982 </span><span class="lineNoCov">          0 :     Rooted&lt;TaggedProto&gt; proto(cx, templateObject-&gt;taggedProto());</span>
+<span class="lineNum">     983 </span><span class="lineNoCov">          0 :     RootedObjectGroup group(cx, ObjectGroupRealm::makeGroup(cx, templateObject-&gt;getClass(),</span>
+<span class="lineNum">     984 </span><span class="lineNoCov">          0 :                                                             proto));</span>
+<span class="lineNum">     985 </span><span class="lineNoCov">          0 :     if (!group)</span>
+<span class="lineNum">     986 </span><span class="lineNoCov">          0 :         return iterResultTemplate_; // = nullptr</span>
+<span class="lineNum">     987 </span><span class="lineNoCov">          0 :     templateObject-&gt;setGroup(group);</span>
+<span class="lineNum">     988 </span>            : 
+<span class="lineNum">     989 </span>            :     // Set dummy `value` property
+<span class="lineNum">     990 </span><span class="lineNoCov">          0 :     if (!NativeDefineDataProperty(cx, templateObject, cx-&gt;names().value, UndefinedHandleValue,</span>
+<span class="lineNum">     991 </span>            :                                   JSPROP_ENUMERATE))
+<span class="lineNum">     992 </span>            :     {
+<span class="lineNum">     993 </span><span class="lineNoCov">          0 :         return iterResultTemplate_; // = nullptr</span>
+<span class="lineNum">     994 </span>            :     }
+<span class="lineNum">     995 </span>            : 
+<span class="lineNum">     996 </span>            :     // Set dummy `done` property
+<span class="lineNum">     997 </span><span class="lineNoCov">          0 :     if (!NativeDefineDataProperty(cx, templateObject, cx-&gt;names().done, TrueHandleValue,</span>
+<span class="lineNum">     998 </span>            :                                   JSPROP_ENUMERATE))
+<span class="lineNum">     999 </span>            :     {
+<span class="lineNum">    1000 </span><span class="lineNoCov">          0 :         return iterResultTemplate_; // = nullptr</span>
+<span class="lineNum">    1001 </span>            :     }
+<span class="lineNum">    1002 </span>            : 
+<span class="lineNum">    1003 </span><span class="lineNoCov">          0 :     AutoSweepObjectGroup sweep(group);</span>
+<span class="lineNum">    1004 </span><span class="lineNoCov">          0 :     if (!group-&gt;unknownProperties(sweep)) {</span>
+<span class="lineNum">    1005 </span>            :         // Update `value` property typeset, since it can be any value.
+<span class="lineNum">    1006 </span><span class="lineNoCov">          0 :         HeapTypeSet* types = group-&gt;maybeGetProperty(sweep, NameToId(cx-&gt;names().value));</span>
+<span class="lineNum">    1007 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(types);</span>
+<span class="lineNum">    1008 </span>            :         {
+<span class="lineNum">    1009 </span><span class="lineNoCov">          0 :             AutoEnterAnalysis enter(cx);</span>
+<span class="lineNum">    1010 </span><span class="lineNoCov">          0 :             types-&gt;makeUnknown(sweep, cx);</span>
+<span class="lineNum">    1011 </span>            :         }
+<span class="lineNum">    1012 </span>            :     }
+<span class="lineNum">    1013 </span>            : 
+<span class="lineNum">    1014 </span>            :     // Make sure that the properties are in the right slots.
+<span class="lineNum">    1015 </span><span class="lineNoCov">          0 :     DebugOnly&lt;Shape*&gt; shape = templateObject-&gt;lastProperty();</span>
+<span class="lineNum">    1016 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(shape-&gt;previous()-&gt;slot() == Realm::IterResultObjectValueSlot &amp;&amp;</span>
+<span class="lineNum">    1017 </span>            :                shape-&gt;previous()-&gt;propidRef() == NameToId(cx-&gt;names().value));
+<span class="lineNum">    1018 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(shape-&gt;slot() == Realm::IterResultObjectDoneSlot &amp;&amp;</span>
+<span class="lineNum">    1019 </span>            :                shape-&gt;propidRef() == NameToId(cx-&gt;names().done));
+<span class="lineNum">    1020 </span>            : 
+<span class="lineNum">    1021 </span><span class="lineNoCov">          0 :     iterResultTemplate_.set(templateObject);</span>
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span><span class="lineNoCov">          0 :     return iterResultTemplate_;</span>
+<span class="lineNum">    1024 </span>            : }
+<span class="lineNum">    1025 </span>            : 
+<span class="lineNum">    1026 </span>            : /*** Iterator objects ****************************************************************************/
+<span class="lineNum">    1027 </span>            : 
+<span class="lineNum">    1028 </span>            : bool
+<span class="lineNum">    1029 </span><span class="lineNoCov">          0 : js::IsPropertyIterator(HandleValue v)</span>
+<span class="lineNum">    1030 </span>            : {
+<span class="lineNum">    1031 </span><span class="lineNoCov">          0 :     return v.isObject() &amp;&amp; v.toObject().is&lt;PropertyIteratorObject&gt;();</span>
+<span class="lineNum">    1032 </span>            : }
+<span class="lineNum">    1033 </span>            : 
+<span class="lineNum">    1034 </span>            : size_t
+<span class="lineNum">    1035 </span><span class="lineNoCov">          0 : PropertyIteratorObject::sizeOfMisc(mozilla::MallocSizeOf mallocSizeOf) const</span>
+<span class="lineNum">    1036 </span>            : {
+<span class="lineNum">    1037 </span><span class="lineNoCov">          0 :     return mallocSizeOf(getPrivate());</span>
+<span class="lineNum">    1038 </span>            : }
+<span class="lineNum">    1039 </span>            : 
+<span class="lineNum">    1040 </span>            : void
+<span class="lineNum">    1041 </span><span class="lineCov">          3 : PropertyIteratorObject::trace(JSTracer* trc, JSObject* obj)</span>
+<span class="lineNum">    1042 </span>            : {
+<span class="lineNum">    1043 </span><span class="lineNoCov">          0 :     if (NativeIterator* ni = obj-&gt;as&lt;PropertyIteratorObject&gt;().getNativeIterator())</span>
+<span class="lineNum">    1044 </span><span class="lineNoCov">          0 :         ni-&gt;trace(trc);</span>
+<span class="lineNum">    1045 </span><span class="lineCov">          3 : }</span>
+<span class="lineNum">    1046 </span>            : 
+<span class="lineNum">    1047 </span>            : void
+<span class="lineNum">    1048 </span><span class="lineNoCov">          0 : PropertyIteratorObject::finalize(FreeOp* fop, JSObject* obj)</span>
+<span class="lineNum">    1049 </span>            : {
+<span class="lineNum">    1050 </span><span class="lineNoCov">          0 :     if (NativeIterator* ni = obj-&gt;as&lt;PropertyIteratorObject&gt;().getNativeIterator())</span>
+<span class="lineNum">    1051 </span><span class="lineNoCov">          0 :         fop-&gt;free_(ni);</span>
+<span class="lineNum">    1052 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">    1053 </span>            : 
+<span class="lineNum">    1054 </span>            : const ClassOps PropertyIteratorObject::classOps_ = {
+<span class="lineNum">    1055 </span>            :     nullptr, /* addProperty */
+<span class="lineNum">    1056 </span>            :     nullptr, /* delProperty */
+<span class="lineNum">    1057 </span>            :     nullptr, /* enumerate */
+<span class="lineNum">    1058 </span>            :     nullptr, /* newEnumerate */
+<span class="lineNum">    1059 </span>            :     nullptr, /* resolve */
+<span class="lineNum">    1060 </span>            :     nullptr, /* mayResolve */
+<span class="lineNum">    1061 </span>            :     finalize,
+<span class="lineNum">    1062 </span>            :     nullptr, /* call        */
+<span class="lineNum">    1063 </span>            :     nullptr, /* hasInstance */
+<span class="lineNum">    1064 </span>            :     nullptr, /* construct   */
+<span class="lineNum">    1065 </span>            :     trace
+<span class="lineNum">    1066 </span>            : };
+<span class="lineNum">    1067 </span>            : 
+<span class="lineNum">    1068 </span>            : const Class PropertyIteratorObject::class_ = {
+<span class="lineNum">    1069 </span>            :     &quot;Iterator&quot;,
+<span class="lineNum">    1070 </span>            :     JSCLASS_HAS_PRIVATE |
+<span class="lineNum">    1071 </span>            :     JSCLASS_BACKGROUND_FINALIZE,
+<span class="lineNum">    1072 </span>            :     &amp;PropertyIteratorObject::classOps_
+<span class="lineNum">    1073 </span>            : };
+<span class="lineNum">    1074 </span>            : 
+<span class="lineNum">    1075 </span>            : static const Class ArrayIteratorPrototypeClass = {
+<span class="lineNum">    1076 </span>            :     &quot;Array Iterator&quot;,
+<span class="lineNum">    1077 </span>            :     0
+<span class="lineNum">    1078 </span>            : };
+<span class="lineNum">    1079 </span>            : 
+<span class="lineNum">    1080 </span>            : enum {
+<span class="lineNum">    1081 </span>            :     ArrayIteratorSlotIteratedObject,
+<span class="lineNum">    1082 </span>            :     ArrayIteratorSlotNextIndex,
+<span class="lineNum">    1083 </span>            :     ArrayIteratorSlotItemKind,
+<span class="lineNum">    1084 </span>            :     ArrayIteratorSlotCount
+<span class="lineNum">    1085 </span>            : };
+<span class="lineNum">    1086 </span>            : 
+<span class="lineNum">    1087 </span>            : const Class ArrayIteratorObject::class_ = {
+<span class="lineNum">    1088 </span>            :     &quot;Array Iterator&quot;,
+<span class="lineNum">    1089 </span>            :     JSCLASS_HAS_RESERVED_SLOTS(ArrayIteratorSlotCount)
+<span class="lineNum">    1090 </span>            : };
+<span class="lineNum">    1091 </span>            : 
+<span class="lineNum">    1092 </span>            : 
+<span class="lineNum">    1093 </span>            : ArrayIteratorObject*
+<span class="lineNum">    1094 </span><span class="lineCov">       1599 : js::NewArrayIteratorObject(JSContext* cx, NewObjectKind newKind)</span>
+<span class="lineNum">    1095 </span>            : {
+<span class="lineNum">    1096 </span><span class="lineNoCov">          0 :     RootedObject proto(cx, GlobalObject::getOrCreateArrayIteratorPrototype(cx, cx-&gt;global()));</span>
+<span class="lineNum">    1097 </span><span class="lineCov">       1599 :     if (!proto)</span>
+<span class="lineNum">    1098 </span>            :         return nullptr;
+<span class="lineNum">    1099 </span>            : 
+<span class="lineNum">    1100 </span><span class="lineCov">       3198 :     return NewObjectWithGivenProto&lt;ArrayIteratorObject&gt;(cx, proto, newKind);</span>
+<span class="lineNum">    1101 </span>            : }
+<span class="lineNum">    1102 </span>            : 
+<span class="lineNum">    1103 </span>            : static const JSFunctionSpec array_iterator_methods[] = {
+<span class="lineNum">    1104 </span>            :     JS_SELF_HOSTED_FN(&quot;next&quot;, &quot;ArrayIteratorNext&quot;, 0, 0),
+<span class="lineNum">    1105 </span>            :     JS_FS_END
+<span class="lineNum">    1106 </span>            : };
+<span class="lineNum">    1107 </span>            : 
+<span class="lineNum">    1108 </span>            : static const Class StringIteratorPrototypeClass = {
+<span class="lineNum">    1109 </span>            :     &quot;String Iterator&quot;,
+<span class="lineNum">    1110 </span>            :     0
+<span class="lineNum">    1111 </span>            : };
+<span class="lineNum">    1112 </span>            : 
+<span class="lineNum">    1113 </span>            : enum {
+<span class="lineNum">    1114 </span>            :     StringIteratorSlotIteratedObject,
+<span class="lineNum">    1115 </span>            :     StringIteratorSlotNextIndex,
+<span class="lineNum">    1116 </span>            :     StringIteratorSlotCount
+<span class="lineNum">    1117 </span>            : };
+<span class="lineNum">    1118 </span>            : 
+<span class="lineNum">    1119 </span>            : const Class StringIteratorObject::class_ = {
+<span class="lineNum">    1120 </span>            :     &quot;String Iterator&quot;,
+<span class="lineNum">    1121 </span>            :     JSCLASS_HAS_RESERVED_SLOTS(StringIteratorSlotCount)
+<span class="lineNum">    1122 </span>            : };
+<span class="lineNum">    1123 </span>            : 
+<span class="lineNum">    1124 </span>            : static const JSFunctionSpec string_iterator_methods[] = {
+<span class="lineNum">    1125 </span>            :     JS_SELF_HOSTED_FN(&quot;next&quot;, &quot;StringIteratorNext&quot;, 0, 0),
+<span class="lineNum">    1126 </span>            :     JS_FS_END
+<span class="lineNum">    1127 </span>            : };
+<span class="lineNum">    1128 </span>            : 
+<span class="lineNum">    1129 </span>            : StringIteratorObject*
+<span class="lineNum">    1130 </span><span class="lineNoCov">          0 : js::NewStringIteratorObject(JSContext* cx, NewObjectKind newKind)</span>
+<span class="lineNum">    1131 </span>            : {
+<span class="lineNum">    1132 </span><span class="lineNoCov">          0 :     RootedObject proto(cx, GlobalObject::getOrCreateStringIteratorPrototype(cx, cx-&gt;global()));</span>
+<span class="lineNum">    1133 </span><span class="lineNoCov">          0 :     if (!proto)</span>
+<span class="lineNum">    1134 </span>            :         return nullptr;
+<span class="lineNum">    1135 </span>            : 
+<span class="lineNum">    1136 </span><span class="lineNoCov">          0 :     return NewObjectWithGivenProto&lt;StringIteratorObject&gt;(cx, proto, newKind);</span>
+<span class="lineNum">    1137 </span>            : }
+<span class="lineNum">    1138 </span>            : 
+<span class="lineNum">    1139 </span>            : JSObject*
+<span class="lineNum">    1140 </span><span class="lineCov">        147 : js::ValueToIterator(JSContext* cx, HandleValue vp)</span>
+<span class="lineNum">    1141 </span>            : {
+<span class="lineNum">    1142 </span><span class="lineNoCov">          0 :     RootedObject obj(cx);</span>
+<span class="lineNum">    1143 </span><span class="lineCov">        147 :     if (vp.isObject()) {</span>
+<span class="lineNum">    1144 </span>            :         /* Common case. */
+<span class="lineNum">    1145 </span><span class="lineNoCov">          0 :         obj = &amp;vp.toObject();</span>
+<span class="lineNum">    1146 </span><span class="lineCov">          5 :     } else if (vp.isNullOrUndefined()) {</span>
+<span class="lineNum">    1147 </span>            :         /*
+<span class="lineNum">    1148 </span>            :          * Enumerating over null and undefined gives an empty enumerator, so
+<span class="lineNum">    1149 </span>            :          * that |for (var p in &lt;null or undefined&gt;) &lt;loop&gt;;| never executes
+<span class="lineNum">    1150 </span>            :          * &lt;loop&gt;, per ES5 12.6.4.
+<span class="lineNum">    1151 </span>            :          */
+<span class="lineNum">    1152 </span><span class="lineCov">          5 :         return NewEmptyPropertyIterator(cx);</span>
+<span class="lineNum">    1153 </span>            :     } else {
+<span class="lineNum">    1154 </span><span class="lineNoCov">          0 :         obj = ToObject(cx, vp);</span>
+<span class="lineNum">    1155 </span><span class="lineNoCov">          0 :         if (!obj)</span>
+<span class="lineNum">    1156 </span>            :             return nullptr;
+<span class="lineNum">    1157 </span>            :     }
+<span class="lineNum">    1158 </span>            : 
+<span class="lineNum">    1159 </span><span class="lineCov">        142 :     return GetIterator(cx, obj);</span>
+<span class="lineNum">    1160 </span>            : }
+<span class="lineNum">    1161 </span>            : 
+<span class="lineNum">    1162 </span>            : void
+<span class="lineNum">    1163 </span><span class="lineCov">        276 : js::CloseIterator(JSObject* obj)</span>
+<span class="lineNum">    1164 </span>            : {
+<span class="lineNum">    1165 </span><span class="lineCov">        276 :     if (obj-&gt;is&lt;PropertyIteratorObject&gt;()) {</span>
+<span class="lineNum">    1166 </span>            :         /* Remove enumerators from the active list, which is a stack. */
+<span class="lineNum">    1167 </span><span class="lineCov">        552 :         NativeIterator* ni = obj-&gt;as&lt;PropertyIteratorObject&gt;().getNativeIterator();</span>
+<span class="lineNum">    1168 </span>            : 
+<span class="lineNum">    1169 </span><span class="lineCov">        276 :         ni-&gt;unlink();</span>
+<span class="lineNum">    1170 </span>            : 
+<span class="lineNum">    1171 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(ni-&gt;isActive());</span>
+<span class="lineNum">    1172 </span><span class="lineCov">        276 :         ni-&gt;markInactive();</span>
+<span class="lineNum">    1173 </span>            : 
+<span class="lineNum">    1174 </span>            :         // Reset the enumerator; it may still be in the cached iterators for
+<span class="lineNum">    1175 </span>            :         // this thread and can be reused.
+<span class="lineNum">    1176 </span><span class="lineCov">        276 :         ni-&gt;resetPropertyCursorForReuse();</span>
+<span class="lineNum">    1177 </span>            :     }
+<span class="lineNum">    1178 </span><span class="lineCov">        276 : }</span>
+<span class="lineNum">    1179 </span>            : 
+<span class="lineNum">    1180 </span>            : bool
+<span class="lineNum">    1181 </span><span class="lineNoCov">          0 : js::IteratorCloseForException(JSContext* cx, HandleObject obj)</span>
+<span class="lineNum">    1182 </span>            : {
+<span class="lineNum">    1183 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(cx-&gt;isExceptionPending());</span>
+<span class="lineNum">    1184 </span>            : 
+<span class="lineNum">    1185 </span><span class="lineNoCov">          0 :     bool isClosingGenerator = cx-&gt;isClosingGenerator();</span>
+<span class="lineNum">    1186 </span><span class="lineNoCov">          0 :     JS::AutoSaveExceptionState savedExc(cx);</span>
+<span class="lineNum">    1187 </span>            : 
+<span class="lineNum">    1188 </span>            :     // Implements IteratorClose (ES 7.4.6) for exception unwinding. See
+<span class="lineNum">    1189 </span>            :     // also the bytecode generated by BytecodeEmitter::emitIteratorClose.
+<span class="lineNum">    1190 </span>            : 
+<span class="lineNum">    1191 </span>            :     // Step 3.
+<span class="lineNum">    1192 </span>            :     //
+<span class="lineNum">    1193 </span>            :     // Get the &quot;return&quot; method.
+<span class="lineNum">    1194 </span><span class="lineNoCov">          0 :     RootedValue returnMethod(cx);</span>
+<span class="lineNum">    1195 </span><span class="lineNoCov">          0 :     if (!GetProperty(cx, obj, obj, cx-&gt;names().return_, &amp;returnMethod))</span>
+<span class="lineNum">    1196 </span>            :         return false;
+<span class="lineNum">    1197 </span>            : 
+<span class="lineNum">    1198 </span>            :     // Step 4.
+<span class="lineNum">    1199 </span>            :     //
+<span class="lineNum">    1200 </span>            :     // Do nothing if &quot;return&quot; is null or undefined. Throw a TypeError if the
+<span class="lineNum">    1201 </span>            :     // method is not IsCallable.
+<span class="lineNum">    1202 </span><span class="lineNoCov">          0 :     if (returnMethod.isNullOrUndefined())</span>
+<span class="lineNum">    1203 </span>            :         return true;
+<span class="lineNum">    1204 </span><span class="lineNoCov">          0 :     if (!IsCallable(returnMethod))</span>
+<span class="lineNum">    1205 </span><span class="lineNoCov">          0 :         return ReportIsNotFunction(cx, returnMethod);</span>
+<span class="lineNum">    1206 </span>            : 
+<span class="lineNum">    1207 </span>            :     // Step 5, 6, 8.
+<span class="lineNum">    1208 </span>            :     //
+<span class="lineNum">    1209 </span>            :     // Call &quot;return&quot; if it is not null or undefined.
+<span class="lineNum">    1210 </span><span class="lineNoCov">          0 :     RootedValue rval(cx);</span>
+<span class="lineNum">    1211 </span><span class="lineNoCov">          0 :     bool ok = Call(cx, returnMethod, obj, &amp;rval);</span>
+<span class="lineNum">    1212 </span><span class="lineNoCov">          0 :     if (isClosingGenerator) {</span>
+<span class="lineNum">    1213 </span>            :         // Closing an iterator is implemented as an exception, but in spec
+<span class="lineNum">    1214 </span>            :         // terms it is a Completion value with [[Type]] return. In this case
+<span class="lineNum">    1215 </span>            :         // we *do* care if the call threw and if it returned an object.
+<span class="lineNum">    1216 </span><span class="lineNoCov">          0 :         if (!ok)</span>
+<span class="lineNum">    1217 </span>            :             return false;
+<span class="lineNum">    1218 </span><span class="lineNoCov">          0 :         if (!rval.isObject())</span>
+<span class="lineNum">    1219 </span><span class="lineNoCov">          0 :             return ThrowCheckIsObject(cx, CheckIsObjectKind::IteratorReturn);</span>
+<span class="lineNum">    1220 </span>            :     } else {
+<span class="lineNum">    1221 </span>            :         // We don't care if the call threw or that it returned an Object, as
+<span class="lineNum">    1222 </span>            :         // Step 6 says if IteratorClose is being called during a throw, the
+<span class="lineNum">    1223 </span>            :         // original throw has primacy.
+<span class="lineNum">    1224 </span><span class="lineNoCov">          0 :         savedExc.restore();</span>
+<span class="lineNum">    1225 </span>            :     }
+<span class="lineNum">    1226 </span>            : 
+<span class="lineNum">    1227 </span>            :     return true;
+<span class="lineNum">    1228 </span>            : }
+<span class="lineNum">    1229 </span>            : 
+<span class="lineNum">    1230 </span>            : void
+<span class="lineNum">    1231 </span><span class="lineNoCov">          0 : js::UnwindIteratorForUncatchableException(JSObject* obj)</span>
+<span class="lineNum">    1232 </span>            : {
+<span class="lineNum">    1233 </span><span class="lineNoCov">          0 :     if (obj-&gt;is&lt;PropertyIteratorObject&gt;()) {</span>
+<span class="lineNum">    1234 </span><span class="lineNoCov">          0 :         NativeIterator* ni = obj-&gt;as&lt;PropertyIteratorObject&gt;().getNativeIterator();</span>
+<span class="lineNum">    1235 </span><span class="lineNoCov">          0 :         ni-&gt;unlink();</span>
+<span class="lineNum">    1236 </span>            :     }
+<span class="lineNum">    1237 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">    1238 </span>            : 
+<span class="lineNum">    1239 </span>            : static bool
+<span class="lineNum">    1240 </span><span class="lineCov">          1 : SuppressDeletedProperty(JSContext* cx, NativeIterator* ni, HandleObject obj,</span>
+<span class="lineNum">    1241 </span>            :                         Handle&lt;JSFlatString*&gt; str)
+<span class="lineNum">    1242 </span>            : {
+<span class="lineNum">    1243 </span><span class="lineCov">          2 :     if (ni-&gt;objectBeingIterated() != obj)</span>
+<span class="lineNum">    1244 </span>            :         return true;
+<span class="lineNum">    1245 </span>            : 
+<span class="lineNum">    1246 </span>            :     // Optimization for the following common case:
+<span class="lineNum">    1247 </span>            :     //
+<span class="lineNum">    1248 </span>            :     //    for (var p in o) {
+<span class="lineNum">    1249 </span>            :     //        delete o[p];
+<span class="lineNum">    1250 </span>            :     //    }
+<span class="lineNum">    1251 </span>            :     //
+<span class="lineNum">    1252 </span>            :     // Note that usually both strings will be atoms so we only check for pointer
+<span class="lineNum">    1253 </span>            :     // equality here.
+<span class="lineNum">    1254 </span><span class="lineCov">          1 :     if (ni-&gt;previousPropertyWas(str))</span>
+<span class="lineNum">    1255 </span>            :         return true;
+<span class="lineNum">    1256 </span>            : 
+<span class="lineNum">    1257 </span>            :     while (true) {
+<span class="lineNum">    1258 </span><span class="lineNoCov">          0 :         bool restart = false;</span>
+<span class="lineNum">    1259 </span>            : 
+<span class="lineNum">    1260 </span>            :         // Check whether id is still to come.
+<span class="lineNum">    1261 </span><span class="lineNoCov">          0 :         GCPtrFlatString* const cursor = ni-&gt;nextProperty();</span>
+<span class="lineNum">    1262 </span><span class="lineNoCov">          0 :         GCPtrFlatString* const end = ni-&gt;propertiesEnd();</span>
+<span class="lineNum">    1263 </span><span class="lineNoCov">          0 :         for (GCPtrFlatString* idp = cursor; idp &lt; end; ++idp) {</span>
+<span class="lineNum">    1264 </span>            :             // Common case: both strings are atoms.
+<span class="lineNum">    1265 </span><span class="lineNoCov">          0 :             if ((*idp)-&gt;isAtom() &amp;&amp; str-&gt;isAtom()) {</span>
+<span class="lineNum">    1266 </span><span class="lineNoCov">          0 :                 if (*idp != str)</span>
+<span class="lineNum">    1267 </span><span class="lineNoCov">          0 :                     continue;</span>
+<span class="lineNum">    1268 </span>            :             } else {
+<span class="lineNum">    1269 </span><span class="lineNoCov">          0 :                 if (!EqualStrings(*idp, str))</span>
+<span class="lineNum">    1270 </span>            :                     continue;
+<span class="lineNum">    1271 </span>            :             }
+<span class="lineNum">    1272 </span>            : 
+<span class="lineNum">    1273 </span>            :             // Check whether another property along the prototype chain became
+<span class="lineNum">    1274 </span>            :             // visible as a result of this deletion.
+<span class="lineNum">    1275 </span><span class="lineNoCov">          0 :             RootedObject proto(cx);</span>
+<span class="lineNum">    1276 </span><span class="lineNoCov">          0 :             if (!GetPrototype(cx, obj, &amp;proto))</span>
+<span class="lineNum">    1277 </span><span class="lineNoCov">          0 :                 return false;</span>
+<span class="lineNum">    1278 </span><span class="lineNoCov">          0 :             if (proto) {</span>
+<span class="lineNum">    1279 </span><span class="lineNoCov">          0 :                 RootedId id(cx);</span>
+<span class="lineNum">    1280 </span><span class="lineNoCov">          0 :                 RootedValue idv(cx, StringValue(*idp));</span>
+<span class="lineNum">    1281 </span><span class="lineNoCov">          0 :                 if (!ValueToId&lt;CanGC&gt;(cx, idv, &amp;id))</span>
+<span class="lineNum">    1282 </span><span class="lineNoCov">          0 :                     return false;</span>
+<span class="lineNum">    1283 </span>            : 
+<span class="lineNum">    1284 </span><span class="lineNoCov">          0 :                 Rooted&lt;PropertyDescriptor&gt; desc(cx);</span>
+<span class="lineNum">    1285 </span><span class="lineNoCov">          0 :                 if (!GetPropertyDescriptor(cx, proto, id, &amp;desc))</span>
+<span class="lineNum">    1286 </span><span class="lineNoCov">          0 :                     return false;</span>
+<span class="lineNum">    1287 </span>            : 
+<span class="lineNum">    1288 </span><span class="lineNoCov">          0 :                 if (desc.object() &amp;&amp; desc.enumerable())</span>
+<span class="lineNum">    1289 </span><span class="lineNoCov">          0 :                     continue;</span>
+<span class="lineNum">    1290 </span>            :             }
+<span class="lineNum">    1291 </span>            : 
+<span class="lineNum">    1292 </span>            :             // If GetPropertyDescriptor above removed a property from ni, start
+<span class="lineNum">    1293 </span>            :             // over.
+<span class="lineNum">    1294 </span><span class="lineNoCov">          0 :             if (end != ni-&gt;propertiesEnd() || cursor != ni-&gt;nextProperty()) {</span>
+<span class="lineNum">    1295 </span><span class="lineNoCov">          0 :                 restart = true;</span>
+<span class="lineNum">    1296 </span><span class="lineNoCov">          0 :                 break;</span>
+<span class="lineNum">    1297 </span>            :             }
+<span class="lineNum">    1298 </span>            : 
+<span class="lineNum">    1299 </span>            :             // No property along the prototype chain stepped in to take the
+<span class="lineNum">    1300 </span>            :             // property's place, so go ahead and delete id from the list.
+<span class="lineNum">    1301 </span>            :             // If it is the next property to be enumerated, just skip it.
+<span class="lineNum">    1302 </span><span class="lineNoCov">          0 :             if (idp == cursor) {</span>
+<span class="lineNum">    1303 </span><span class="lineNoCov">          0 :                 ni-&gt;incCursor();</span>
+<span class="lineNum">    1304 </span>            :             } else {
+<span class="lineNum">    1305 </span><span class="lineNoCov">          0 :                 for (GCPtrFlatString* p = idp; p + 1 != end; p++)</span>
+<span class="lineNum">    1306 </span><span class="lineNoCov">          0 :                     *p = *(p + 1);</span>
+<span class="lineNum">    1307 </span>            : 
+<span class="lineNum">    1308 </span><span class="lineNoCov">          0 :                 ni-&gt;trimLastProperty();</span>
+<span class="lineNum">    1309 </span>            :             }
+<span class="lineNum">    1310 </span>            : 
+<span class="lineNum">    1311 </span><span class="lineNoCov">          0 :             ni-&gt;markHasUnvisitedPropertyDeletion();</span>
+<span class="lineNum">    1312 </span><span class="lineNoCov">          0 :             return true;</span>
+<span class="lineNum">    1313 </span>            :         }
+<span class="lineNum">    1314 </span>            : 
+<span class="lineNum">    1315 </span><span class="lineNoCov">          0 :         if (!restart)</span>
+<span class="lineNum">    1316 </span>            :             return true;
+<span class="lineNum">    1317 </span>            :     }
+<span class="lineNum">    1318 </span>            : }
+<span class="lineNum">    1319 </span>            : 
+<span class="lineNum">    1320 </span>            : /*
+<span class="lineNum">    1321 </span>            :  * Suppress enumeration of deleted properties. This function must be called
+<span class="lineNum">    1322 </span>            :  * when a property is deleted and there might be active enumerators.
+<span class="lineNum">    1323 </span>            :  *
+<span class="lineNum">    1324 </span>            :  * We maintain a list of active non-escaping for-in enumerators. To suppress
+<span class="lineNum">    1325 </span>            :  * a property, we check whether each active enumerator contains the (obj, id)
+<span class="lineNum">    1326 </span>            :  * pair and has not yet enumerated |id|. If so, and |id| is the next property,
+<span class="lineNum">    1327 </span>            :  * we simply advance the cursor. Otherwise, we delete |id| from the list.
+<span class="lineNum">    1328 </span>            :  *
+<span class="lineNum">    1329 </span>            :  * We do not suppress enumeration of a property deleted along an object's
+<span class="lineNum">    1330 </span>            :  * prototype chain. Only direct deletions on the object are handled.
+<span class="lineNum">    1331 </span>            :  */
+<span class="lineNum">    1332 </span>            : static bool
+<span class="lineNum">    1333 </span><span class="lineCov">          1 : SuppressDeletedPropertyHelper(JSContext* cx, HandleObject obj, Handle&lt;JSFlatString*&gt; str)</span>
+<span class="lineNum">    1334 </span>            : {
+<span class="lineNum">    1335 </span><span class="lineNoCov">          0 :     NativeIterator* enumeratorList = ObjectRealm::get(obj).enumerators;</span>
+<span class="lineNum">    1336 </span><span class="lineCov">          1 :     NativeIterator* ni = enumeratorList-&gt;next();</span>
+<span class="lineNum">    1337 </span>            : 
+<span class="lineNum">    1338 </span><span class="lineNoCov">          0 :     while (ni != enumeratorList) {</span>
+<span class="lineNum">    1339 </span><span class="lineCov">          1 :         if (!SuppressDeletedProperty(cx, ni, obj, str))</span>
+<span class="lineNum">    1340 </span>            :             return false;
+<span class="lineNum">    1341 </span><span class="lineCov">          1 :         ni = ni-&gt;next();</span>
+<span class="lineNum">    1342 </span>            :     }
+<span class="lineNum">    1343 </span>            : 
+<span class="lineNum">    1344 </span>            :     return true;
+<span class="lineNum">    1345 </span>            : }
+<span class="lineNum">    1346 </span>            : 
+<span class="lineNum">    1347 </span>            : bool
+<span class="lineNum">    1348 </span><span class="lineCov">        133 : js::SuppressDeletedProperty(JSContext* cx, HandleObject obj, jsid id)</span>
+<span class="lineNum">    1349 </span>            : {
+<span class="lineNum">    1350 </span><span class="lineCov">        399 :     if (MOZ_LIKELY(!ObjectRealm::get(obj).objectMaybeInIteration(obj)))</span>
+<span class="lineNum">    1351 </span>            :         return true;
+<span class="lineNum">    1352 </span>            : 
+<span class="lineNum">    1353 </span><span class="lineCov">          1 :     if (JSID_IS_SYMBOL(id))</span>
+<span class="lineNum">    1354 </span>            :         return true;
+<span class="lineNum">    1355 </span>            : 
+<span class="lineNum">    1356 </span><span class="lineNoCov">          0 :     Rooted&lt;JSFlatString*&gt; str(cx, IdToString(cx, id));</span>
+<span class="lineNum">    1357 </span><span class="lineCov">          1 :     if (!str)</span>
+<span class="lineNum">    1358 </span>            :         return false;
+<span class="lineNum">    1359 </span><span class="lineCov">          1 :     return SuppressDeletedPropertyHelper(cx, obj, str);</span>
+<span class="lineNum">    1360 </span>            : }
+<span class="lineNum">    1361 </span>            : 
+<span class="lineNum">    1362 </span>            : bool
+<span class="lineNum">    1363 </span><span class="lineCov">        104 : js::SuppressDeletedElement(JSContext* cx, HandleObject obj, uint32_t index)</span>
+<span class="lineNum">    1364 </span>            : {
+<span class="lineNum">    1365 </span><span class="lineCov">        312 :     if (MOZ_LIKELY(!ObjectRealm::get(obj).objectMaybeInIteration(obj)))</span>
+<span class="lineNum">    1366 </span>            :         return true;
+<span class="lineNum">    1367 </span>            : 
+<span class="lineNum">    1368 </span><span class="lineNoCov">          0 :     RootedId id(cx);</span>
+<span class="lineNum">    1369 </span><span class="lineNoCov">          0 :     if (!IndexToId(cx, index, &amp;id))</span>
+<span class="lineNum">    1370 </span>            :         return false;
+<span class="lineNum">    1371 </span>            : 
+<span class="lineNum">    1372 </span><span class="lineNoCov">          0 :     Rooted&lt;JSFlatString*&gt; str(cx, IdToString(cx, id));</span>
+<span class="lineNum">    1373 </span><span class="lineNoCov">          0 :     if (!str)</span>
+<span class="lineNum">    1374 </span>            :         return false;
+<span class="lineNum">    1375 </span><span class="lineNoCov">          0 :     return SuppressDeletedPropertyHelper(cx, obj, str);</span>
+<span class="lineNum">    1376 </span>            : }
+<span class="lineNum">    1377 </span>            : 
+<span class="lineNum">    1378 </span>            : bool
+<span class="lineNum">    1379 </span><span class="lineCov">        195 : js::IteratorMore(JSContext* cx, HandleObject iterobj, MutableHandleValue rval)</span>
+<span class="lineNum">    1380 </span>            : {
+<span class="lineNum">    1381 </span>            :     // Fast path for native iterators.
+<span class="lineNum">    1382 </span><span class="lineNoCov">          0 :     if (MOZ_LIKELY(iterobj-&gt;is&lt;PropertyIteratorObject&gt;())) {</span>
+<span class="lineNum">    1383 </span><span class="lineNoCov">          0 :         NativeIterator* ni = iterobj-&gt;as&lt;PropertyIteratorObject&gt;().getNativeIterator();</span>
+<span class="lineNum">    1384 </span><span class="lineNoCov">          0 :         rval.set(ni-&gt;nextIteratedValueAndAdvance());</span>
+<span class="lineNum">    1385 </span><span class="lineCov">        195 :         return true;</span>
+<span class="lineNum">    1386 </span>            :     }
+<span class="lineNum">    1387 </span>            : 
+<span class="lineNum">    1388 </span><span class="lineNoCov">          0 :     if (JS_IsDeadWrapper(iterobj)) {</span>
+<span class="lineNum">    1389 </span><span class="lineNoCov">          0 :         JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr, JSMSG_DEAD_OBJECT);</span>
+<span class="lineNum">    1390 </span><span class="lineNoCov">          0 :         return false;</span>
+<span class="lineNum">    1391 </span>            :     }
+<span class="lineNum">    1392 </span>            : 
+<span class="lineNum">    1393 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(IsWrapper(iterobj));</span>
+<span class="lineNum">    1394 </span>            : 
+<span class="lineNum">    1395 </span><span class="lineNoCov">          0 :     RootedObject obj(cx, CheckedUnwrap(iterobj));</span>
+<span class="lineNum">    1396 </span><span class="lineNoCov">          0 :     if (!obj)</span>
+<span class="lineNum">    1397 </span>            :         return false;
+<span class="lineNum">    1398 </span>            : 
+<span class="lineNum">    1399 </span><span class="lineNoCov">          0 :     MOZ_RELEASE_ASSERT(obj-&gt;is&lt;PropertyIteratorObject&gt;());</span>
+<span class="lineNum">    1400 </span>            :     {
+<span class="lineNum">    1401 </span><span class="lineNoCov">          0 :         AutoRealm ar(cx, obj);</span>
+<span class="lineNum">    1402 </span><span class="lineNoCov">          0 :         NativeIterator* ni = obj-&gt;as&lt;PropertyIteratorObject&gt;().getNativeIterator();</span>
+<span class="lineNum">    1403 </span><span class="lineNoCov">          0 :         rval.set(ni-&gt;nextIteratedValueAndAdvance());</span>
+<span class="lineNum">    1404 </span>            :     }
+<span class="lineNum">    1405 </span><span class="lineNoCov">          0 :     return cx-&gt;compartment()-&gt;wrap(cx, rval);</span>
+<span class="lineNum">    1406 </span>            : }
+<span class="lineNum">    1407 </span>            : 
+<span class="lineNum">    1408 </span>            : static const JSFunctionSpec iterator_proto_methods[] = {
+<span class="lineNum">    1409 </span>            :     JS_SELF_HOSTED_SYM_FN(iterator, &quot;IteratorIdentity&quot;, 0, 0),
+<span class="lineNum">    1410 </span>            :     JS_FS_END
+<span class="lineNum">    1411 </span>            : };
+<span class="lineNum">    1412 </span>            : 
+<span class="lineNum">    1413 </span>            : /* static */ bool
+<span class="lineNum">    1414 </span><span class="lineCov">         18 : GlobalObject::initIteratorProto(JSContext* cx, Handle&lt;GlobalObject*&gt; global)</span>
+<span class="lineNum">    1415 </span>            : {
+<span class="lineNum">    1416 </span><span class="lineCov">         18 :     if (global-&gt;getReservedSlot(ITERATOR_PROTO).isObject())</span>
+<span class="lineNum">    1417 </span>            :         return true;
+<span class="lineNum">    1418 </span>            : 
+<span class="lineNum">    1419 </span><span class="lineNoCov">          0 :     RootedObject proto(cx, GlobalObject::createBlankPrototype&lt;PlainObject&gt;(cx, global));</span>
+<span class="lineNum">    1420 </span><span class="lineCov">         54 :     if (!proto || !DefinePropertiesAndFunctions(cx, proto, nullptr, iterator_proto_methods))</span>
+<span class="lineNum">    1421 </span>            :         return false;
+<span class="lineNum">    1422 </span>            : 
+<span class="lineNum">    1423 </span><span class="lineNoCov">          0 :     global-&gt;setReservedSlot(ITERATOR_PROTO, ObjectValue(*proto));</span>
+<span class="lineNum">    1424 </span><span class="lineCov">         18 :     return true;</span>
+<span class="lineNum">    1425 </span>            : }
+<span class="lineNum">    1426 </span>            : 
+<span class="lineNum">    1427 </span>            : /* static */ bool
+<span class="lineNum">    1428 </span><span class="lineCov">         16 : GlobalObject::initArrayIteratorProto(JSContext* cx, Handle&lt;GlobalObject*&gt; global)</span>
+<span class="lineNum">    1429 </span>            : {
+<span class="lineNum">    1430 </span><span class="lineCov">         16 :     if (global-&gt;getReservedSlot(ARRAY_ITERATOR_PROTO).isObject())</span>
+<span class="lineNum">    1431 </span>            :         return true;
+<span class="lineNum">    1432 </span>            : 
+<span class="lineNum">    1433 </span><span class="lineNoCov">          0 :     RootedObject iteratorProto(cx, GlobalObject::getOrCreateIteratorPrototype(cx, global));</span>
+<span class="lineNum">    1434 </span><span class="lineCov">         16 :     if (!iteratorProto)</span>
+<span class="lineNum">    1435 </span>            :         return false;
+<span class="lineNum">    1436 </span>            : 
+<span class="lineNum">    1437 </span><span class="lineNoCov">          0 :     const Class* cls = &amp;ArrayIteratorPrototypeClass;</span>
+<span class="lineNum">    1438 </span><span class="lineNoCov">          0 :     RootedObject proto(cx, GlobalObject::createBlankPrototypeInheriting(cx, cls, iteratorProto));</span>
+<span class="lineNum">    1439 </span><span class="lineNoCov">          0 :     if (!proto ||</span>
+<span class="lineNum">    1440 </span><span class="lineNoCov">          0 :         !DefinePropertiesAndFunctions(cx, proto, nullptr, array_iterator_methods) ||</span>
+<span class="lineNum">    1441 </span><span class="lineCov">         64 :         !DefineToStringTag(cx, proto, cx-&gt;names().ArrayIterator))</span>
+<span class="lineNum">    1442 </span>            :     {
+<span class="lineNum">    1443 </span>            :         return false;
+<span class="lineNum">    1444 </span>            :     }
+<span class="lineNum">    1445 </span>            : 
+<span class="lineNum">    1446 </span><span class="lineNoCov">          0 :     global-&gt;setReservedSlot(ARRAY_ITERATOR_PROTO, ObjectValue(*proto));</span>
+<span class="lineNum">    1447 </span><span class="lineCov">         16 :     return true;</span>
+<span class="lineNum">    1448 </span>            : }
+<span class="lineNum">    1449 </span>            : 
+<span class="lineNum">    1450 </span>            : /* static */ bool
+<span class="lineNum">    1451 </span><span class="lineNoCov">          0 : GlobalObject::initStringIteratorProto(JSContext* cx, Handle&lt;GlobalObject*&gt; global)</span>
+<span class="lineNum">    1452 </span>            : {
+<span class="lineNum">    1453 </span><span class="lineNoCov">          0 :     if (global-&gt;getReservedSlot(STRING_ITERATOR_PROTO).isObject())</span>
+<span class="lineNum">    1454 </span>            :         return true;
+<span class="lineNum">    1455 </span>            : 
+<span class="lineNum">    1456 </span><span class="lineNoCov">          0 :     RootedObject iteratorProto(cx, GlobalObject::getOrCreateIteratorPrototype(cx, global));</span>
+<span class="lineNum">    1457 </span><span class="lineNoCov">          0 :     if (!iteratorProto)</span>
+<span class="lineNum">    1458 </span>            :         return false;
+<span class="lineNum">    1459 </span>            : 
+<span class="lineNum">    1460 </span><span class="lineNoCov">          0 :     const Class* cls = &amp;StringIteratorPrototypeClass;</span>
+<span class="lineNum">    1461 </span><span class="lineNoCov">          0 :     RootedObject proto(cx, GlobalObject::createBlankPrototypeInheriting(cx, cls, iteratorProto));</span>
+<span class="lineNum">    1462 </span><span class="lineNoCov">          0 :     if (!proto ||</span>
+<span class="lineNum">    1463 </span><span class="lineNoCov">          0 :         !DefinePropertiesAndFunctions(cx, proto, nullptr, string_iterator_methods) ||</span>
+<span class="lineNum">    1464 </span><span class="lineNoCov">          0 :         !DefineToStringTag(cx, proto, cx-&gt;names().StringIterator))</span>
+<span class="lineNum">    1465 </span>            :     {
+<span class="lineNum">    1466 </span>            :         return false;
+<span class="lineNum">    1467 </span>            :     }
+<span class="lineNum">    1468 </span>            : 
+<span class="lineNum">    1469 </span><span class="lineNoCov">          0 :     global-&gt;setReservedSlot(STRING_ITERATOR_PROTO, ObjectValue(*proto));</span>
+<span class="lineNum">    1470 </span>            :     return true;
+<span class="lineNum">    1471 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

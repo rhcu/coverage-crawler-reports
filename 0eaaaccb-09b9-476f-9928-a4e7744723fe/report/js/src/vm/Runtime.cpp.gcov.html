@@ -1,0 +1,952 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - js/src/vm/Runtime.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">js/src/vm</a> - Runtime.cpp<span style="font-size: 80%;"> (source / <a href="Runtime.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">97</td>
+            <td class="headerCovTableEntry">335</td>
+            <td class="headerCovTableEntryLo">29.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-</a>
+<span class="lineNum">       2 </span>            :  * vim: set ts=8 sts=4 et sw=4 tw=99:
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #include &quot;mozilla/ArrayUtils.h&quot;
+<span class="lineNum">       8 </span>            : #include &quot;mozilla/Atomics.h&quot;
+<span class="lineNum">       9 </span>            : #include &quot;mozilla/DebugOnly.h&quot;
+<span class="lineNum">      10 </span>            : #include &quot;mozilla/MemoryReporting.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/ThreadLocal.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/Unused.h&quot;
+<span class="lineNum">      13 </span>            : 
+<span class="lineNum">      14 </span>            : #if defined(XP_DARWIN)
+<span class="lineNum">      15 </span>            : # include &lt;mach/mach.h&gt;
+<span class="lineNum">      16 </span>            : #elif defined(XP_UNIX)
+<span class="lineNum">      17 </span>            : # include &lt;sys/resource.h&gt;
+<span class="lineNum">      18 </span>            : #endif // defined(XP_DARWIN) || defined(XP_UNIX) || defined(XP_WIN)
+<span class="lineNum">      19 </span>            : #include &lt;locale.h&gt;
+<span class="lineNum">      20 </span>            : #include &lt;string.h&gt;
+<span class="lineNum">      21 </span>            : #ifdef JS_CAN_CHECK_THREADSAFE_ACCESSES
+<span class="lineNum">      22 </span>            : # include &lt;sys/mman.h&gt;
+<span class="lineNum">      23 </span>            : #endif
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : #include &quot;jsfriendapi.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;jsmath.h&quot;
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;builtin/Promise.h&quot;
+<span class="lineNum">      29 </span>            : #include &quot;gc/FreeOp.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;gc/GCInternals.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;gc/PublicIterators.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;jit/arm/Simulator-arm.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;jit/arm64/vixl/Simulator-vixl.h&quot;
+<span class="lineNum">      34 </span>            : #include &quot;jit/IonBuilder.h&quot;
+<span class="lineNum">      35 </span>            : #include &quot;jit/JitRealm.h&quot;
+<span class="lineNum">      36 </span>            : #include &quot;jit/mips32/Simulator-mips32.h&quot;
+<span class="lineNum">      37 </span>            : #include &quot;jit/mips64/Simulator-mips64.h&quot;
+<span class="lineNum">      38 </span>            : #include &quot;js/Date.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;js/MemoryMetrics.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;js/SliceBudget.h&quot;
+<span class="lineNum">      41 </span>            : #include &quot;js/Wrapper.h&quot;
+<span class="lineNum">      42 </span>            : #include &quot;util/Windows.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;vm/Debugger.h&quot;
+<span class="lineNum">      44 </span>            : #include &quot;vm/JSAtom.h&quot;
+<span class="lineNum">      45 </span>            : #include &quot;vm/JSObject.h&quot;
+<span class="lineNum">      46 </span>            : #include &quot;vm/JSScript.h&quot;
+<span class="lineNum">      47 </span>            : #include &quot;vm/TraceLogging.h&quot;
+<span class="lineNum">      48 </span>            : #include &quot;vm/TraceLoggingGraph.h&quot;
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : #include &quot;gc/GC-inl.h&quot;
+<span class="lineNum">      51 </span>            : #include &quot;vm/JSContext-inl.h&quot;
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : using namespace js;
+<span class="lineNum">      54 </span>            : using namespace js::gc;
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            : using mozilla::Atomic;
+<span class="lineNum">      57 </span>            : using mozilla::DebugOnly;
+<span class="lineNum">      58 </span>            : using mozilla::NegativeInfinity;
+<span class="lineNum">      59 </span>            : using mozilla::PodZero;
+<span class="lineNum">      60 </span>            : using mozilla::PositiveInfinity;
+<span class="lineNum">      61 </span>            : using JS::DoubleNaNValue;
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            : /* static */ MOZ_THREAD_LOCAL(JSContext*) js::TlsContext;
+<span class="lineNum">      64 </span>            : /* static */ Atomic&lt;size_t&gt; JSRuntime::liveRuntimesCount;
+<span class="lineNum">      65 </span>            : Atomic&lt;JS::LargeAllocationFailureCallback&gt; js::OnLargeAllocationFailure;
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            : namespace js {
+<span class="lineNum">      68 </span>            :     bool gCanUseExtraThreads = true;
+<span class="lineNum">      69 </span>            : } // namespace js
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span>            : void
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 : js::DisableExtraThreads()</span>
+<span class="lineNum">      73 </span>            : {
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :     gCanUseExtraThreads = false;</span>
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : const JSSecurityCallbacks js::NullSecurityCallbacks = { };
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            : static const JSWrapObjectCallbacks DefaultWrapObjectCallbacks = {
+<span class="lineNum">      80 </span>            :     TransparentObjectWrapper,
+<span class="lineNum">      81 </span>            :     nullptr
+<span class="lineNum">      82 </span>            : };
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span>            : static size_t
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 : ReturnZeroSize(const void* p)</span>
+<span class="lineNum">      86 </span>            : {
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :     return 0;</span>
+<span class="lineNum">      88 </span>            : }
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 : JSRuntime::JSRuntime(JSRuntime* parentRuntime)</span>
+<span class="lineNum">      91 </span>            :   : parentRuntime(parentRuntime),
+<span class="lineNum">      92 </span>            : #ifdef DEBUG
+<span class="lineNum">      93 </span>            :     updateChildRuntimeCount(parentRuntime),
+<span class="lineNum">      94 </span>            :     initialized_(false),
+<span class="lineNum">      95 </span>            : #endif
+<span class="lineNum">      96 </span>            :     mainContext_(nullptr),
+<span class="lineNum">      97 </span>            :     profilerSampleBufferRangeStart_(0),
+<span class="lineNum">      98 </span>            :     telemetryCallback(nullptr),
+<span class="lineNum">      99 </span>            :     consumeStreamCallback(nullptr),
+<span class="lineNum">     100 </span>            :     readableStreamDataRequestCallback(nullptr),
+<span class="lineNum">     101 </span>            :     readableStreamWriteIntoReadRequestCallback(nullptr),
+<span class="lineNum">     102 </span>            :     readableStreamCancelCallback(nullptr),
+<span class="lineNum">     103 </span>            :     readableStreamClosedCallback(nullptr),
+<span class="lineNum">     104 </span>            :     readableStreamErroredCallback(nullptr),
+<span class="lineNum">     105 </span>            :     readableStreamFinalizeCallback(nullptr),
+<span class="lineNum">     106 </span>            :     hadOutOfMemory(false),
+<span class="lineNum">     107 </span>            :     allowRelazificationForTesting(false),
+<span class="lineNum">     108 </span>            :     destroyCompartmentCallback(nullptr),
+<span class="lineNum">     109 </span>            :     sizeOfIncludingThisCompartmentCallback(nullptr),
+<span class="lineNum">     110 </span>            :     destroyRealmCallback(nullptr),
+<span class="lineNum">     111 </span>            :     realmNameCallback(nullptr),
+<span class="lineNum">     112 </span>            :     externalStringSizeofCallback(nullptr),
+<span class="lineNum">     113 </span>            :     securityCallbacks(&amp;NullSecurityCallbacks),
+<span class="lineNum">     114 </span>            :     DOMcallbacks(nullptr),
+<span class="lineNum">     115 </span>            :     destroyPrincipals(nullptr),
+<span class="lineNum">     116 </span>            :     readPrincipals(nullptr),
+<span class="lineNum">     117 </span>            :     warningReporter(nullptr),
+<span class="lineNum">     118 </span><span class="lineCov">          4 :     geckoProfiler_(thisFromCtor()),</span>
+<span class="lineNum">     119 </span>            :     buildIdOp(nullptr),
+<span class="lineNum">     120 </span>            :     trustedPrincipals_(nullptr),
+<span class="lineNum">     121 </span>            :     wrapObjectCallbacks(&amp;DefaultWrapObjectCallbacks),
+<span class="lineNum">     122 </span>            :     preserveWrapperCallback(nullptr),
+<span class="lineNum">     123 </span>            :     scriptEnvironmentPreparer(nullptr),
+<span class="lineNum">     124 </span>            :     ctypesActivityCallback(nullptr),
+<span class="lineNum">     125 </span>            :     windowProxyClass_(nullptr),
+<span class="lineNum">     126 </span>            :     exclusiveAccessLock(mutexid::RuntimeExclusiveAccess),
+<span class="lineNum">     127 </span>            : #ifdef DEBUG
+<span class="lineNum">     128 </span>            :     activeThreadHasExclusiveAccess(false),
+<span class="lineNum">     129 </span>            : #endif
+<span class="lineNum">     130 </span>            :     scriptDataLock(mutexid::RuntimeScriptData),
+<span class="lineNum">     131 </span>            : #ifdef DEBUG
+<span class="lineNum">     132 </span>            :     activeThreadHasScriptDataAccess(false),
+<span class="lineNum">     133 </span>            : #endif
+<span class="lineNum">     134 </span>            :     numActiveHelperThreadZones(0),
+<span class="lineNum">     135 </span>            :     heapState_(JS::HeapState::Idle),
+<span class="lineNum">     136 </span>            :     numRealms(0),
+<span class="lineNum">     137 </span>            :     localeCallbacks(nullptr),
+<span class="lineNum">     138 </span>            :     defaultLocale(nullptr),
+<span class="lineNum">     139 </span>            :     profilingScripts(false),
+<span class="lineNum">     140 </span>            :     scriptAndCountsVector(nullptr),
+<span class="lineNum">     141 </span>            :     lcovOutput_(),
+<span class="lineNum">     142 </span>            :     jitRuntime_(nullptr),
+<span class="lineNum">     143 </span>            :     selfHostingGlobal_(nullptr),
+<span class="lineNum">     144 </span>            :     gc(thisFromCtor()),
+<span class="lineNum">     145 </span>            :     gcInitialized(false),
+<span class="lineNum">     146 </span><span class="lineCov">          4 :     NaNValue(DoubleNaNValue()),</span>
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :     negativeInfinityValue(DoubleValue(NegativeInfinity&lt;double&gt;())),</span>
+<span class="lineNum">     148 </span>            :     positiveInfinityValue(DoubleValue(PositiveInfinity&lt;double&gt;())),
+<span class="lineNum">     149 </span>            :     emptyString(nullptr),
+<span class="lineNum">     150 </span>            :     defaultFreeOp_(nullptr),
+<span class="lineNum">     151 </span>            : #if !EXPOSE_INTL_API
+<span class="lineNum">     152 </span>            :     thousandsSeparator(nullptr),
+<span class="lineNum">     153 </span>            :     decimalSeparator(nullptr),
+<span class="lineNum">     154 </span>            :     numGrouping(nullptr),
+<span class="lineNum">     155 </span>            : #endif
+<span class="lineNum">     156 </span>            :     beingDestroyed_(false),
+<span class="lineNum">     157 </span>            :     allowContentJS_(true),
+<span class="lineNum">     158 </span>            :     atoms_(nullptr),
+<span class="lineNum">     159 </span>            :     atomsAddedWhileSweeping_(nullptr),
+<span class="lineNum">     160 </span>            :     staticStrings(nullptr),
+<span class="lineNum">     161 </span>            :     commonNames(nullptr),
+<span class="lineNum">     162 </span>            :     permanentAtoms(nullptr),
+<span class="lineNum">     163 </span>            :     wellKnownSymbols(nullptr),
+<span class="lineNum">     164 </span>            :     jitSupportsFloatingPoint(false),
+<span class="lineNum">     165 </span>            :     jitSupportsUnalignedAccesses(false),
+<span class="lineNum">     166 </span>            :     jitSupportsSimd(false),
+<span class="lineNum">     167 </span>            :     offthreadIonCompilationEnabled_(true),
+<span class="lineNum">     168 </span>            :     parallelParsingEnabled_(true),
+<span class="lineNum">     169 </span>            :     autoWritableJitCodeActive_(false),
+<span class="lineNum">     170 </span>            :     oomCallback(nullptr),
+<span class="lineNum">     171 </span>            :     debuggerMallocSizeOf(ReturnZeroSize),
+<span class="lineNum">     172 </span>            :     lastAnimationTime(0),
+<span class="lineNum">     173 </span>            :     performanceMonitoring_(),
+<span class="lineNum">     174 </span>            :     stackFormat_(parentRuntime ? js::StackFormat::Default
+<span class="lineNum">     175 </span>            :                                : js::StackFormat::SpiderMonkey),
+<span class="lineNum">     176 </span>            :     wasmInstances(mutexid::WasmRuntimeInstances),
+<span class="lineNum">     177 </span><span class="lineCov">        352 :     moduleResolveHook(),</span>
+<span class="lineNum">     178 </span>            :     moduleMetadataHook()
+<span class="lineNum">     179 </span><span class="lineCov">          4 : {</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :     JS_COUNT_CTOR(JSRuntime);</span>
+<span class="lineNum">     181 </span>            :     liveRuntimesCount++;
+<span class="lineNum">     182 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :     lcovOutput().init();</span>
+<span class="lineNum">     184 </span>            : }
+<span class="lineNum">     185 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     186 </span>            : JSRuntime::~JSRuntime()
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :     JS_COUNT_DTOR(JSRuntime);</span>
+<span class="lineNum">     189 </span>            :     MOZ_ASSERT(!initialized_);
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     191 </span><span class="lineNoCov">          0 :     DebugOnly&lt;size_t&gt; oldCount = liveRuntimesCount--;</span>
+<span class="lineNum">     192 </span>            :     MOZ_ASSERT(oldCount &gt; 0);
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(wasmInstances.lock()-&gt;empty());</span>
+<span class="lineNum">     195 </span>            : }
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span><span class="lineCov">          4 : bool</span>
+<span class="lineNum">     198 </span>            : JSRuntime::init(JSContext* cx, uint32_t maxbytes, uint32_t maxNurseryBytes)
+<span class="lineNum">     199 </span>            : {
+<span class="lineNum">     200 </span><span class="lineCov">          8 : #ifdef DEBUG</span>
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!initialized_);</span>
+<span class="lineNum">     202 </span>            :     initialized_ = true;
+<span class="lineNum">     203 </span>            : #endif
+<span class="lineNum">     204 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     205 </span>            :     if (CanUseExtraThreads() &amp;&amp; !EnsureHelperThreadsInitialized())
+<span class="lineNum">     206 </span>            :         return false;
+<span class="lineNum">     207 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     208 </span>            :     mainContext_ = cx;
+<span class="lineNum">     209 </span><span class="lineCov">          8 : </span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :     defaultFreeOp_ = js_new&lt;js::FreeOp&gt;(this);</span>
+<span class="lineNum">     211 </span>            :     if (!defaultFreeOp_)
+<span class="lineNum">     212 </span>            :         return false;
+<span class="lineNum">     213 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     214 </span>            :     if (!gc.init(maxbytes, maxNurseryBytes))
+<span class="lineNum">     215 </span>            :         return false;
+<span class="lineNum">     216 </span><span class="lineCov">         12 : </span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :     UniquePtr&lt;Zone&gt; atomsZone = MakeUnique&lt;Zone&gt;(this);</span>
+<span class="lineNum">     218 </span>            :     if (!atomsZone || !atomsZone-&gt;init(true))
+<span class="lineNum">     219 </span>            :         return false;
+<span class="lineNum">     220 </span><span class="lineCov">          8 : </span>
+<span class="lineNum">     221 </span>            :     gc.atomsZone = atomsZone.release();
+<span class="lineNum">     222 </span><span class="lineCov">          8 : </span>
+<span class="lineNum">     223 </span>            :     if (!symbolRegistry_.ref().init())
+<span class="lineNum">     224 </span>            :         return false;
+<span class="lineNum">     225 </span><span class="lineCov">          8 : </span>
+<span class="lineNum">     226 </span>            :     if (!scriptDataTable_.ref().init())
+<span class="lineNum">     227 </span>            :         return false;
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span><span class="lineCov">          8 :     /* The garbage collector depends on everything before this point being initialized. */</span>
+<span class="lineNum">     230 </span>            :     gcInitialized = true;
+<span class="lineNum">     231 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     232 </span>            :     if (!InitRuntimeNumberState(this))
+<span class="lineNum">     233 </span>            :         return false;
+<span class="lineNum">     234 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     235 </span>            :     JS::ResetTimeZone();
+<span class="lineNum">     236 </span><span class="lineCov">          8 : </span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :     jitSupportsFloatingPoint = js::jit::JitSupportsFloatingPoint();</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :     jitSupportsUnalignedAccesses = js::jit::JitSupportsUnalignedAccesses();</span>
+<span class="lineNum">     239 </span>            :     jitSupportsSimd = js::jit::JitSupportsSimd();
+<span class="lineNum">     240 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     241 </span>            :     if (!geckoProfiler().init())
+<span class="lineNum">     242 </span>            :         return false;
+<span class="lineNum">     243 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :     if (!parentRuntime) {</span>
+<span class="lineNum">     245 </span><span class="lineNoCov">          0 :         sharedImmutableStrings_ = js::SharedImmutableStringsCache::Create();</span>
+<span class="lineNum">     246 </span>            :         if (!sharedImmutableStrings_)
+<span class="lineNum">     247 </span>            :             return false;
+<span class="lineNum">     248 </span>            :     }
+<span class="lineNum">     249 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     250 </span>            :     if (!caches().init())
+<span class="lineNum">     251 </span>            :         return false;
+<span class="lineNum">     252 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     253 </span>            :     return true;
+<span class="lineNum">     254 </span>            : }
+<span class="lineNum">     255 </span>            : 
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 : void</span>
+<span class="lineNum">     257 </span>            : JSRuntime::destroyRuntime()
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!JS::RuntimeHeapIsBusy());</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(childRuntimeCount == 0);</span>
+<span class="lineNum">     261 </span>            :     MOZ_ASSERT(initialized_);
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     263 </span>            :     sharedIntlData.ref().destroyInstance();
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     265 </span>            :     if (gcInitialized) {
+<span class="lineNum">     266 </span>            :         /*
+<span class="lineNum">     267 </span>            :          * Finish any in-progress GCs first. This ensures the parseWaitingOnGC
+<span class="lineNum">     268 </span>            :          * list is empty in CancelOffThreadParses.
+<span class="lineNum">     269 </span><span class="lineNoCov">          0 :          */</span>
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :         JSContext* cx = mainContextFromOwnThread();</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         if (JS::IsIncrementalGCInProgress(cx))</span>
+<span class="lineNum">     272 </span>            :             FinishGC(cx);
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :         /* Free source hook early, as its destructor may want to delete roots. */</span>
+<span class="lineNum">     275 </span>            :         sourceHook = nullptr;
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span>            :         /*
+<span class="lineNum">     278 </span>            :          * Cancel any pending, in progress or completed Ion compilations and
+<span class="lineNum">     279 </span>            :          * parse tasks. Waiting for wasm and compression tasks is done
+<span class="lineNum">     280 </span>            :          * synchronously (on the main thread or during parse tasks), so no
+<span class="lineNum">     281 </span>            :          * explicit canceling is needed for these.
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :          */</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         CancelOffThreadIonCompile(this);</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         CancelOffThreadParses(this);</span>
+<span class="lineNum">     285 </span>            :         CancelOffThreadCompressions(this);
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :         /* Remove persistent GC roots. */</span>
+<span class="lineNum">     288 </span>            :         gc.finishRoots();
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span>            :         /*
+<span class="lineNum">     291 </span>            :          * Flag us as being destroyed. This allows the GC to free things like
+<span class="lineNum">     292 </span>            :          * interned atoms and Ion trampolines.
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :          */</span>
+<span class="lineNum">     294 </span>            :         beingDestroyed_ = true;
+<span class="lineNum">     295 </span>            : 
+<span class="lineNum">     296 </span><span class="lineNoCov">          0 :         /* Allow the GC to release scripts that were being profiled. */</span>
+<span class="lineNum">     297 </span>            :         profilingScripts = false;
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :         JS::PrepareForFullGC(cx);</span>
+<span class="lineNum">     300 </span>            :         gc.gc(GC_NORMAL, JS::gcreason::DESTROY_RUNTIME);
+<span class="lineNum">     301 </span>            :     }
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     303 </span>            :     AutoNoteSingleThreadedRegion anstr;
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     305 </span>            :     MOZ_ASSERT(!hasHelperThreadZones());
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span>            :     /*
+<span class="lineNum">     308 </span>            :      * Even though all objects in the compartment are dead, we may have keep
+<span class="lineNum">     309 </span>            :      * some filenames around because of gcKeepAtoms.
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :      */</span>
+<span class="lineNum">     311 </span>            :     FreeScriptData(this);
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span>            : #if !EXPOSE_INTL_API
+<span class="lineNum">     314 </span>            :     FinishRuntimeNumberState(this);
+<span class="lineNum">     315 </span>            : #endif
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     317 </span>            :     gc.finish();
+<span class="lineNum">     318 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     319 </span>            :     js_delete(defaultFreeOp_.ref());
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :     js_free(defaultLocale);</span>
+<span class="lineNum">     322 </span>            :     js_delete(jitRuntime_.ref());
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 : #ifdef DEBUG</span>
+<span class="lineNum">     325 </span>            :     initialized_ = false;
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 : #endif</span>
+<span class="lineNum">     327 </span>            : }
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineCov">         24 : void</span>
+<span class="lineNum">     330 </span>            : JSRuntime::addTelemetry(int id, uint32_t sample, const char* key)
+<span class="lineNum">     331 </span><span class="lineCov">         48 : {</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :     if (telemetryCallback)</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :         (*telemetryCallback)(id, sample, key);</span>
+<span class="lineNum">     334 </span>            : }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span><span class="lineCov">          1 : void</span>
+<span class="lineNum">     337 </span>            : JSRuntime::setTelemetryCallback(JSRuntime* rt, JSAccumulateTelemetryDataCallback callback)
+<span class="lineNum">     338 </span><span class="lineCov">          2 : {</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :     rt-&gt;telemetryCallback = callback;</span>
+<span class="lineNum">     340 </span>            : }
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 : void</span>
+<span class="lineNum">     343 </span>            : JSRuntime::setUseCounter(JSObject* obj, JSUseCounter counter)
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :     if (useCounterCallback)</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :         (*useCounterCallback)(obj, counter);</span>
+<span class="lineNum">     347 </span>            : }
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span><span class="lineCov">          1 : void</span>
+<span class="lineNum">     350 </span>            : JSRuntime::setUseCounterCallback(JSRuntime* rt, JSSetUseCounterCallback callback)
+<span class="lineNum">     351 </span><span class="lineCov">          2 : {</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :     rt-&gt;useCounterCallback = callback;</span>
+<span class="lineNum">     353 </span>            : }
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 : void</span>
+<span class="lineNum">     356 </span>            : JSRuntime::addSizeOfIncludingThis(mozilla::MallocSizeOf mallocSizeOf, JS::RuntimeSizes* rtSizes)
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     358 </span>            :     rtSizes-&gt;object += mallocSizeOf(this);
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :     {</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :         AutoLockForExclusiveAccess lock(this);</span>
+<span class="lineNum">     362 </span><span class="lineNoCov">          0 :         rtSizes-&gt;atomsTable += atoms(lock).sizeOfIncludingThis(mallocSizeOf);</span>
+<span class="lineNum">     363 </span>            :         rtSizes-&gt;gc.marker += gc.marker.sizeOfExcludingThis(mallocSizeOf, lock);
+<span class="lineNum">     364 </span>            :     }
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :     if (!parentRuntime) {</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :         rtSizes-&gt;atomsTable += mallocSizeOf(staticStrings);</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         rtSizes-&gt;atomsTable += mallocSizeOf(commonNames);</span>
+<span class="lineNum">     369 </span>            :         rtSizes-&gt;atomsTable += permanentAtoms-&gt;sizeOfIncludingThis(mallocSizeOf);
+<span class="lineNum">     370 </span>            :     }
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     372 </span><span class="lineNoCov">          0 :     JSContext* cx = mainContextFromAnyThread();</span>
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :     rtSizes-&gt;contexts += mallocSizeOf(cx);</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :     rtSizes-&gt;contexts += cx-&gt;sizeOfExcludingThis(mallocSizeOf);</span>
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :     rtSizes-&gt;temporary += cx-&gt;tempLifoAlloc().sizeOfExcludingThis(mallocSizeOf);</span>
+<span class="lineNum">     376 </span>            :     rtSizes-&gt;interpreterStack += cx-&gt;interpreterStack().sizeOfExcludingThis(mallocSizeOf);
+<span class="lineNum">     377 </span><span class="lineNoCov">          0 : #ifdef JS_TRACE_LOGGING</span>
+<span class="lineNum">     378 </span><span class="lineNoCov">          0 :     if (cx-&gt;traceLogger)</span>
+<span class="lineNum">     379 </span>            :         rtSizes-&gt;tracelogger += cx-&gt;traceLogger-&gt;sizeOfIncludingThis(mallocSizeOf);
+<span class="lineNum">     380 </span>            : #endif
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :     if (MathCache* cache = caches().maybeGetMathCache())</span>
+<span class="lineNum">     383 </span>            :         rtSizes-&gt;mathCache += cache-&gt;sizeOfIncludingThis(mallocSizeOf);
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :     rtSizes-&gt;uncompressedSourceCache +=</span>
+<span class="lineNum">     386 </span>            :         caches().uncompressedSourceCache.sizeOfExcludingThis(mallocSizeOf);
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :     rtSizes-&gt;gc.nurseryCommitted += gc.nursery().sizeOfHeapCommitted();</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :     rtSizes-&gt;gc.nurseryMallocedBuffers += gc.nursery().sizeOfMallocedBuffers(mallocSizeOf);</span>
+<span class="lineNum">     390 </span>            :     gc.storeBuffer().addSizeOfExcludingThis(mallocSizeOf, &amp;rtSizes-&gt;gc);
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     392 </span><span class="lineNoCov">          0 :     if (sharedImmutableStrings_) {</span>
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :         rtSizes-&gt;sharedImmutableStringsCache +=</span>
+<span class="lineNum">     394 </span>            :             sharedImmutableStrings_-&gt;sizeOfExcludingThis(mallocSizeOf);
+<span class="lineNum">     395 </span>            :     }
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     397 </span>            :     rtSizes-&gt;sharedIntlData += sharedIntlData.ref().sizeOfExcludingThis(mallocSizeOf);
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :     {</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :         AutoLockScriptData lock(this);</span>
+<span class="lineNum">     401 </span><span class="lineNoCov">          0 :         rtSizes-&gt;scriptData += scriptDataTable(lock).sizeOfExcludingThis(mallocSizeOf);</span>
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :         for (ScriptDataTable::Range r = scriptDataTable(lock).all(); !r.empty(); r.popFront())</span>
+<span class="lineNum">     403 </span>            :             rtSizes-&gt;scriptData += mallocSizeOf(r.front());
+<span class="lineNum">     404 </span>            :     }
+<span class="lineNum">     405 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :     if (jitRuntime_) {</span>
+<span class="lineNum">     407 </span>            :         jitRuntime_-&gt;execAlloc().addSizeOfCode(&amp;rtSizes-&gt;code);
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :         // Sizes of the IonBuilders we are holding for lazy linking</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :         for (auto builder : jitRuntime_-&gt;ionLazyLinkList(this))</span>
+<span class="lineNum">     411 </span>            :             rtSizes-&gt;jitLazyLink += builder-&gt;sizeOfExcludingThis(mallocSizeOf);
+<span class="lineNum">     412 </span>            :     }
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 :     rtSizes-&gt;wasmRuntime += wasmInstances.lock()-&gt;sizeOfExcludingThis(mallocSizeOf);</span>
+<span class="lineNum">     415 </span>            : }
+<span class="lineNum">     416 </span>            : 
+<span class="lineNum">     417 </span><span class="lineCov">         50 : static bool</span>
+<span class="lineNum">     418 </span>            : HandleInterrupt(JSContext* cx, bool invokeCallback)
+<span class="lineNum">     419 </span><span class="lineCov">        100 : {</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(cx-&gt;requestDepth &gt;= 1);</span>
+<span class="lineNum">     421 </span>            :     MOZ_ASSERT(!cx-&gt;zone()-&gt;isAtomsZone());
+<span class="lineNum">     422 </span><span class="lineCov">        100 : </span>
+<span class="lineNum">     423 </span>            :     cx-&gt;runtime()-&gt;gc.gcIfRequested();
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span>            :     // A worker thread may have requested an interrupt after finishing an Ion
+<span class="lineNum">     426 </span><span class="lineCov">         50 :     // compilation.</span>
+<span class="lineNum">     427 </span>            :     jit::AttachFinishedCompilations(cx);
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineCov">         50 :     // Don't call the interrupt callback if we only interrupted for GC or Ion.</span>
+<span class="lineNum">     430 </span>            :     if (!invokeCallback)
+<span class="lineNum">     431 </span>            :         return true;
+<span class="lineNum">     432 </span>            : 
+<span class="lineNum">     433 </span>            :     // Important: Additional callbacks can occur inside the callback handler
+<span class="lineNum">     434 </span>            :     // if it re-enters the JS engine. The embedding must ensure that the
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :     // callback is disconnected before attempting such re-entry.</span>
+<span class="lineNum">     436 </span>            :     if (cx-&gt;interruptCallbackDisabled)
+<span class="lineNum">     437 </span>            :         return true;
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :     bool stop = false;</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :     for (JSInterruptCallback cb : cx-&gt;interruptCallbacks()) {</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :         if (!cb(cx))</span>
+<span class="lineNum">     442 </span>            :             stop = true;
+<span class="lineNum">     443 </span>            :     }
+<span class="lineNum">     444 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     445 </span>            :     if (!stop) {
+<span class="lineNum">     446 </span>            :         // Debugger treats invoking the interrupt callback as a &quot;step&quot;, so
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :         // invoke the onStep handler.</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :         if (cx-&gt;realm()-&gt;isDebuggee()) {</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :             ScriptFrameIter iter(cx);</span>
+<span class="lineNum">     450 </span><span class="lineNoCov">          0 :             if (!iter.done() &amp;&amp;</span>
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :                 cx-&gt;compartment() == iter.compartment() &amp;&amp;</span>
+<span class="lineNum">     452 </span>            :                 iter.script()-&gt;stepModeEnabled())
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :             {</span>
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :                 RootedValue rval(cx);</span>
+<span class="lineNum">     455 </span>            :                 switch (Debugger::onSingleStep(cx, &amp;rval)) {
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :                   case ResumeMode::Terminate:</span>
+<span class="lineNum">     457 </span>            :                     return false;
+<span class="lineNum">     458 </span><span class="lineNoCov">          0 :                   case ResumeMode::Continue:</span>
+<span class="lineNum">     459 </span>            :                     return true;
+<span class="lineNum">     460 </span>            :                   case ResumeMode::Return:
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 :                     // See note in Debugger::propagateForcedReturn.</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :                     Debugger::propagateForcedReturn(cx, iter.abstractFramePtr(), rval);</span>
+<span class="lineNum">     463 </span>            :                     return false;
+<span class="lineNum">     464 </span><span class="lineNoCov">          0 :                   case ResumeMode::Throw:</span>
+<span class="lineNum">     465 </span><span class="lineNoCov">          0 :                     cx-&gt;setPendingException(rval);</span>
+<span class="lineNum">     466 </span>            :                     return false;
+<span class="lineNum">     467 </span>            :                   default:;
+<span class="lineNum">     468 </span>            :                 }
+<span class="lineNum">     469 </span>            :             }
+<span class="lineNum">     470 </span>            :         }
+<span class="lineNum">     471 </span>            : 
+<span class="lineNum">     472 </span>            :         return true;
+<span class="lineNum">     473 </span>            :     }
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span>            :     // No need to set aside any pending exception here: ComputeStackString
+<span class="lineNum">     476 </span><span class="lineNoCov">          0 :     // already does that.</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :     JSString* stack = ComputeStackString(cx);</span>
+<span class="lineNum">     478 </span>            :     JSFlatString* flat = stack ? stack-&gt;ensureFlat(cx) : nullptr;
+<span class="lineNum">     479 </span>            : 
+<span class="lineNum">     480 </span><span class="lineNoCov">          0 :     const char16_t* chars;</span>
+<span class="lineNum">     481 </span><span class="lineNoCov">          0 :     AutoStableStringChars stableChars(cx);</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :     if (flat &amp;&amp; stableChars.initTwoByte(cx, flat))</span>
+<span class="lineNum">     483 </span>            :         chars = stableChars.twoByteRange().begin().get();
+<span class="lineNum">     484 </span>            :     else
+<span class="lineNum">     485 </span>            :         chars = u&quot;(stack not available)&quot;;
+<span class="lineNum">     486 </span><span class="lineNoCov">          0 :     JS_ReportErrorFlagsAndNumberUC(cx, JSREPORT_WARNING, GetErrorMessage, nullptr,</span>
+<span class="lineNum">     487 </span>            :                                    JSMSG_TERMINATED, chars);
+<span class="lineNum">     488 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     489 </span>            :     return false;
+<span class="lineNum">     490 </span>            : }
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span><span class="lineCov">         51 : void</span>
+<span class="lineNum">     493 </span>            : JSContext::requestInterrupt(InterruptReason reason)
+<span class="lineNum">     494 </span><span class="lineCov">        102 : {</span>
+<span class="lineNum">     495 </span><span class="lineNoCov">          0 :     interruptBits_ |= uint32_t(reason);</span>
+<span class="lineNum">     496 </span>            :     jitStackLimit = UINTPTR_MAX;
+<span class="lineNum">     497 </span><span class="lineCov">         51 : </span>
+<span class="lineNum">     498 </span>            :     if (reason == InterruptReason::CallbackUrgent) {
+<span class="lineNum">     499 </span>            :         // If this interrupt is urgent (slow script dialog for instance), take
+<span class="lineNum">     500 </span>            :         // additional steps to interrupt corner cases where the above fields are
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :         // not regularly polled.</span>
+<span class="lineNum">     502 </span><span class="lineNoCov">          0 :         FutexThread::lock();</span>
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :         if (fx.isWaiting())</span>
+<span class="lineNum">     504 </span><span class="lineNoCov">          0 :             fx.wake(FutexThread::WakeForJSInterrupt);</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :         fx.unlock();</span>
+<span class="lineNum">     506 </span>            :         wasm::InterruptRunningCode(this);
+<span class="lineNum">     507 </span><span class="lineCov">         51 :     }</span>
+<span class="lineNum">     508 </span>            : }
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span><span class="lineCov">         50 : bool</span>
+<span class="lineNum">     511 </span>            : JSContext::handleInterrupt()
+<span class="lineNum">     512 </span><span class="lineCov">        100 : {</span>
+<span class="lineNum">     513 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(CurrentThreadCanAccessRuntime(runtime()));</span>
+<span class="lineNum">     514 </span>            :     if (hasAnyPendingInterrupt() || jitStackLimit == UINTPTR_MAX) {
+<span class="lineNum">     515 </span><span class="lineCov">        100 :         bool invokeCallback =</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :             hasPendingInterrupt(InterruptReason::CallbackUrgent) ||</span>
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :             hasPendingInterrupt(InterruptReason::CallbackCanWait);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         interruptBits_ = 0;</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :         resetJitStackLimit();</span>
+<span class="lineNum">     520 </span>            :         return HandleInterrupt(this, invokeCallback);
+<span class="lineNum">     521 </span>            :     }
+<span class="lineNum">     522 </span>            :     return true;
+<span class="lineNum">     523 </span>            : }
+<span class="lineNum">     524 </span>            : 
+<span class="lineNum">     525 </span><span class="lineCov">          4 : bool</span>
+<span class="lineNum">     526 </span>            : JSRuntime::setDefaultLocale(const char* locale)
+<span class="lineNum">     527 </span><span class="lineCov">          4 : {</span>
+<span class="lineNum">     528 </span>            :     if (!locale)
+<span class="lineNum">     529 </span>            :         return false;
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :     char* newLocale = DuplicateString(mainContextFromOwnThread(), locale).release();</span>
+<span class="lineNum">     532 </span>            :     if (!newLocale)
+<span class="lineNum">     533 </span>            :         return false;
+<span class="lineNum">     534 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     535 </span><span class="lineCov">          8 :     resetDefaultLocale();</span>
+<span class="lineNum">     536 </span><span class="lineNoCov">          0 :     defaultLocale = newLocale;</span>
+<span class="lineNum">     537 </span>            :     return true;
+<span class="lineNum">     538 </span>            : }
+<span class="lineNum">     539 </span>            : 
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 : void</span>
+<span class="lineNum">     541 </span>            : JSRuntime::resetDefaultLocale()
+<span class="lineNum">     542 </span><span class="lineCov">         12 : {</span>
+<span class="lineNum">     543 </span><span class="lineNoCov">          0 :     js_free(defaultLocale);</span>
+<span class="lineNum">     544 </span><span class="lineCov">          4 :     defaultLocale = nullptr;</span>
+<span class="lineNum">     545 </span>            : }
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span><span class="lineCov">          3 : const char*</span>
+<span class="lineNum">     548 </span>            : JSRuntime::getDefaultLocale()
+<span class="lineNum">     549 </span><span class="lineCov">          6 : {</span>
+<span class="lineNum">     550 </span><span class="lineCov">          6 :     if (defaultLocale)</span>
+<span class="lineNum">     551 </span>            :         return defaultLocale;
+<span class="lineNum">     552 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     553 </span>            :     const char* locale = setlocale(LC_ALL, nullptr);
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 :     // convert to a well-formed BCP 47 language tag</span>
+<span class="lineNum">     556 </span><span class="lineNoCov">          0 :     if (!locale || !strcmp(locale, &quot;C&quot;))</span>
+<span class="lineNum">     557 </span>            :         locale = &quot;und&quot;;
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :     char* lang = DuplicateString(mainContextFromOwnThread(), locale).release();</span>
+<span class="lineNum">     560 </span>            :     if (!lang)
+<span class="lineNum">     561 </span>            :         return nullptr;
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span><span class="lineNoCov">          0 :     char* p;</span>
+<span class="lineNum">     564 </span><span class="lineNoCov">          0 :     if ((p = strchr(lang, '.')))</span>
+<span class="lineNum">     565 </span><span class="lineNoCov">          0 :         *p = '\0';</span>
+<span class="lineNum">     566 </span><span class="lineNoCov">          0 :     while ((p = strchr(lang, '_')))</span>
+<span class="lineNum">     567 </span>            :         *p = '-';
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :     defaultLocale = lang;</span>
+<span class="lineNum">     570 </span>            :     return defaultLocale;
+<span class="lineNum">     571 </span>            : }
+<span class="lineNum">     572 </span>            : 
+<span class="lineNum">     573 </span><span class="lineCov">          4 : void</span>
+<span class="lineNum">     574 </span>            : JSRuntime::traceSharedIntlData(JSTracer* trc)
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     576 </span><span class="lineCov">          4 :     sharedIntlData.ref().trace(trc);</span>
+<span class="lineNum">     577 </span>            : }
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span><span class="lineCov">       2293 : void</span>
+<span class="lineNum">     580 </span>            : JSContext::triggerActivityCallback(bool active)
+<span class="lineNum">     581 </span><span class="lineCov">       4586 : {</span>
+<span class="lineNum">     582 </span><span class="lineCov">          9 :     if (!activityCallback)</span>
+<span class="lineNum">     583 </span>            :         return;
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span>            :     /*
+<span class="lineNum">     586 </span>            :      * The activity callback must not trigger a GC: it would create a cirular
+<span class="lineNum">     587 </span>            :      * dependency between entering a request and Rooted's requirement of being
+<span class="lineNum">     588 </span>            :      * in a request. In practice this callback already cannot trigger GC. The
+<span class="lineNum">     589 </span>            :      * suppression serves to inform the exact rooting hazard analysis of this
+<span class="lineNum">     590 </span>            :      * property and ensures that it remains true in the future.
+<span class="lineNum">     591 </span><span class="lineCov">       4568 :      */</span>
+<span class="lineNum">     592 </span>            :     AutoSuppressGC suppress(this);
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     594 </span>            :     activityCallback(activityCallbackArg, active);
+<span class="lineNum">     595 </span>            : }
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     597 </span><span class="lineCov">         16 : FreeOp::FreeOp(JSRuntime* maybeRuntime)</span>
+<span class="lineNum">     598 </span>            :   : JSFreeOp(maybeRuntime)
+<span class="lineNum">     599 </span><span class="lineCov">          8 : {</span>
+<span class="lineNum">     600 </span><span class="lineNoCov">          0 :     MOZ_ASSERT_IF(maybeRuntime, CurrentThreadCanAccessRuntime(maybeRuntime));</span>
+<span class="lineNum">     601 </span>            : }
+<span class="lineNum">     602 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     603 </span>            : FreeOp::~FreeOp()
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :     for (size_t i = 0; i &lt; freeLaterList.length(); i++)</span>
+<span class="lineNum">     606 </span>            :         free_(freeLaterList[i]);
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :     if (!jitPoisonRanges.empty())</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :         jit::ExecutableAllocator::poisonCode(runtime(), jitPoisonRanges);</span>
+<span class="lineNum">     610 </span>            : }
+<span class="lineNum">     611 </span>            : 
+<span class="lineNum">     612 </span><span class="lineNoCov">          0 : bool</span>
+<span class="lineNum">     613 </span>            : FreeOp::isDefaultFreeOp() const
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     615 </span>            :     return runtime_ &amp;&amp; runtime_-&gt;defaultFreeOp() == this;
+<span class="lineNum">     616 </span>            : }
+<span class="lineNum">     617 </span>            : 
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 : JSObject*</span>
+<span class="lineNum">     619 </span>            : JSRuntime::getIncumbentGlobal(JSContext* cx)
+<span class="lineNum">     620 </span>            : {
+<span class="lineNum">     621 </span>            :     // If the embedding didn't set a callback for getting the incumbent
+<span class="lineNum">     622 </span><span class="lineCov">       8750 :     // global, the currently active global is used.</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :     if (!cx-&gt;getIncumbentGlobalCallback) {</span>
+<span class="lineNum">     624 </span>            :         if (!cx-&gt;compartment())
+<span class="lineNum">     625 </span><span class="lineNoCov">          0 :             return nullptr;</span>
+<span class="lineNum">     626 </span>            :         return cx-&gt;global();
+<span class="lineNum">     627 </span>            :     }
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     629 </span>            :     return cx-&gt;getIncumbentGlobalCallback(cx);
+<span class="lineNum">     630 </span>            : }
+<span class="lineNum">     631 </span>            : 
+<span class="lineNum">     632 </span><span class="lineCov">       4148 : bool</span>
+<span class="lineNum">     633 </span>            : JSRuntime::enqueuePromiseJob(JSContext* cx, HandleFunction job, HandleObject promise,
+<span class="lineNum">     634 </span>            :                              HandleObject incumbentGlobal)
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     636 </span>            :     MOZ_ASSERT(cx-&gt;enqueuePromiseJobCallback,
+<span class="lineNum">     637 </span><span class="lineNoCov">          0 :                &quot;Must set a callback using JS::SetEnqueuePromiseJobCallback before using Promises&quot;);</span>
+<span class="lineNum">     638 </span>            :     MOZ_ASSERT_IF(incumbentGlobal, !IsWrapper(incumbentGlobal) &amp;&amp; !IsWindowProxy(incumbentGlobal));
+<span class="lineNum">     639 </span><span class="lineCov">       8296 : </span>
+<span class="lineNum">     640 </span><span class="lineCov">       8296 :     void* data = cx-&gt;enqueuePromiseJobCallbackData;</span>
+<span class="lineNum">     641 </span><span class="lineCov">       4148 :     RootedObject allocationSite(cx);</span>
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :     if (promise) {</span>
+<span class="lineNum">     643 </span>            :         RootedObject unwrappedPromise(cx, promise);
+<span class="lineNum">     644 </span>            :         // While the job object is guaranteed to be unwrapped, the promise
+<span class="lineNum">     645 </span>            :         // might be wrapped. See the comments in
+<span class="lineNum">     646 </span><span class="lineCov">       4053 :         // intrinsic_EnqueuePromiseReactionJob for details.</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :         if (IsWrapper(promise))</span>
+<span class="lineNum">     648 </span><span class="lineCov">       8106 :             unwrappedPromise = UncheckedUnwrap(promise);</span>
+<span class="lineNum">     649 </span><span class="lineCov">       8106 :         if (unwrappedPromise-&gt;is&lt;PromiseObject&gt;())</span>
+<span class="lineNum">     650 </span>            :             allocationSite = JS::GetPromiseAllocationSite(unwrappedPromise);
+<span class="lineNum">     651 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     652 </span>            :     return cx-&gt;enqueuePromiseJobCallback(cx, job, allocationSite, incumbentGlobal, data);
+<span class="lineNum">     653 </span>            : }
+<span class="lineNum">     654 </span>            : 
+<span class="lineNum">     655 </span><span class="lineCov">          2 : void</span>
+<span class="lineNum">     656 </span>            : JSRuntime::addUnhandledRejectedPromise(JSContext* cx, js::HandleObject promise)
+<span class="lineNum">     657 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     658 </span><span class="lineCov">          4 :     MOZ_ASSERT(promise-&gt;is&lt;PromiseObject&gt;());</span>
+<span class="lineNum">     659 </span>            :     if (!cx-&gt;promiseRejectionTrackerCallback)
+<span class="lineNum">     660 </span>            :         return;
+<span class="lineNum">     661 </span><span class="lineCov">          4 : </span>
+<span class="lineNum">     662 </span>            :     void* data = cx-&gt;promiseRejectionTrackerCallbackData;
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :     cx-&gt;promiseRejectionTrackerCallback(cx, promise,</span>
+<span class="lineNum">     664 </span>            :                                         JS::PromiseRejectionHandlingState::Unhandled, data);
+<span class="lineNum">     665 </span>            : }
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span><span class="lineCov">          1 : void</span>
+<span class="lineNum">     668 </span>            : JSRuntime::removeUnhandledRejectedPromise(JSContext* cx, js::HandleObject promise)
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     670 </span><span class="lineCov">          2 :     MOZ_ASSERT(promise-&gt;is&lt;PromiseObject&gt;());</span>
+<span class="lineNum">     671 </span>            :     if (!cx-&gt;promiseRejectionTrackerCallback)
+<span class="lineNum">     672 </span>            :         return;
+<span class="lineNum">     673 </span><span class="lineCov">          2 : </span>
+<span class="lineNum">     674 </span>            :     void* data = cx-&gt;promiseRejectionTrackerCallbackData;
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :     cx-&gt;promiseRejectionTrackerCallback(cx, promise,</span>
+<span class="lineNum">     676 </span>            :                                         JS::PromiseRejectionHandlingState::Handled, data);
+<span class="lineNum">     677 </span>            : }
+<span class="lineNum">     678 </span>            : 
+<span class="lineNum">     679 </span><span class="lineNoCov">          0 : mozilla::non_crypto::XorShift128PlusRNG&amp;</span>
+<span class="lineNum">     680 </span>            : JSRuntime::randomKeyGenerator()
+<span class="lineNum">     681 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     682 </span><span class="lineCov">         68 :     MOZ_ASSERT(CurrentThreadCanAccessRuntime(this));</span>
+<span class="lineNum">     683 </span><span class="lineNoCov">          0 :     if (randomKeyGenerator_.isNothing()) {</span>
+<span class="lineNum">     684 </span><span class="lineCov">          4 :         mozilla::Array&lt;uint64_t, 2&gt; seed;</span>
+<span class="lineNum">     685 </span><span class="lineCov">          4 :         GenerateXorShift128PlusSeed(seed);</span>
+<span class="lineNum">     686 </span>            :         randomKeyGenerator_.emplace(seed[0], seed[1]);
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     688 </span>            :     return randomKeyGenerator_.ref();
+<span class="lineNum">     689 </span>            : }
+<span class="lineNum">     690 </span>            : 
+<span class="lineNum">     691 </span><span class="lineCov">         21 : mozilla::HashCodeScrambler</span>
+<span class="lineNum">     692 </span>            : JSRuntime::randomHashCodeScrambler()
+<span class="lineNum">     693 </span><span class="lineCov">         21 : {</span>
+<span class="lineNum">     694 </span><span class="lineNoCov">          0 :     auto&amp; rng = randomKeyGenerator();</span>
+<span class="lineNum">     695 </span>            :     return mozilla::HashCodeScrambler(rng.next(), rng.next());
+<span class="lineNum">     696 </span>            : }
+<span class="lineNum">     697 </span>            : 
+<span class="lineNum">     698 </span><span class="lineCov">         47 : mozilla::non_crypto::XorShift128PlusRNG</span>
+<span class="lineNum">     699 </span>            : JSRuntime::forkRandomKeyGenerator()
+<span class="lineNum">     700 </span><span class="lineCov">         47 : {</span>
+<span class="lineNum">     701 </span><span class="lineNoCov">          0 :     auto&amp; rng = randomKeyGenerator();</span>
+<span class="lineNum">     702 </span>            :     return mozilla::non_crypto::XorShift128PlusRNG(rng.next(), rng.next());
+<span class="lineNum">     703 </span>            : }
+<span class="lineNum">     704 </span>            : 
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 : js::HashNumber</span>
+<span class="lineNum">     706 </span>            : JSRuntime::randomHashCode()
+<span class="lineNum">     707 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     708 </span>            :     MOZ_ASSERT(CurrentThreadCanAccessRuntime(this));
+<span class="lineNum">     709 </span><span class="lineCov">         24 : </span>
+<span class="lineNum">     710 </span><span class="lineCov">          1 :     if (randomHashCodeGenerator_.isNothing()) {</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :         mozilla::Array&lt;uint64_t, 2&gt; seed;</span>
+<span class="lineNum">     712 </span><span class="lineCov">          1 :         GenerateXorShift128PlusSeed(seed);</span>
+<span class="lineNum">     713 </span>            :         randomHashCodeGenerator_.emplace(seed[0], seed[1]);
+<span class="lineNum">     714 </span>            :     }
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     716 </span>            :     return HashNumber(randomHashCodeGenerator_-&gt;next());
+<span class="lineNum">     717 </span>            : }
+<span class="lineNum">     718 </span>            : 
+<span class="lineNum">     719 </span><span class="lineCov">         66 : void</span>
+<span class="lineNum">     720 </span>            : JSRuntime::updateMallocCounter(size_t nbytes)
+<span class="lineNum">     721 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     722 </span><span class="lineCov">         66 :     gc.updateMallocCounter(nbytes);</span>
+<span class="lineNum">     723 </span>            : }
+<span class="lineNum">     724 </span>            : 
+<span class="lineNum">     725 </span><span class="lineNoCov">          0 : JS_FRIEND_API(void*)</span>
+<span class="lineNum">     726 </span>            : JSRuntime::onOutOfMemory(AllocFunction allocFunc, size_t nbytes, void* reallocPtr, JSContext* maybecx)
+<span class="lineNum">     727 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     728 </span>            :     MOZ_ASSERT_IF(allocFunc != AllocFunction::Realloc, !reallocPtr);
+<span class="lineNum">     729 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     730 </span>            :     if (JS::RuntimeHeapIsBusy())
+<span class="lineNum">     731 </span>            :         return nullptr;
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     733 </span>            :     if (!oom::IsSimulatedOOMAllocation()) {
+<span class="lineNum">     734 </span>            :         /*
+<span class="lineNum">     735 </span>            :          * Retry when we are done with the background sweeping and have stopped
+<span class="lineNum">     736 </span>            :          * all the allocations and released the empty GC chunks.
+<span class="lineNum">     737 </span><span class="lineNoCov">          0 :          */</span>
+<span class="lineNum">     738 </span>            :         gc.onOutOfMallocMemory();
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :         void* p;</span>
+<span class="lineNum">     740 </span>            :         switch (allocFunc) {
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :           case AllocFunction::Malloc:</span>
+<span class="lineNum">     742 </span><span class="lineNoCov">          0 :             p = js_malloc(nbytes);</span>
+<span class="lineNum">     743 </span>            :             break;
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :           case AllocFunction::Calloc:</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 :             p = js_calloc(nbytes);</span>
+<span class="lineNum">     746 </span>            :             break;
+<span class="lineNum">     747 </span><span class="lineNoCov">          0 :           case AllocFunction::Realloc:</span>
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :             p = js_realloc(reallocPtr, nbytes);</span>
+<span class="lineNum">     749 </span>            :             break;
+<span class="lineNum">     750 </span><span class="lineNoCov">          0 :           default:</span>
+<span class="lineNum">     751 </span>            :             MOZ_CRASH();
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :         }</span>
+<span class="lineNum">     753 </span>            :         if (p)
+<span class="lineNum">     754 </span>            :             return p;
+<span class="lineNum">     755 </span>            :     }
+<span class="lineNum">     756 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 :     if (maybecx)</span>
+<span class="lineNum">     758 </span>            :         ReportOutOfMemory(maybecx);
+<span class="lineNum">     759 </span>            :     return nullptr;
+<span class="lineNum">     760 </span>            : }
+<span class="lineNum">     761 </span>            : 
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 : void*</span>
+<span class="lineNum">     763 </span>            : JSRuntime::onOutOfMemoryCanGC(AllocFunction allocFunc, size_t bytes, void* reallocPtr)
+<span class="lineNum">     764 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">          0 :     if (OnLargeAllocationFailure &amp;&amp; bytes &gt;= LARGE_ALLOCATION)</span>
+<span class="lineNum">     766 </span><span class="lineNoCov">          0 :         OnLargeAllocationFailure();</span>
+<span class="lineNum">     767 </span>            :     return onOutOfMemory(allocFunc, bytes, reallocPtr);
+<span class="lineNum">     768 </span>            : }
+<span class="lineNum">     769 </span>            : 
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 : bool</span>
+<span class="lineNum">     771 </span>            : JSRuntime::activeGCInAtomsZone()
+<span class="lineNum">     772 </span><span class="lineCov">         15 : {</span>
+<span class="lineNum">     773 </span><span class="lineCov">         30 :     Zone* zone = unsafeAtomsZone();</span>
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :     return (zone-&gt;needsIncrementalBarrier() &amp;&amp; !gc.isVerifyPreBarriersEnabled()) ||</span>
+<span class="lineNum">     775 </span>            :            zone-&gt;wasGCStarted();
+<span class="lineNum">     776 </span>            : }
+<span class="lineNum">     777 </span>            : 
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 : bool</span>
+<span class="lineNum">     779 </span>            : JSRuntime::createAtomsAddedWhileSweepingTable()
+<span class="lineNum">     780 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     781 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(JS::RuntimeHeapIsCollecting());</span>
+<span class="lineNum">     782 </span>            :     MOZ_ASSERT(!atomsAddedWhileSweeping_);
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     784 </span><span class="lineNoCov">          0 :     atomsAddedWhileSweeping_ = js_new&lt;AtomSet&gt;();</span>
+<span class="lineNum">     785 </span>            :     if (!atomsAddedWhileSweeping_)
+<span class="lineNum">     786 </span>            :         return false;
+<span class="lineNum">     787 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     788 </span><span class="lineNoCov">          0 :     if (!atomsAddedWhileSweeping_-&gt;init()) {</span>
+<span class="lineNum">     789 </span><span class="lineNoCov">          0 :         destroyAtomsAddedWhileSweepingTable();</span>
+<span class="lineNum">     790 </span>            :         return false;
+<span class="lineNum">     791 </span>            :     }
+<span class="lineNum">     792 </span>            : 
+<span class="lineNum">     793 </span>            :     return true;
+<span class="lineNum">     794 </span>            : }
+<span class="lineNum">     795 </span>            : 
+<span class="lineNum">     796 </span><span class="lineNoCov">          0 : void</span>
+<span class="lineNum">     797 </span>            : JSRuntime::destroyAtomsAddedWhileSweepingTable()
+<span class="lineNum">     798 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     799 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(JS::RuntimeHeapIsCollecting());</span>
+<span class="lineNum">     800 </span>            :     MOZ_ASSERT(atomsAddedWhileSweeping_);
+<span class="lineNum">     801 </span><span class="lineNoCov">          0 : </span>
+<span class="lineNum">     802 </span><span class="lineNoCov">          0 :     js_delete(atomsAddedWhileSweeping_.ref());</span>
+<span class="lineNum">     803 </span><span class="lineNoCov">          0 :     atomsAddedWhileSweeping_ = nullptr;</span>
+<span class="lineNum">     804 </span>            : }
+<span class="lineNum">     805 </span>            : 
+<span class="lineNum">     806 </span><span class="lineNoCov">          0 : void</span>
+<span class="lineNum">     807 </span>            : JSRuntime::setUsedByHelperThread(Zone* zone)
+<span class="lineNum">     808 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     809 </span><span class="lineCov">         10 :     MOZ_ASSERT(!zone-&gt;usedByHelperThread());</span>
+<span class="lineNum">     810 </span><span class="lineCov">          5 :     MOZ_ASSERT(!zone-&gt;wasGCStarted());</span>
+<span class="lineNum">     811 </span><span class="lineNoCov">          0 :     zone-&gt;setUsedByHelperThread();</span>
+<span class="lineNum">     812 </span><span class="lineCov">          5 :     numActiveHelperThreadZones++;</span>
+<span class="lineNum">     813 </span>            : }
+<span class="lineNum">     814 </span>            : 
+<span class="lineNum">     815 </span><span class="lineNoCov">          0 : void</span>
+<span class="lineNum">     816 </span>            : JSRuntime::clearUsedByHelperThread(Zone* zone)
+<span class="lineNum">     817 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     818 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(zone-&gt;usedByHelperThread());</span>
+<span class="lineNum">     819 </span><span class="lineNoCov">          0 :     zone-&gt;clearUsedByHelperThread();</span>
+<span class="lineNum">     820 </span><span class="lineCov">          5 :     numActiveHelperThreadZones--;</span>
+<span class="lineNum">     821 </span><span class="lineCov">         10 :     JSContext* cx = mainContextFromOwnThread();</span>
+<span class="lineNum">     822 </span><span class="lineNoCov">          0 :     if (gc.fullGCForAtomsRequested() &amp;&amp; cx-&gt;canCollectAtoms())</span>
+<span class="lineNum">     823 </span><span class="lineCov">          5 :         gc.triggerFullGCForAtoms(cx);</span>
+<span class="lineNum">     824 </span>            : }
+<span class="lineNum">     825 </span>            : 
+<span class="lineNum">     826 </span><span class="lineCov">   54727291 : bool</span>
+<span class="lineNum">     827 </span>            : js::CurrentThreadCanAccessRuntime(const JSRuntime* rt)
+<span class="lineNum">     828 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     829 </span>            :     return rt-&gt;mainContextFromAnyThread() == TlsContext.get();
+<span class="lineNum">     830 </span>            : }
+<span class="lineNum">     831 </span>            : 
+<span class="lineNum">     832 </span><span class="lineNoCov">          0 : bool</span>
+<span class="lineNum">     833 </span>            : js::CurrentThreadCanAccessZone(Zone* zone)
+<span class="lineNum">     834 </span>            : {
+<span class="lineNum">     835 </span><span class="lineNoCov">          0 :     // Helper thread zones can only be used by their owning thread.</span>
+<span class="lineNum">     836 </span><span class="lineCov">       6810 :     if (zone-&gt;usedByHelperThread())</span>
+<span class="lineNum">     837 </span>            :         return zone-&gt;ownedByCurrentHelperThread();
+<span class="lineNum">     838 </span>            : 
+<span class="lineNum">     839 </span><span class="lineCov">    9445542 :     // Other zones can only be accessed by the runtime's active context.</span>
+<span class="lineNum">     840 </span>            :     return CurrentThreadCanAccessRuntime(zone-&gt;runtime_);
+<span class="lineNum">     841 </span>            : }
+<span class="lineNum">     842 </span>            : 
+<span class="lineNum">     843 </span>            : #ifdef DEBUG
+<span class="lineNum">     844 </span><span class="lineCov">          1 : bool</span>
+<span class="lineNum">     845 </span>            : js::CurrentThreadIsPerformingGC()
+<span class="lineNum">     846 </span><span class="lineCov">          2 : {</span>
+<span class="lineNum">     847 </span>            :     return TlsContext.get()-&gt;performingGC;
+<span class="lineNum">     848 </span>            : }
+<span class="lineNum">     849 </span>            : #endif
+<span class="lineNum">     850 </span>            : 
+<span class="lineNum">     851 </span><span class="lineNoCov">          0 : JS_FRIEND_API(void)</span>
+<span class="lineNum">     852 </span>            : JS::SetJSContextProfilerSampleBufferRangeStart(JSContext* cx, uint64_t rangeStart)
+<span class="lineNum">     853 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     854 </span><span class="lineNoCov">          0 :     cx-&gt;runtime()-&gt;setProfilerSampleBufferRangeStart(rangeStart);</span>
+<span class="lineNum">     855 </span>            : }
+<span class="lineNum">     856 </span>            : 
+<span class="lineNum">     857 </span><span class="lineNoCov">          0 : JS_FRIEND_API(bool)</span>
+<span class="lineNum">     858 </span>            : JS::IsProfilingEnabledForContext(JSContext* cx)
+<span class="lineNum">     859 </span><span class="lineNoCov">          0 : {</span>
+<span class="lineNum">     860 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(cx);</span>
+<span class="lineNum">     861 </span>            :     return cx-&gt;runtime()-&gt;geckoProfiler().enabled();
+<span class="lineNum">     862 </span>            : }
+<span class="lineNum">     863 </span>            : 
+<span class="lineNum">     864 </span>            : JS_PUBLIC_API(void)
+<span class="lineNum">     865 </span>            : JS::shadow::RegisterWeakCache(JSRuntime* rt, detail::WeakCacheBase* cachep)
+<span class="lineNum">     866 </span>            : {
+<span class="lineNum">     867 </span>            :     rt-&gt;registerWeakCache(cachep);
+<span class="lineNum">     868 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

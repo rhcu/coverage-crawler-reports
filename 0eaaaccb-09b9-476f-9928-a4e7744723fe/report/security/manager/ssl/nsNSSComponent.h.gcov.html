@@ -1,0 +1,299 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - security/manager/ssl/nsNSSComponent.h</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">security/manager/ssl</a> - nsNSSComponent.h<span style="font-size: 80%;"> (source / <a href="nsNSSComponent.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntry">9</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*-</a>
+<span class="lineNum">       2 </span>            :  *
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef _nsNSSComponent_h_
+<span class="lineNum">       8 </span>            : #define _nsNSSComponent_h_
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &quot;ScopedNSSTypes.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;SharedCertVerifier.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/Attributes.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/Monitor.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/Mutex.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/RefPtr.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;nsCOMPtr.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;nsIObserver.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;nsNSSCallbacks.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;prerror.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;sslt.h&quot;
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span>            : #ifdef XP_WIN
+<span class="lineNum">      23 </span>            : #include &quot;windows.h&quot; // this needs to be before the following includes
+<span class="lineNum">      24 </span>            : #include &quot;wincrypt.h&quot;
+<span class="lineNum">      25 </span>            : #endif // XP_WIN
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : class nsIDOMWindow;
+<span class="lineNum">      28 </span>            : class nsIPrompt;
+<span class="lineNum">      29 </span>            : class nsIX509CertList;
+<span class="lineNum">      30 </span>            : class SmartCardThreadList;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : namespace mozilla { namespace psm {
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : MOZ_MUST_USE
+<span class="lineNum">      35 </span>            :   ::already_AddRefed&lt;mozilla::psm::SharedCertVerifier&gt;
+<span class="lineNum">      36 </span>            :   GetDefaultCertVerifier();
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : } } // namespace mozilla::psm
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : #define NS_NSSCOMPONENT_CID \
+<span class="lineNum">      42 </span>            : {0x4cb64dfd, 0xca98, 0x4e24, {0xbe, 0xfd, 0x0d, 0x92, 0x85, 0xa3, 0x3b, 0xcb}}
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : #define PSM_COMPONENT_CONTRACTID &quot;@mozilla.org/psm;1&quot;
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : #define NS_INSSCOMPONENT_IID \
+<span class="lineNum">      47 </span>            :   { 0xa0a8f52b, 0xea18, 0x4abc, \
+<span class="lineNum">      48 </span>            :     { 0xa3, 0xca, 0xec, 0xcf, 0x70, 0x4f, 0xfe, 0x63 } }
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span>            : extern bool EnsureNSSInitializedChromeOrContent();
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineCov">          1 : class NS_NO_VTABLE nsINSSComponent : public nsISupports</span>
+<span class="lineNum">      53 </span>            : {
+<span class="lineNum">      54 </span>            : public:
+<span class="lineNum">      55 </span>            :   NS_DECLARE_STATIC_IID_ACCESSOR(NS_INSSCOMPONENT_IID)
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span>            :   NS_IMETHOD LogoutAuthenticatedPK11() = 0;
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            : #ifdef DEBUG
+<span class="lineNum">      60 </span>            :   NS_IMETHOD IsCertTestBuiltInRoot(CERTCertificate* cert, bool&amp; result) = 0;
+<span class="lineNum">      61 </span>            : #endif
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            :   NS_IMETHOD IsCertContentSigningRoot(CERTCertificate* cert, bool&amp; result) = 0;
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : #ifdef XP_WIN
+<span class="lineNum">      66 </span>            :   NS_IMETHOD GetEnterpriseRoots(nsIX509CertList** enterpriseRoots) = 0;
+<span class="lineNum">      67 </span>            :   NS_IMETHOD TrustLoaded3rdPartyRoots() = 0;
+<span class="lineNum">      68 </span>            : #endif
+<span class="lineNum">      69 </span>            : 
+<span class="lineNum">      70 </span>            :   NS_IMETHOD BlockUntilLoadableRootsLoaded() = 0;
+<span class="lineNum">      71 </span>            :   NS_IMETHOD CheckForSmartCardChanges() = 0;
+<span class="lineNum">      72 </span>            :   // IssuerMatchesMitmCanary succeeds if aCertIssuer matches the canary and
+<span class="lineNum">      73 </span>            :   // the feature is enabled. It returns an error if the strings don't match,
+<span class="lineNum">      74 </span>            :   // the canary is not set, or the feature is disabled.
+<span class="lineNum">      75 </span>            :   NS_IMETHOD IssuerMatchesMitmCanary(const char* aCertIssuer) = 0;
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            :   // Main thread only
+<span class="lineNum">      78 </span>            :   NS_IMETHOD HasActiveSmartCards(bool&amp; result) = 0;
+<span class="lineNum">      79 </span>            :   NS_IMETHOD HasUserCertsInstalled(bool&amp; result) = 0;
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            :   virtual ::already_AddRefed&lt;mozilla::psm::SharedCertVerifier&gt;
+<span class="lineNum">      82 </span>            :     GetDefaultCertVerifier() = 0;
+<span class="lineNum">      83 </span>            : };
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span>            : NS_DEFINE_STATIC_IID_ACCESSOR(nsINSSComponent, NS_INSSCOMPONENT_IID)
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : // Implementation of the PSM component interface.
+<span class="lineNum">      88 </span>            : class nsNSSComponent final : public nsINSSComponent
+<span class="lineNum">      89 </span>            :                            , public nsIObserver
+<span class="lineNum">      90 </span>            : {
+<span class="lineNum">      91 </span>            : public:
+<span class="lineNum">      92 </span>            :   // LoadLoadableRootsTask updates mLoadableRootsLoaded and
+<span class="lineNum">      93 </span>            :   // mLoadableRootsLoadedResult and then signals mLoadableRootsLoadedMonitor.
+<span class="lineNum">      94 </span>            :   friend class LoadLoadableRootsTask;
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span>            :   NS_DEFINE_STATIC_CID_ACCESSOR( NS_NSSCOMPONENT_CID )
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span>            :   nsNSSComponent();
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            :   NS_DECL_THREADSAFE_ISUPPORTS
+<span class="lineNum">     101 </span>            :   NS_DECL_NSIOBSERVER
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span>            :   nsresult Init();
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span>            :   static nsresult GetNewPrompter(nsIPrompt** result);
+<span class="lineNum">     106 </span>            : 
+<span class="lineNum">     107 </span>            :   NS_IMETHOD LogoutAuthenticatedPK11() override;
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span>            : #ifdef DEBUG
+<span class="lineNum">     110 </span>            :   NS_IMETHOD IsCertTestBuiltInRoot(CERTCertificate* cert, bool&amp; result) override;
+<span class="lineNum">     111 </span>            : #endif
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span>            :   NS_IMETHOD IsCertContentSigningRoot(CERTCertificate* cert, bool&amp; result) override;
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            : #ifdef XP_WIN
+<span class="lineNum">     116 </span>            :   NS_IMETHOD GetEnterpriseRoots(nsIX509CertList** enterpriseRoots) override;
+<span class="lineNum">     117 </span>            :   NS_IMETHOD TrustLoaded3rdPartyRoots() override;
+<span class="lineNum">     118 </span>            : #endif
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            :   NS_IMETHOD BlockUntilLoadableRootsLoaded() override;
+<span class="lineNum">     121 </span>            :   NS_IMETHOD CheckForSmartCardChanges() override;
+<span class="lineNum">     122 </span>            :   NS_IMETHOD IssuerMatchesMitmCanary(const char* aCertIssuer) override;
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            :   // Main thread only
+<span class="lineNum">     125 </span>            :   NS_IMETHOD HasActiveSmartCards(bool&amp; result) override;
+<span class="lineNum">     126 </span>            :   NS_IMETHOD HasUserCertsInstalled(bool&amp; result) override;
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            :   ::already_AddRefed&lt;mozilla::psm::SharedCertVerifier&gt;
+<span class="lineNum">     129 </span>            :     GetDefaultCertVerifier() override;
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span>            :   // The following two methods are thread-safe.
+<span class="lineNum">     132 </span>            :   static bool AreAnyWeakCiphersEnabled();
+<span class="lineNum">     133 </span>            :   static void UseWeakCiphersOnSocket(PRFileDesc* fd);
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span>            :   static void FillTLSVersionRange(SSLVersionRange&amp; rangeOut,
+<span class="lineNum">     136 </span>            :                                   uint32_t minFromPrefs,
+<span class="lineNum">     137 </span>            :                                   uint32_t maxFromPrefs,
+<span class="lineNum">     138 </span>            :                                   SSLVersionRange defaults);
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            : protected:
+<span class="lineNum">     141 </span>            :   virtual ~nsNSSComponent();
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            : private:
+<span class="lineNum">     144 </span>            :   nsresult InitializeNSS();
+<span class="lineNum">     145 </span>            :   void ShutdownNSS();
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span>            :   void setValidationOptions(bool isInitialSetting,
+<span class="lineNum">     148 </span>            :                             const mozilla::MutexAutoLock&amp; proofOfLock);
+<span class="lineNum">     149 </span>            :   nsresult setEnabledTLSVersions();
+<span class="lineNum">     150 </span>            :   nsresult RegisterObservers();
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            :   void MaybeEnableFamilySafetyCompatibility();
+<span class="lineNum">     153 </span>            :   void MaybeImportEnterpriseRoots();
+<span class="lineNum">     154 </span>            : #ifdef XP_WIN
+<span class="lineNum">     155 </span>            :   void ImportEnterpriseRootsForLocation(
+<span class="lineNum">     156 </span>            :     DWORD locationFlag, const mozilla::MutexAutoLock&amp; proofOfLock);
+<span class="lineNum">     157 </span>            :   nsresult MaybeImportFamilySafetyRoot(PCCERT_CONTEXT certificate,
+<span class="lineNum">     158 </span>            :                                        bool&amp; wasFamilySafetyRoot);
+<span class="lineNum">     159 </span>            :   nsresult LoadFamilySafetyRoot();
+<span class="lineNum">     160 </span>            :   void UnloadFamilySafetyRoot();
+<span class="lineNum">     161 </span>            : 
+<span class="lineNum">     162 </span>            :   void UnloadEnterpriseRoots();
+<span class="lineNum">     163 </span>            : #endif // XP_WIN
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span>            :   // mLoadableRootsLoadedMonitor protects mLoadableRootsLoaded.
+<span class="lineNum">     166 </span>            :   mozilla::Monitor mLoadableRootsLoadedMonitor;
+<span class="lineNum">     167 </span>            :   bool mLoadableRootsLoaded;
+<span class="lineNum">     168 </span>            :   nsresult mLoadableRootsLoadedResult;
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span>            :   // mMutex protects all members that are accessed from more than one thread.
+<span class="lineNum">     171 </span>            :   mozilla::Mutex mMutex;
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span>            :   // The following members are accessed from more than one thread:
+<span class="lineNum">     174 </span>            :   bool mNSSInitialized;
+<span class="lineNum">     175 </span>            : #ifdef DEBUG
+<span class="lineNum">     176 </span>            :   nsString mTestBuiltInRootHash;
+<span class="lineNum">     177 </span>            : #endif
+<span class="lineNum">     178 </span>            :   nsString mContentSigningRootHash;
+<span class="lineNum">     179 </span>            :   RefPtr&lt;mozilla::psm::SharedCertVerifier&gt; mDefaultCertVerifier;
+<span class="lineNum">     180 </span>            :   nsString mMitmCanaryIssuer;
+<span class="lineNum">     181 </span>            :   bool mMitmDetecionEnabled;
+<span class="lineNum">     182 </span>            : #ifdef XP_WIN
+<span class="lineNum">     183 </span>            :   mozilla::UniqueCERTCertificate mFamilySafetyRoot;
+<span class="lineNum">     184 </span>            :   mozilla::UniqueCERTCertList mEnterpriseRoots;
+<span class="lineNum">     185 </span>            : #endif // XP_WIN
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span>            :   // The following members are accessed only on the main thread:
+<span class="lineNum">     188 </span>            :   static int mInstanceCount;
+<span class="lineNum">     189 </span>            : };
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            : inline nsresult
+<span class="lineNum">     192 </span><span class="lineCov">          2 : BlockUntilLoadableRootsLoaded()</span>
+<span class="lineNum">     193 </span>            : {
+<span class="lineNum">     194 </span><span class="lineCov">          4 :   nsCOMPtr&lt;nsINSSComponent&gt; component(do_GetService(PSM_COMPONENT_CONTRACTID));</span>
+<span class="lineNum">     195 </span><span class="lineCov">          2 :   if (!component) {</span>
+<span class="lineNum">     196 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     197 </span>            :   }
+<span class="lineNum">     198 </span><span class="lineCov">          2 :   return component-&gt;BlockUntilLoadableRootsLoaded();</span>
+<span class="lineNum">     199 </span>            : }
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            : inline nsresult
+<span class="lineNum">     202 </span><span class="lineCov">          1 : CheckForSmartCardChanges()</span>
+<span class="lineNum">     203 </span>            : {
+<span class="lineNum">     204 </span>            : #ifndef MOZ_NO_SMART_CARDS
+<span class="lineNum">     205 </span><span class="lineCov">          2 :   nsCOMPtr&lt;nsINSSComponent&gt; component(do_GetService(PSM_COMPONENT_CONTRACTID));</span>
+<span class="lineNum">     206 </span><span class="lineCov">          1 :   if (!component) {</span>
+<span class="lineNum">     207 </span>            :     return NS_ERROR_FAILURE;
+<span class="lineNum">     208 </span>            :   }
+<span class="lineNum">     209 </span><span class="lineCov">          1 :   return component-&gt;CheckForSmartCardChanges();</span>
+<span class="lineNum">     210 </span>            : #else
+<span class="lineNum">     211 </span>            :   return NS_OK;
+<span class="lineNum">     212 </span>            : #endif
+<span class="lineNum">     213 </span>            : }
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            : #endif // _nsNSSComponent_h_
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

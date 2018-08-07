@@ -1,0 +1,364 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - gfx/layers/apz/src/APZSampler.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../../index.html">top level</a> - <a href="index.html">gfx/layers/apz/src</a> - APZSampler.cpp<span style="font-size: 80%;"> (source / <a href="APZSampler.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">11</td>
+            <td class="headerCovTableEntry">126</td>
+            <td class="headerCovTableEntryLo">8.7 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #include &quot;mozilla/layers/APZSampler.h&quot;
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;APZCTreeManager.h&quot;
+<span class="lineNum">      10 </span>            : #include &quot;AsyncPanZoomController.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/ClearOnShutdown.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/layers/APZThreadUtils.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/layers/CompositorThread.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/layers/LayerMetricsWrapper.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/layers/SynchronousTask.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;TreeTraversal.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/webrender/WebRenderAPI.h&quot;
+<span class="lineNum">      18 </span>            : 
+<span class="lineNum">      19 </span>            : namespace mozilla {
+<span class="lineNum">      20 </span>            : namespace layers {
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span><span class="lineNoCov">          0 : StaticMutex APZSampler::sWindowIdLock;</span>
+<span class="lineNum">      23 </span><span class="lineNoCov">          0 : StaticAutoPtr&lt;std::unordered_map&lt;uint64_t, APZSampler*&gt;&gt; APZSampler::sWindowIdMap;</span>
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span><span class="lineNoCov">          0 : APZSampler::APZSampler(const RefPtr&lt;APZCTreeManager&gt;&amp; aApz,</span>
+<span class="lineNum">      27 </span><span class="lineNoCov">          0 :                        bool aIsUsingWebRender)</span>
+<span class="lineNum">      28 </span>            :   : mApz(aApz)
+<span class="lineNum">      29 </span>            :   , mIsUsingWebRender(aIsUsingWebRender)
+<span class="lineNum">      30 </span>            :   , mThreadIdLock(&quot;APZSampler::mThreadIdLock&quot;)
+<span class="lineNum">      31 </span><span class="lineNoCov">          0 :   , mSampleTimeLock(&quot;APZSampler::mSampleTimeLock&quot;)</span>
+<span class="lineNum">      32 </span>            : {
+<span class="lineNum">      33 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(aApz);</span>
+<span class="lineNum">      34 </span><span class="lineNoCov">          0 :   mApz-&gt;SetSampler(this);</span>
+<span class="lineNum">      35 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span><span class="lineNoCov">          0 : APZSampler::~APZSampler()</span>
+<span class="lineNum">      38 </span>            : {
+<span class="lineNum">      39 </span><span class="lineNoCov">          0 :   mApz-&gt;SetSampler(nullptr);</span>
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 :   StaticMutexAutoLock lock(sWindowIdLock);</span>
+<span class="lineNum">      42 </span><span class="lineNoCov">          0 :   if (mWindowId) {</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(sWindowIdMap);</span>
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 :     sWindowIdMap-&gt;erase(wr::AsUint64(*mWindowId));</span>
+<span class="lineNum">      45 </span>            :   }
+<span class="lineNum">      46 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span>            : void
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 : APZSampler::SetWebRenderWindowId(const wr::WindowId&amp; aWindowId)</span>
+<span class="lineNum">      50 </span>            : {
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :   StaticMutexAutoLock lock(sWindowIdLock);</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(!mWindowId);</span>
+<span class="lineNum">      53 </span><span class="lineNoCov">          0 :   mWindowId = Some(aWindowId);</span>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :   if (!sWindowIdMap) {</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :     sWindowIdMap = new std::unordered_map&lt;uint64_t, APZSampler*&gt;();</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :     NS_DispatchToMainThread(</span>
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 :       NS_NewRunnableFunction(&quot;APZUpdater::ClearOnShutdown&quot;, [] {</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :         ClearOnShutdown(&amp;sWindowIdMap);</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :       }</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :     ));</span>
+<span class="lineNum">      61 </span>            :   }
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :   (*sWindowIdMap)[wr::AsUint64(aWindowId)] = this;</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : /*static*/ void
+<span class="lineNum">      66 </span><span class="lineNoCov">          0 : APZSampler::SetSamplerThread(const wr::WrWindowId&amp; aWindowId)</span>
+<span class="lineNum">      67 </span>            : {
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :   if (RefPtr&lt;APZSampler&gt; sampler = GetSampler(aWindowId)) {</span>
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :     MutexAutoLock lock(sampler-&gt;mThreadIdLock);</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :     sampler-&gt;mSamplerThreadId = Some(PlatformThread::CurrentId());</span>
+<span class="lineNum">      71 </span>            :   }
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            : /*static*/ void
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 : APZSampler::SampleForWebRender(const wr::WrWindowId&amp; aWindowId,</span>
+<span class="lineNum">      76 </span>            :                                wr::Transaction* aTransaction)
+<span class="lineNum">      77 </span>            : {
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :   if (RefPtr&lt;APZSampler&gt; sampler = GetSampler(aWindowId)) {</span>
+<span class="lineNum">      79 </span><span class="lineNoCov">          0 :     wr::TransactionWrapper txn(aTransaction);</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :     sampler-&gt;SampleForWebRender(txn);</span>
+<span class="lineNum">      81 </span>            :   }
+<span class="lineNum">      82 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span>            : void
+<span class="lineNum">      85 </span><span class="lineNoCov">          0 : APZSampler::SetSampleTime(const TimeStamp&amp; aSampleTime)</span>
+<span class="lineNum">      86 </span>            : {
+<span class="lineNum">      87 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 :   MutexAutoLock lock(mSampleTimeLock);</span>
+<span class="lineNum">      89 </span><span class="lineNoCov">          0 :   mSampleTime = aSampleTime;</span>
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            : void
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 : APZSampler::SampleForWebRender(wr::TransactionWrapper&amp; aTxn)</span>
+<span class="lineNum">      94 </span>            : {
+<span class="lineNum">      95 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :   TimeStamp sampleTime;</span>
+<span class="lineNum">      97 </span>            :   { // scope lock
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :     MutexAutoLock lock(mSampleTimeLock);</span>
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            :     // If mSampleTime is null we're in a startup phase where the
+<span class="lineNum">     101 </span>            :     // WebRenderBridgeParent hasn't yet provided us with a sample time.
+<span class="lineNum">     102 </span>            :     // If we're that early there probably aren't any APZ animations happening
+<span class="lineNum">     103 </span>            :     // anyway, so using Timestamp::Now() should be fine.
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :     sampleTime = mSampleTime.IsNull() ? TimeStamp::Now() : mSampleTime;</span>
+<span class="lineNum">     105 </span>            :   }
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :   mApz-&gt;SampleForWebRender(aTxn, sampleTime);</span>
+<span class="lineNum">     107 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span>            : bool
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 : APZSampler::SampleAnimations(const LayerMetricsWrapper&amp; aLayer,</span>
+<span class="lineNum">     111 </span>            :                              const TimeStamp&amp; aSampleTime)
+<span class="lineNum">     112 </span>            : {
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            :   // TODO: eventually we can drop the aLayer argument and just walk the APZ
+<span class="lineNum">     117 </span>            :   // tree directly in mApz.
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :   bool activeAnimations = false;</span>
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :   ForEachNodePostOrder&lt;ForwardIterator&gt;(aLayer,</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :       [&amp;activeAnimations, &amp;aSampleTime](LayerMetricsWrapper aLayerMetrics)</span>
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :       {</span>
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :         if (AsyncPanZoomController* apzc = aLayerMetrics.GetApzc()) {</span>
+<span class="lineNum">     125 </span><span class="lineNoCov">          0 :           apzc-&gt;ReportCheckerboard(aSampleTime);</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :           activeAnimations |= apzc-&gt;AdvanceAnimations(aSampleTime);</span>
+<span class="lineNum">     127 </span>            :         }
+<span class="lineNum">     128 </span><span class="lineNoCov">          0 :       }</span>
+<span class="lineNum">     129 </span><span class="lineNoCov">          0 :   );</span>
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span><span class="lineNoCov">          0 :   return activeAnimations;</span>
+<span class="lineNum">     132 </span>            : }
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span>            : LayerToParentLayerMatrix4x4
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 : APZSampler::ComputeTransformForScrollThumb(const LayerToParentLayerMatrix4x4&amp; aCurrentTransform,</span>
+<span class="lineNum">     136 </span>            :                                            const LayerMetricsWrapper&amp; aContent,
+<span class="lineNum">     137 </span>            :                                            const ScrollbarData&amp; aThumbData,
+<span class="lineNum">     138 </span>            :                                            bool aScrollbarIsDescendant,
+<span class="lineNum">     139 </span>            :                                            AsyncTransformComponentMatrix* aOutClipTransform)
+<span class="lineNum">     140 </span>            : {
+<span class="lineNum">     141 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :   return mApz-&gt;ComputeTransformForScrollThumb(aCurrentTransform,</span>
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :                                               aContent.GetTransform(),</span>
+<span class="lineNum">     146 </span>            :                                               aContent.GetApzc(),
+<span class="lineNum">     147 </span>            :                                               aContent.Metrics(),
+<span class="lineNum">     148 </span>            :                                               aThumbData,
+<span class="lineNum">     149 </span>            :                                               aScrollbarIsDescendant,
+<span class="lineNum">     150 </span><span class="lineNoCov">          0 :                                               aOutClipTransform);</span>
+<span class="lineNum">     151 </span>            : }
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            : CSSRect
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 : APZSampler::GetCurrentAsyncLayoutViewport(const LayerMetricsWrapper&amp; aLayer)</span>
+<span class="lineNum">     155 </span>            : {
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     158 </span>            : 
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(aLayer.GetApzc());</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :   return aLayer.GetApzc()-&gt;GetCurrentAsyncLayoutViewport(AsyncPanZoomController::eForCompositing);</span>
+<span class="lineNum">     161 </span>            : }
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span>            : ParentLayerPoint
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 : APZSampler::GetCurrentAsyncScrollOffset(const LayerMetricsWrapper&amp; aLayer)</span>
+<span class="lineNum">     165 </span>            : {
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(aLayer.GetApzc());</span>
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :   return aLayer.GetApzc()-&gt;GetCurrentAsyncScrollOffset(AsyncPanZoomController::eForCompositing);</span>
+<span class="lineNum">     171 </span>            : }
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span>            : AsyncTransform
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 : APZSampler::GetCurrentAsyncTransform(const LayerMetricsWrapper&amp; aLayer)</span>
+<span class="lineNum">     175 </span>            : {
+<span class="lineNum">     176 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(aLayer.GetApzc());</span>
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :   return aLayer.GetApzc()-&gt;GetCurrentAsyncTransform(AsyncPanZoomController::eForCompositing);</span>
+<span class="lineNum">     181 </span>            : }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            : AsyncTransformComponentMatrix
+<span class="lineNum">     184 </span><span class="lineNoCov">          0 : APZSampler::GetOverscrollTransform(const LayerMetricsWrapper&amp; aLayer)</span>
+<span class="lineNum">     185 </span>            : {
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     187 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(aLayer.GetApzc());</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :   return aLayer.GetApzc()-&gt;GetOverscrollTransform(AsyncPanZoomController::eForCompositing);</span>
+<span class="lineNum">     191 </span>            : }
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span>            : AsyncTransformComponentMatrix
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 : APZSampler::GetCurrentAsyncTransformWithOverscroll(const LayerMetricsWrapper&amp; aLayer)</span>
+<span class="lineNum">     195 </span>            : {
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     197 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(aLayer.GetApzc());</span>
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :   return aLayer.GetApzc()-&gt;GetCurrentAsyncTransformWithOverscroll(AsyncPanZoomController::eForCompositing);</span>
+<span class="lineNum">     201 </span>            : }
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            : void
+<span class="lineNum">     204 </span><span class="lineCov">          1 : APZSampler::MarkAsyncTransformAppliedToContent(const LayerMetricsWrapper&amp; aLayer)</span>
+<span class="lineNum">     205 </span>            : {
+<span class="lineNum">     206 </span><span class="lineCov">          1 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     207 </span><span class="lineCov">          1 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineCov">          1 :   MOZ_ASSERT(aLayer.GetApzc());</span>
+<span class="lineNum">     210 </span><span class="lineCov">         14 :   aLayer.GetApzc()-&gt;MarkAsyncTransformAppliedToContent();</span>
+<span class="lineNum">     211 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            : bool
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 : APZSampler::HasUnusedAsyncTransform(const LayerMetricsWrapper&amp; aLayer)</span>
+<span class="lineNum">     215 </span>            : {
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(CompositorThreadHolder::IsInCompositorThread());</span>
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :   AssertOnSamplerThread();</span>
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :   AsyncPanZoomController* apzc = aLayer.GetApzc();</span>
+<span class="lineNum">     220 </span>            :   return apzc
+<span class="lineNum">     221 </span><span class="lineNoCov">          0 :       &amp;&amp; !apzc-&gt;GetAsyncTransformAppliedToContent()</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :       &amp;&amp; !AsyncTransformComponentMatrix(apzc-&gt;GetCurrentAsyncTransform(AsyncPanZoomController::eForCompositing)).IsIdentity();</span>
+<span class="lineNum">     223 </span>            : }
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span>            : void
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 : APZSampler::AssertOnSamplerThread() const</span>
+<span class="lineNum">     227 </span>            : {
+<span class="lineNum">     228 </span><span class="lineCov">         42 :   if (APZThreadUtils::GetThreadAssertionsEnabled()) {</span>
+<span class="lineNum">     229 </span><span class="lineCov">         42 :     MOZ_ASSERT(IsSamplerThread());</span>
+<span class="lineNum">     230 </span>            :   }
+<span class="lineNum">     231 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            : bool
+<span class="lineNum">     234 </span><span class="lineNoCov">          0 : APZSampler::IsSamplerThread() const</span>
+<span class="lineNum">     235 </span>            : {
+<span class="lineNum">     236 </span><span class="lineCov">         42 :   if (mIsUsingWebRender) {</span>
+<span class="lineNum">     237 </span>            :     // If the sampler thread id isn't set yet then we cannot be running on the
+<span class="lineNum">     238 </span>            :     // sampler thread (because we will have the thread id before we run any
+<span class="lineNum">     239 </span>            :     // other C++ code on it, and this function is only ever invoked from C++
+<span class="lineNum">     240 </span>            :     // code), so return false in that scenario.
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :     MutexAutoLock lock(mThreadIdLock);</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :     return mSamplerThreadId &amp;&amp; PlatformThread::CurrentId() == *mSamplerThreadId;</span>
+<span class="lineNum">     243 </span>            :   }
+<span class="lineNum">     244 </span><span class="lineCov">          1 :   return CompositorThreadHolder::IsInCompositorThread();</span>
+<span class="lineNum">     245 </span>            : }
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            : /*static*/ already_AddRefed&lt;APZSampler&gt;
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 : APZSampler::GetSampler(const wr::WrWindowId&amp; aWindowId)</span>
+<span class="lineNum">     249 </span>            : {
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :   RefPtr&lt;APZSampler&gt; sampler;</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :   StaticMutexAutoLock lock(sWindowIdLock);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :   if (sWindowIdMap) {</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :     auto it = sWindowIdMap-&gt;find(wr::AsUint64(aWindowId));</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :     if (it != sWindowIdMap-&gt;end()) {</span>
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 :       sampler = it-&gt;second;</span>
+<span class="lineNum">     256 </span>            :     }
+<span class="lineNum">     257 </span>            :   }
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :   return sampler.forget();</span>
+<span class="lineNum">     259 </span>            : }
+<span class="lineNum">     260 </span>            : 
+<span class="lineNum">     261 </span>            : } // namespace layers
+<span class="lineNum">     262 </span>            : } // namespace mozilla
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            : void
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 : apz_register_sampler(mozilla::wr::WrWindowId aWindowId)</span>
+<span class="lineNum">     266 </span>            : {
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :   mozilla::layers::APZSampler::SetSamplerThread(aWindowId);</span>
+<span class="lineNum">     268 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span>            : void
+<span class="lineNum">     271 </span>            : apz_sample_transforms(mozilla::wr::WrWindowId aWindowId,
+<span class="lineNum">     272 </span>            :                       mozilla::wr::Transaction *aTransaction)
+<span class="lineNum">     273 </span>            : {
+<span class="lineNum">     274 </span>            :   mozilla::layers::APZSampler::SampleForWebRender(aWindowId, aTransaction);
+<span class="lineNum">     275 </span>            : }
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span>            : void
+<span class="lineNum">     278 </span>            : apz_deregister_sampler(mozilla::wr::WrWindowId aWindowId)
+<span class="lineNum">     279 </span>            : {
+<span class="lineNum">     280 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

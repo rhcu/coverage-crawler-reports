@@ -1,0 +1,307 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - dom/base/nsIContentInlines.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">dom/base</a> - nsIContentInlines.h<span style="font-size: 80%;"> (source / <a href="nsIContentInlines.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">49</td>
+            <td class="headerCovTableEntry">66</td>
+            <td class="headerCovTableEntryLo">74.2 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:42:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef nsIContentInlines_h
+<span class="lineNum">       8 </span>            : #define nsIContentInlines_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &quot;nsIContent.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;nsIDocument.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;nsBindingManager.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;nsContentUtils.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;nsAtom.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;nsIFrame.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/dom/Element.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/dom/HTMLSlotElement.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;mozilla/dom/ShadowRoot.h&quot;
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : inline bool
+<span class="lineNum">      21 </span><span class="lineCov">          2 : nsIContent::IsInHTMLDocument() const</span>
+<span class="lineNum">      22 </span>            : {
+<span class="lineNum">      23 </span><span class="lineCov">          2 :   return OwnerDoc()-&gt;IsHTMLDocument();</span>
+<span class="lineNum">      24 </span>            : }
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : inline bool
+<span class="lineNum">      27 </span><span class="lineCov">      59428 : nsIContent::IsInChromeDocument() const</span>
+<span class="lineNum">      28 </span>            : {
+<span class="lineNum">      29 </span><span class="lineCov">      59428 :   return nsContentUtils::IsChromeDoc(OwnerDoc());</span>
+<span class="lineNum">      30 </span>            : }
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : inline void
+<span class="lineNum">      33 </span><span class="lineCov">        664 : nsIContent::SetPrimaryFrame(nsIFrame* aFrame)</span>
+<span class="lineNum">      34 </span>            : {
+<span class="lineNum">      35 </span><span class="lineCov">       1328 :   MOZ_ASSERT(IsInUncomposedDoc() || IsInShadowTree(), &quot;This will end badly!&quot;);</span>
+<span class="lineNum">      36 </span>            : 
+<span class="lineNum">      37 </span>            :   // FIXME bug 749326
+<span class="lineNum">      38 </span><span class="lineCov">        664 :   NS_ASSERTION(!aFrame || !mPrimaryFrame || aFrame == mPrimaryFrame,</span>
+<span class="lineNum">      39 </span>            :                &quot;Losing track of existing primary frame&quot;);
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span><span class="lineCov">        664 :   if (aFrame) {</span>
+<span class="lineNum">      42 </span><span class="lineCov">        580 :     if (MOZ_LIKELY(!IsHTMLElement(nsGkAtoms::area)) ||</span>
+<span class="lineNum">      43 </span><span class="lineNoCov">          0 :         aFrame-&gt;GetContent() == this) {</span>
+<span class="lineNum">      44 </span>            :       aFrame-&gt;SetIsPrimaryFrame(true);
+<span class="lineNum">      45 </span>            :     }
+<span class="lineNum">      46 </span><span class="lineCov">         84 :   } else if (nsIFrame* currentPrimaryFrame = GetPrimaryFrame()) {</span>
+<span class="lineNum">      47 </span><span class="lineCov">         84 :     if (MOZ_LIKELY(!IsHTMLElement(nsGkAtoms::area)) ||</span>
+<span class="lineNum">      48 </span><span class="lineNoCov">          0 :         currentPrimaryFrame-&gt;GetContent() == this) {</span>
+<span class="lineNum">      49 </span>            :       currentPrimaryFrame-&gt;SetIsPrimaryFrame(false);
+<span class="lineNum">      50 </span>            :     }
+<span class="lineNum">      51 </span>            :   }
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span><span class="lineCov">        664 :   mPrimaryFrame = aFrame;</span>
+<span class="lineNum">      54 </span><span class="lineCov">        664 : }</span>
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 : inline mozilla::dom::ShadowRoot* nsIContent::GetShadowRoot() const</span>
+<span class="lineNum">      57 </span>            : {
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :   if (!IsElement()) {</span>
+<span class="lineNum">      59 </span>            :     return nullptr;
+<span class="lineNum">      60 </span>            :   }
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :   return AsElement()-&gt;GetShadowRoot();</span>
+<span class="lineNum">      63 </span>            : }
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : template&lt;nsINode::FlattenedParentType aType&gt;
+<span class="lineNum">      66 </span>            : static inline nsINode*
+<span class="lineNum">      67 </span><span class="lineCov">     215540 : GetFlattenedTreeParentNode(const nsINode* aNode)</span>
+<span class="lineNum">      68 </span>            : {
+<span class="lineNum">      69 </span><span class="lineCov">     215540 :   if (!aNode-&gt;IsContent()) {</span>
+<span class="lineNum">      70 </span>            :     return nullptr;
+<span class="lineNum">      71 </span>            :   }
+<span class="lineNum">      72 </span>            : 
+<span class="lineNum">      73 </span><span class="lineCov">     215540 :   nsINode* parent = aNode-&gt;GetParentNode();</span>
+<span class="lineNum">      74 </span><span class="lineCov">     430920 :   if (!parent || !parent-&gt;IsContent()) {</span>
+<span class="lineNum">      75 </span>            :     return parent;
+<span class="lineNum">      76 </span>            :   }
+<span class="lineNum">      77 </span>            : 
+<span class="lineNum">      78 </span><span class="lineCov">     209740 :   const nsIContent* content = aNode-&gt;AsContent();</span>
+<span class="lineNum">      79 </span><span class="lineCov">     209740 :   nsIContent* parentAsContent = parent-&gt;AsContent();</span>
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span><span class="lineCov">     209190 :   if (aType == nsINode::eForStyle &amp;&amp;</span>
+<span class="lineNum">      82 </span><span class="lineCov">     212840 :       content-&gt;IsRootOfNativeAnonymousSubtree() &amp;&amp;</span>
+<span class="lineNum">      83 </span><span class="lineCov">       3650 :       parentAsContent == content-&gt;OwnerDoc()-&gt;GetRootElement()) {</span>
+<span class="lineNum">      84 </span>            :     const bool docLevel =
+<span class="lineNum">      85 </span><span class="lineCov">       1794 :       content-&gt;GetProperty(nsGkAtoms::docLevelNativeAnonymousContent);</span>
+<span class="lineNum">      86 </span><span class="lineCov">       3232 :     return docLevel ? content-&gt;OwnerDocAsNode() : parent;</span>
+<span class="lineNum">      87 </span>            :   }
+<span class="lineNum">      88 </span>            : 
+<span class="lineNum">      89 </span><span class="lineCov">     207946 :   if (content-&gt;IsRootOfAnonymousSubtree()) {</span>
+<span class="lineNum">      90 </span>            :     return parent;
+<span class="lineNum">      91 </span>            :   }
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span><span class="lineCov">     184568 :   if (parentAsContent-&gt;GetShadowRoot()) {</span>
+<span class="lineNum">      94 </span>            :     // If it's not assigned to any slot it's not part of the flat tree, and thus
+<span class="lineNum">      95 </span>            :     // we return null.
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :     return content-&gt;GetAssignedSlot();</span>
+<span class="lineNum">      97 </span>            :   }
+<span class="lineNum">      98 </span>            : 
+<span class="lineNum">      99 </span><span class="lineCov">     184568 :   if (parentAsContent-&gt;IsInShadowTree()) {</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :     if (auto* slot = mozilla::dom::HTMLSlotElement::FromNode(parentAsContent)) {</span>
+<span class="lineNum">     101 </span>            :       // If the assigned nodes list is empty, we're fallback content which is
+<span class="lineNum">     102 </span>            :       // active, otherwise we are not part of the flat tree.
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :       return slot-&gt;AssignedNodes().IsEmpty()</span>
+<span class="lineNum">     104 </span>            :         ? parent
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :         : nullptr;</span>
+<span class="lineNum">     106 </span>            :     }
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 :     if (auto* shadowRoot = mozilla::dom::ShadowRoot::FromNode(parentAsContent)) {</span>
+<span class="lineNum">     109 </span><span class="lineNoCov">          0 :       return shadowRoot-&gt;GetHost();</span>
+<span class="lineNum">     110 </span>            :     }
+<span class="lineNum">     111 </span>            :   }
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span><span class="lineCov">     318348 :   if (content-&gt;HasFlag(NODE_MAY_BE_IN_BINDING_MNGR) ||</span>
+<span class="lineNum">     114 </span><span class="lineCov">     133780 :       parent-&gt;HasFlag(NODE_MAY_BE_IN_BINDING_MNGR)) {</span>
+<span class="lineNum">     115 </span><span class="lineCov">      66572 :     if (nsIContent* xblInsertionPoint = content-&gt;GetXBLInsertionPoint()) {</span>
+<span class="lineNum">     116 </span><span class="lineCov">      34400 :       return xblInsertionPoint-&gt;GetParent();</span>
+<span class="lineNum">     117 </span>            :     }
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span><span class="lineCov">      64344 :     if (parent-&gt;OwnerDoc()-&gt;BindingManager()-&gt;GetBindingWithContent(parentAsContent)) {</span>
+<span class="lineNum">     120 </span>            :       // This is an unassigned node child of the bound element, so it isn't part
+<span class="lineNum">     121 </span>            :       // of the flat tree.
+<span class="lineNum">     122 </span>            :       return nullptr;
+<span class="lineNum">     123 </span>            :     }
+<span class="lineNum">     124 </span>            :   }
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span><span class="lineCov">     150168 :   MOZ_ASSERT(!parentAsContent-&gt;IsActiveChildrenElement(),</span>
+<span class="lineNum">     127 </span>            :              &quot;&lt;xbl:children&gt; isn't in the flattened tree&quot;);
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            :   // Common case.
+<span class="lineNum">     130 </span>            :   return parent;
+<span class="lineNum">     131 </span>            : }
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span>            : inline nsINode*
+<span class="lineNum">     134 </span>            : nsINode::GetFlattenedTreeParentNode() const
+<span class="lineNum">     135 </span>            : {
+<span class="lineNum">     136 </span><span class="lineCov">       1352 :   return ::GetFlattenedTreeParentNode&lt;nsINode::eNotForStyle&gt;(this);</span>
+<span class="lineNum">     137 </span>            : }
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            : inline nsIContent*
+<span class="lineNum">     140 </span><span class="lineCov">       1162 : nsIContent::GetFlattenedTreeParent() const</span>
+<span class="lineNum">     141 </span>            : {
+<span class="lineNum">     142 </span><span class="lineCov">       2324 :   nsINode* parent = GetFlattenedTreeParentNode();</span>
+<span class="lineNum">     143 </span><span class="lineCov">       2164 :   return (parent &amp;&amp; parent-&gt;IsContent()) ? parent-&gt;AsContent() : nullptr;</span>
+<span class="lineNum">     144 </span>            : }
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            : inline bool
+<span class="lineNum">     147 </span><span class="lineCov">        450 : nsIContent::IsEventAttributeName(nsAtom* aName)</span>
+<span class="lineNum">     148 </span>            : {
+<span class="lineNum">     149 </span><span class="lineCov">        450 :   const char16_t* name = aName-&gt;GetUTF16String();</span>
+<span class="lineNum">     150 </span><span class="lineCov">        450 :   if (name[0] != 'o' || name[1] != 'n') {</span>
+<span class="lineNum">     151 </span>            :     return false;
+<span class="lineNum">     152 </span>            :   }
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span><span class="lineCov">          2 :   return IsEventAttributeNameInternal(aName);</span>
+<span class="lineNum">     155 </span>            : }
+<span class="lineNum">     156 </span>            : 
+<span class="lineNum">     157 </span>            : inline nsINode*
+<span class="lineNum">     158 </span>            : nsINode::GetFlattenedTreeParentNodeForStyle() const
+<span class="lineNum">     159 </span>            : {
+<span class="lineNum">     160 </span><span class="lineCov">     214186 :   return ::GetFlattenedTreeParentNode&lt;nsINode::eForStyle&gt;(this);</span>
+<span class="lineNum">     161 </span>            : }
+<span class="lineNum">     162 </span>            : 
+<span class="lineNum">     163 </span>            : inline bool
+<span class="lineNum">     164 </span><span class="lineCov">        352 : nsINode::NodeOrAncestorHasDirAuto() const</span>
+<span class="lineNum">     165 </span>            : {
+<span class="lineNum">     166 </span><span class="lineCov">        704 :   return AncestorHasDirAuto() || (IsElement() &amp;&amp; AsElement()-&gt;HasDirAuto());</span>
+<span class="lineNum">     167 </span>            : }
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            : inline bool
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 : nsINode::IsEditable() const</span>
+<span class="lineNum">     171 </span>            : {
+<span class="lineNum">     172 </span><span class="lineNoCov">          0 :   if (HasFlag(NODE_IS_EDITABLE)) {</span>
+<span class="lineNum">     173 </span>            :     // The node is in an editable contentEditable subtree.
+<span class="lineNum">     174 </span>            :     return true;
+<span class="lineNum">     175 </span>            :   }
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span><span class="lineNoCov">          0 :   nsIDocument* doc = GetUncomposedDoc();</span>
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span>            :   // Check if the node is in a document and the document is in designMode.
+<span class="lineNum">     180 </span><span class="lineNoCov">          0 :   return doc &amp;&amp; doc-&gt;HasFlag(NODE_IS_EDITABLE);</span>
+<span class="lineNum">     181 </span>            : }
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            : inline bool
+<span class="lineNum">     184 </span><span class="lineCov">     613380 : nsIContent::IsActiveChildrenElement() const</span>
+<span class="lineNum">     185 </span>            : {
+<span class="lineNum">     186 </span><span class="lineCov">    1226760 :   if (!mNodeInfo-&gt;Equals(nsGkAtoms::children, kNameSpaceID_XBL)) {</span>
+<span class="lineNum">     187 </span>            :     return false;
+<span class="lineNum">     188 </span>            :   }
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span><span class="lineCov">      89676 :   nsIContent* bindingParent = GetBindingParent();</span>
+<span class="lineNum">     191 </span><span class="lineCov">      89676 :   if (!bindingParent) {</span>
+<span class="lineNum">     192 </span>            :     return false;
+<span class="lineNum">     193 </span>            :   }
+<span class="lineNum">     194 </span>            : 
+<span class="lineNum">     195 </span>            :   // We reuse the binding parent machinery for Shadow DOM too, so prevent that
+<span class="lineNum">     196 </span>            :   // from getting us confused in this case.
+<span class="lineNum">     197 </span><span class="lineCov">      89676 :   return !bindingParent-&gt;GetShadowRoot();</span>
+<span class="lineNum">     198 </span>            : }
+<span class="lineNum">     199 </span>            : 
+<span class="lineNum">     200 </span>            : inline bool
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 : nsIContent::IsInAnonymousSubtree() const</span>
+<span class="lineNum">     202 </span>            : {
+<span class="lineNum">     203 </span><span class="lineNoCov">          0 :   NS_ASSERTION(!IsInNativeAnonymousSubtree() || GetBindingParent() ||</span>
+<span class="lineNum">     204 </span>            :                (!IsInUncomposedDoc() &amp;&amp;
+<span class="lineNum">     205 </span>            :                 static_cast&lt;nsIContent*&gt;(SubtreeRoot())-&gt;IsInNativeAnonymousSubtree()),
+<span class="lineNum">     206 </span>            :                &quot;Must have binding parent when in native anonymous subtree which is in document.\n&quot;
+<span class="lineNum">     207 </span>            :                &quot;Native anonymous subtree which is not in document must have native anonymous root.&quot;);
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span>            :   if (IsInNativeAnonymousSubtree()) {
+<span class="lineNum">     210 </span>            :     return true;
+<span class="lineNum">     211 </span>            :   }
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            :   nsIContent* bindingParent = GetBindingParent();
+<span class="lineNum">     214 </span>            :   if (!bindingParent) {
+<span class="lineNum">     215 </span>            :     return false;
+<span class="lineNum">     216 </span>            :   }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            :   // We reuse the binding parent machinery for Shadow DOM too, so prevent that
+<span class="lineNum">     219 </span>            :   // from getting us confused in this case.
+<span class="lineNum">     220 </span>            :   return !bindingParent-&gt;GetShadowRoot();
+<span class="lineNum">     221 </span>            : }
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            : #endif // nsIContentInlines_h
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

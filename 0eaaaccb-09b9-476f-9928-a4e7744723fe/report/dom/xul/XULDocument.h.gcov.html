@@ -1,0 +1,776 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - dom/xul/XULDocument.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">dom/xul</a> - XULDocument.h<span style="font-size: 80%;"> (source / <a href="XULDocument.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntry">29</td>
+            <td class="headerCovTableEntryLo">62.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*- */</a>
+<span class="lineNum">       2 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       3 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       4 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       5 </span>            : 
+<span class="lineNum">       6 </span>            : #ifndef mozilla_dom_XULDocument_h
+<span class="lineNum">       7 </span>            : #define mozilla_dom_XULDocument_h
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;nsAutoPtr.h&quot;
+<span class="lineNum">      10 </span>            : #include &quot;nsCOMPtr.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;nsXULPrototypeDocument.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;nsTArray.h&quot;
+<span class="lineNum">      13 </span>            : 
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/dom/XMLDocument.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/StyleSheet.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;nsForwardReference.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;nsIContent.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;nsIDOMXULCommandDispatcher.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;nsCOMArray.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;nsIURI.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;nsIStreamListener.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;nsIStreamLoader.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;nsICSSLoaderObserver.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;nsIXULStore.h&quot;
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;mozilla/Attributes.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;mozilla/dom/ScriptLoader.h&quot;
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : #include &quot;js/TracingAPI.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;js/TypeDecls.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : class nsPIWindowRoot;
+<span class="lineNum">      33 </span>            : class nsXULPrototypeElement;
+<span class="lineNum">      34 </span>            : #if 0 // XXXbe save me, scc (need NSCAP_FORWARD_DECL(nsXULPrototypeScript))
+<span class="lineNum">      35 </span>            : class nsIObjectInputStream;
+<span class="lineNum">      36 </span>            : class nsIObjectOutputStream;
+<span class="lineNum">      37 </span>            : #else
+<span class="lineNum">      38 </span>            : #include &quot;nsIObjectInputStream.h&quot;
+<span class="lineNum">      39 </span>            : #include &quot;nsIObjectOutputStream.h&quot;
+<span class="lineNum">      40 </span>            : #include &quot;nsXULElement.h&quot;
+<span class="lineNum">      41 </span>            : #endif
+<span class="lineNum">      42 </span>            : #include &quot;nsURIHashKey.h&quot;
+<span class="lineNum">      43 </span>            : #include &quot;nsInterfaceHashtable.h&quot;
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : /**
+<span class="lineNum">      46 </span>            :  * The XUL document class
+<span class="lineNum">      47 </span>            :  */
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : // Factory function.
+<span class="lineNum">      50 </span>            : nsresult NS_NewXULDocument(nsIDocument** result);
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span>            : namespace mozilla {
+<span class="lineNum">      53 </span>            : namespace dom {
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : class XULDocument final : public XMLDocument,
+<span class="lineNum">      56 </span>            :                           public nsIStreamLoaderObserver,
+<span class="lineNum">      57 </span>            :                           public nsICSSLoaderObserver,
+<span class="lineNum">      58 </span>            :                           public nsIOffThreadScriptReceiver
+<span class="lineNum">      59 </span>            : {
+<span class="lineNum">      60 </span>            : public:
+<span class="lineNum">      61 </span>            :     XULDocument();
+<span class="lineNum">      62 </span>            : 
+<span class="lineNum">      63 </span>            :     // nsISupports interface
+<span class="lineNum">      64 </span>            :     NS_DECL_ISUPPORTS_INHERITED
+<span class="lineNum">      65 </span>            :     NS_DECL_NSISTREAMLOADEROBSERVER
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span>            :     // nsIDocument interface
+<span class="lineNum">      68 </span>            :     virtual void Reset(nsIChannel* aChannel, nsILoadGroup* aLoadGroup) override;
+<span class="lineNum">      69 </span>            :     virtual void ResetToURI(nsIURI *aURI, nsILoadGroup* aLoadGroup,
+<span class="lineNum">      70 </span>            :                             nsIPrincipal* aPrincipal) override;
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            :     virtual nsresult StartDocumentLoad(const char* aCommand,
+<span class="lineNum">      73 </span>            :                                        nsIChannel *channel,
+<span class="lineNum">      74 </span>            :                                        nsILoadGroup* aLoadGroup,
+<span class="lineNum">      75 </span>            :                                        nsISupports* aContainer,
+<span class="lineNum">      76 </span>            :                                        nsIStreamListener **aDocListener,
+<span class="lineNum">      77 </span>            :                                        bool aReset = true,
+<span class="lineNum">      78 </span>            :                                        nsIContentSink* aSink = nullptr) override;
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            :     virtual void SetContentType(const nsAString&amp; aContentType) override;
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            :     virtual void EndLoad() override;
+<span class="lineNum">      83 </span>            : 
+<span class="lineNum">      84 </span>            :     // nsIMutationObserver interface
+<span class="lineNum">      85 </span>            :     NS_DECL_NSIMUTATIONOBSERVER_CONTENTAPPENDED
+<span class="lineNum">      86 </span>            :     NS_DECL_NSIMUTATIONOBSERVER_CONTENTINSERTED
+<span class="lineNum">      87 </span>            :     NS_DECL_NSIMUTATIONOBSERVER_CONTENTREMOVED
+<span class="lineNum">      88 </span>            :     NS_DECL_NSIMUTATIONOBSERVER_ATTRIBUTECHANGED
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span>            :     /**
+<span class="lineNum">      91 </span>            :      * Notify the XUL document that a subtree has been added
+<span class="lineNum">      92 </span>            :      */
+<span class="lineNum">      93 </span>            :     nsresult AddSubtreeToDocument(nsIContent* aContent);
+<span class="lineNum">      94 </span>            :     /**
+<span class="lineNum">      95 </span>            :      * Notify the XUL document that a subtree has been removed
+<span class="lineNum">      96 </span>            :      */
+<span class="lineNum">      97 </span>            :     nsresult RemoveSubtreeFromDocument(nsIContent* aContent);
+<span class="lineNum">      98 </span>            :     /**
+<span class="lineNum">      99 </span>            :      * This is invoked whenever the prototype for this document is loaded
+<span class="lineNum">     100 </span>            :      * and should be walked, regardless of whether the XUL cache is
+<span class="lineNum">     101 </span>            :      * disabled, whether the protototype was loaded, whether the
+<span class="lineNum">     102 </span>            :      * prototype was loaded from the cache or created by parsing the
+<span class="lineNum">     103 </span>            :      * actual XUL source, etc.
+<span class="lineNum">     104 </span>            :      *
+<span class="lineNum">     105 </span>            :      * @param aResumeWalk whether this should also call ResumeWalk().
+<span class="lineNum">     106 </span>            :      * Sometimes the caller of OnPrototypeLoadDone resumes the walk itself
+<span class="lineNum">     107 </span>            :      */
+<span class="lineNum">     108 </span>            :     nsresult OnPrototypeLoadDone(bool aResumeWalk);
+<span class="lineNum">     109 </span>            :     /**
+<span class="lineNum">     110 </span>            :      * Callback notifying when a document could not be parsed properly.
+<span class="lineNum">     111 </span>            :      */
+<span class="lineNum">     112 </span>            :     bool OnDocumentParserError();
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span>            :     // nsINode interface overrides
+<span class="lineNum">     115 </span>            :     virtual nsresult Clone(mozilla::dom::NodeInfo *aNodeInfo, nsINode **aResult,
+<span class="lineNum">     116 </span>            :                            bool aPreallocateChildren) const override;
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            :     // nsICSSLoaderObserver
+<span class="lineNum">     119 </span>            :     NS_IMETHOD StyleSheetLoaded(mozilla::StyleSheet* aSheet,
+<span class="lineNum">     120 </span>            :                                 bool aWasAlternate,
+<span class="lineNum">     121 </span>            :                                 nsresult aStatus) override;
+<span class="lineNum">     122 </span>            : 
+<span class="lineNum">     123 </span>            :     virtual void EndUpdate() override;
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span>            :     virtual bool IsDocumentRightToLeft() override;
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            :     /**
+<span class="lineNum">     128 </span>            :      * Reset the document direction so that it is recomputed.
+<span class="lineNum">     129 </span>            :      */
+<span class="lineNum">     130 </span>            :     void ResetDocumentDirection();
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span>            :     virtual nsIDocument::DocumentTheme GetDocumentLWTheme() override;
+<span class="lineNum">     133 </span>            :     virtual nsIDocument::DocumentTheme ThreadSafeGetDocumentLWTheme() const override;
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span><span class="lineNoCov">          0 :     void ResetDocumentLWTheme() { mDocLWTheme = Doc_Theme_Uninitialized; }</span>
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span>            :     NS_IMETHOD OnScriptCompileComplete(JSScript* aScript, nsresult aStatus) override;
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            :     static bool
+<span class="lineNum">     140 </span>            :     MatchAttribute(Element* aContent,
+<span class="lineNum">     141 </span>            :                    int32_t aNameSpaceID,
+<span class="lineNum">     142 </span>            :                    nsAtom* aAttrName,
+<span class="lineNum">     143 </span>            :                    void* aData);
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span><span class="lineNoCov">          0 :     NS_DECL_CYCLE_COLLECTION_CLASS_INHERITED(XULDocument, XMLDocument)</span>
+<span class="lineNum">     146 </span>            : 
+<span class="lineNum">     147 </span>            :     void TraceProtos(JSTracer* aTrc);
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            :     // WebIDL API
+<span class="lineNum">     150 </span>            :     already_AddRefed&lt;nsINode&gt; GetPopupNode();
+<span class="lineNum">     151 </span>            :     void SetPopupNode(nsINode* aNode);
+<span class="lineNum">     152 </span>            :     nsINode* GetPopupRangeParent(ErrorResult&amp; aRv);
+<span class="lineNum">     153 </span>            :     int32_t GetPopupRangeOffset(ErrorResult&amp; aRv);
+<span class="lineNum">     154 </span>            :     already_AddRefed&lt;nsINode&gt; GetTooltipNode();
+<span class="lineNum">     155 </span>            :     void SetTooltipNode(nsINode* aNode) { /* do nothing */ }
+<span class="lineNum">     156 </span>            :     nsIDOMXULCommandDispatcher* GetCommandDispatcher() const
+<span class="lineNum">     157 </span>            :     {
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         return mCommandDispatcher;</span>
+<span class="lineNum">     159 </span>            :     }
+<span class="lineNum">     160 </span>            :     int32_t GetWidth(ErrorResult&amp; aRv);
+<span class="lineNum">     161 </span>            :     int32_t GetHeight(ErrorResult&amp; aRv);
+<span class="lineNum">     162 </span>            :     already_AddRefed&lt;nsINodeList&gt;
+<span class="lineNum">     163 </span>            :       GetElementsByAttribute(const nsAString&amp; aAttribute,
+<span class="lineNum">     164 </span>            :                              const nsAString&amp; aValue);
+<span class="lineNum">     165 </span>            :     already_AddRefed&lt;nsINodeList&gt;
+<span class="lineNum">     166 </span>            :       GetElementsByAttributeNS(const nsAString&amp; aNamespaceURI,
+<span class="lineNum">     167 </span>            :                                const nsAString&amp; aAttribute,
+<span class="lineNum">     168 </span>            :                                const nsAString&amp; aValue,
+<span class="lineNum">     169 </span>            :                                ErrorResult&amp; aRv);
+<span class="lineNum">     170 </span>            :     void AddBroadcastListenerFor(Element&amp; aBroadcaster, Element&amp; aListener,
+<span class="lineNum">     171 </span>            :                                  const nsAString&amp; aAttr, ErrorResult&amp; aRv);
+<span class="lineNum">     172 </span>            :     void RemoveBroadcastListenerFor(Element&amp; aBroadcaster, Element&amp; aListener,
+<span class="lineNum">     173 </span>            :                                     const nsAString&amp; aAttr);
+<span class="lineNum">     174 </span>            :     void Persist(const nsAString&amp; aId, const nsAString&amp; aAttr,
+<span class="lineNum">     175 </span>            :                  ErrorResult&amp; aRv);
+<span class="lineNum">     176 </span>            :     using nsDocument::GetBoxObjectFor;
+<span class="lineNum">     177 </span>            :     void LoadOverlay(const nsAString&amp; aURL, nsIObserver* aObserver,
+<span class="lineNum">     178 </span>            :                      ErrorResult&amp; aRv);
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span>            : protected:
+<span class="lineNum">     181 </span>            :     virtual ~XULDocument();
+<span class="lineNum">     182 </span>            : 
+<span class="lineNum">     183 </span>            :     // Implementation methods
+<span class="lineNum">     184 </span>            :     friend nsresult
+<span class="lineNum">     185 </span>            :     (::NS_NewXULDocument(nsIDocument** aResult));
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span>            :     nsresult Init(void) override;
+<span class="lineNum">     188 </span>            :     nsresult StartLayout(void);
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span>            :     nsresult GetViewportSize(int32_t* aWidth, int32_t* aHeight);
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :     nsresult PrepareToLoad(nsISupports* aContainer,
+<span class="lineNum">     193 </span>            :                            const char* aCommand,
+<span class="lineNum">     194 </span>            :                            nsIChannel* aChannel,
+<span class="lineNum">     195 </span>            :                            nsILoadGroup* aLoadGroup,
+<span class="lineNum">     196 </span>            :                            nsIParser** aResult);
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            :     nsresult
+<span class="lineNum">     199 </span>            :     PrepareToLoadPrototype(nsIURI* aURI,
+<span class="lineNum">     200 </span>            :                            const char* aCommand,
+<span class="lineNum">     201 </span>            :                            nsIPrincipal* aDocumentPrincipal,
+<span class="lineNum">     202 </span>            :                            nsIParser** aResult);
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span>            :     nsresult
+<span class="lineNum">     205 </span>            :     LoadOverlayInternal(nsIURI* aURI, bool aIsDynamic, bool* aShouldReturn,
+<span class="lineNum">     206 </span>            :                         bool* aFailureFromContent);
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span>            :     nsresult ApplyPersistentAttributes();
+<span class="lineNum">     209 </span>            :     nsresult ApplyPersistentAttributesInternal();
+<span class="lineNum">     210 </span>            :     nsresult ApplyPersistentAttributesToElements(const nsAString &amp;aID,
+<span class="lineNum">     211 </span>            :                                                  nsCOMArray&lt;Element&gt;&amp; aElements);
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            :     nsresult
+<span class="lineNum">     214 </span>            :     AddElementToDocumentPre(Element* aElement);
+<span class="lineNum">     215 </span>            : 
+<span class="lineNum">     216 </span>            :     nsresult
+<span class="lineNum">     217 </span>            :     AddElementToDocumentPost(Element* aElement);
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span>            :     nsresult
+<span class="lineNum">     220 </span>            :     ExecuteOnBroadcastHandlerFor(Element* aBroadcaster,
+<span class="lineNum">     221 </span>            :                                  Element* aListener,
+<span class="lineNum">     222 </span>            :                                  nsAtom* aAttr);
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span>            :     nsresult
+<span class="lineNum">     225 </span>            :     BroadcastAttributeChangeFromOverlay(nsIContent* aNode,
+<span class="lineNum">     226 </span>            :                                         int32_t aNameSpaceID,
+<span class="lineNum">     227 </span>            :                                         nsAtom* aAttribute,
+<span class="lineNum">     228 </span>            :                                         nsAtom* aPrefix,
+<span class="lineNum">     229 </span>            :                                         const nsAString&amp; aValue);
+<span class="lineNum">     230 </span>            : 
+<span class="lineNum">     231 </span>            :     already_AddRefed&lt;nsPIWindowRoot&gt; GetWindowRoot();
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            :     static void DirectionChanged(const char* aPrefName, void* aData);
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            :     // pseudo constants
+<span class="lineNum">     236 </span>            :     static int32_t gRefCnt;
+<span class="lineNum">     237 </span>            : 
+<span class="lineNum">     238 </span>            :     static LazyLogModule gXULLog;
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span>            :     nsresult
+<span class="lineNum">     241 </span>            :     Persist(mozilla::dom::Element* aElement,
+<span class="lineNum">     242 </span>            :             int32_t aNameSpaceID,
+<span class="lineNum">     243 </span>            :             nsAtom* aAttribute);
+<span class="lineNum">     244 </span>            :     // Just like Persist but ignores the return value so we can use it
+<span class="lineNum">     245 </span>            :     // as a runnable method.
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :     void DoPersist(mozilla::dom::Element* aElement,</span>
+<span class="lineNum">     247 </span>            :                    int32_t aNameSpaceID,
+<span class="lineNum">     248 </span>            :                    nsAtom* aAttribute)
+<span class="lineNum">     249 </span>            :     {
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :         Persist(aElement, aNameSpaceID, aAttribute);</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            :     virtual JSObject* WrapNode(JSContext *aCx, JS::Handle&lt;JSObject*&gt; aGivenProto) override;
+<span class="lineNum">     254 </span>            : 
+<span class="lineNum">     255 </span>            :     // IMPORTANT: The ownership implicit in the following member
+<span class="lineNum">     256 </span>            :     // variables has been explicitly checked and set using nsCOMPtr
+<span class="lineNum">     257 </span>            :     // for owning pointers and raw COM interface pointers for weak
+<span class="lineNum">     258 </span>            :     // (ie, non owning) references. If you add any members to this
+<span class="lineNum">     259 </span>            :     // class, please make the ownership explicit (pinkerton, scc).
+<span class="lineNum">     260 </span>            :     // NOTE, THIS IS STILL IN PROGRESS, TALK TO PINK OR SCC BEFORE
+<span class="lineNum">     261 </span>            :     // CHANGING
+<span class="lineNum">     262 </span>            : 
+<span class="lineNum">     263 </span>            :     XULDocument*             mNextSrcLoadWaiter;  // [OWNER] but not COMPtr
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span>            :     nsCOMPtr&lt;nsIXULStore&gt;       mLocalStore;
+<span class="lineNum">     266 </span>            :     bool                        mApplyingPersistedAttrs;
+<span class="lineNum">     267 </span>            :     bool                        mIsWritingFastLoad;
+<span class="lineNum">     268 </span>            :     bool                        mDocumentLoaded;
+<span class="lineNum">     269 </span>            :     /**
+<span class="lineNum">     270 </span>            :      * Since ResumeWalk is interruptible, it's possible that last
+<span class="lineNum">     271 </span>            :      * stylesheet finishes loading while the PD walk is still in
+<span class="lineNum">     272 </span>            :      * progress (waiting for an overlay to finish loading).
+<span class="lineNum">     273 </span>            :      * mStillWalking prevents DoneLoading (and StartLayout) from being
+<span class="lineNum">     274 </span>            :      * called in this situation.
+<span class="lineNum">     275 </span>            :      */
+<span class="lineNum">     276 </span>            :     bool                       mStillWalking;
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            :     /**
+<span class="lineNum">     279 </span>            :      * These two values control where persistent attributes get applied.
+<span class="lineNum">     280 </span>            :      */
+<span class="lineNum">     281 </span>            :     bool                           mRestrictPersistence;
+<span class="lineNum">     282 </span>            :     nsTHashtable&lt;nsStringHashKey&gt;  mPersistenceIds;
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span>            :     nsCOMPtr&lt;nsIDOMXULCommandDispatcher&gt;     mCommandDispatcher; // [OWNER] of the focus tracker
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span>            :     uint32_t mPendingSheets;
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            :     /**
+<span class="lineNum">     289 </span>            :      * document lightweight theme for use with :-moz-lwtheme, :-moz-lwtheme-brighttext
+<span class="lineNum">     290 </span>            :      * and :-moz-lwtheme-darktext
+<span class="lineNum">     291 </span>            :      */
+<span class="lineNum">     292 </span>            :     DocumentTheme                         mDocLWTheme;
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span>            :     /**
+<span class="lineNum">     295 </span>            :      * Context stack, which maintains the state of the Builder and allows
+<span class="lineNum">     296 </span>            :      * it to be interrupted.
+<span class="lineNum">     297 </span>            :      */
+<span class="lineNum">     298 </span>            :     class ContextStack {
+<span class="lineNum">     299 </span>            :     protected:
+<span class="lineNum">     300 </span>            :         struct Entry {
+<span class="lineNum">     301 </span>            :             nsXULPrototypeElement* mPrototype;
+<span class="lineNum">     302 </span>            :             nsIContent*            mElement;
+<span class="lineNum">     303 </span>            :             int32_t                mIndex;
+<span class="lineNum">     304 </span>            :             Entry*                 mNext;
+<span class="lineNum">     305 </span>            :         };
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span>            :         Entry* mTop;
+<span class="lineNum">     308 </span>            :         int32_t mDepth;
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span>            :     public:
+<span class="lineNum">     311 </span>            :         ContextStack();
+<span class="lineNum">     312 </span>            :         ~ContextStack();
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span>            :         int32_t Depth() { return mDepth; }
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span>            :         nsresult Push(nsXULPrototypeElement* aPrototype, nsIContent* aElement);
+<span class="lineNum">     317 </span>            :         nsresult Pop();
+<span class="lineNum">     318 </span>            :         nsresult Peek(nsXULPrototypeElement** aPrototype, nsIContent** aElement, int32_t* aIndex);
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span>            :         nsresult SetTopIndex(int32_t aIndex);
+<span class="lineNum">     321 </span>            :     };
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span>            :     friend class ContextStack;
+<span class="lineNum">     324 </span>            :     ContextStack mContextStack;
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span>            :     enum State { eState_Master, eState_Overlay };
+<span class="lineNum">     327 </span>            :     State mState;
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span>            :     /**
+<span class="lineNum">     330 </span>            :      * An array of overlay nsIURIs that have yet to be resolved. The
+<span class="lineNum">     331 </span>            :      * order of the array is significant: overlays at the _end_ of the
+<span class="lineNum">     332 </span>            :      * array are resolved before overlays earlier in the array (i.e.,
+<span class="lineNum">     333 </span>            :      * it is a stack).
+<span class="lineNum">     334 </span>            :      *
+<span class="lineNum">     335 </span>            :      * In the current implementation the order the overlays are loaded
+<span class="lineNum">     336 </span>            :      * in is as follows: first overlays from xul-overlay PIs, in the
+<span class="lineNum">     337 </span>            :      * same order as in the document, then the overlays from the chrome
+<span class="lineNum">     338 </span>            :      * registry.
+<span class="lineNum">     339 </span>            :      */
+<span class="lineNum">     340 </span>            :     nsTArray&lt;nsCOMPtr&lt;nsIURI&gt; &gt; mUnloadedOverlays;
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span>            :     /**
+<span class="lineNum">     343 </span>            :      * Load the transcluded script at the specified URI. If the
+<span class="lineNum">     344 </span>            :      * prototype construction must 'block' until the load has
+<span class="lineNum">     345 </span>            :      * completed, aBlock will be set to true.
+<span class="lineNum">     346 </span>            :      */
+<span class="lineNum">     347 </span>            :     nsresult LoadScript(nsXULPrototypeScript *aScriptProto, bool* aBlock);
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            :     /**
+<span class="lineNum">     350 </span>            :      * Execute the precompiled script object scoped by this XUL document's
+<span class="lineNum">     351 </span>            :      * containing window object.
+<span class="lineNum">     352 </span>            :      */
+<span class="lineNum">     353 </span>            :     nsresult ExecuteScript(nsXULPrototypeScript *aScript);
+<span class="lineNum">     354 </span>            : 
+<span class="lineNum">     355 </span>            :     /**
+<span class="lineNum">     356 </span>            :      * Create a delegate content model element from a prototype.
+<span class="lineNum">     357 </span>            :      * Note that the resulting content node is not bound to any tree
+<span class="lineNum">     358 </span>            :      */
+<span class="lineNum">     359 </span>            :     nsresult CreateElementFromPrototype(nsXULPrototypeElement* aPrototype,
+<span class="lineNum">     360 </span>            :                                         Element** aResult,
+<span class="lineNum">     361 </span>            :                                         bool aIsRoot);
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            :     /**
+<span class="lineNum">     364 </span>            :      * Create a hook-up element to which content nodes can be attached for
+<span class="lineNum">     365 </span>            :      * later resolution.
+<span class="lineNum">     366 </span>            :      */
+<span class="lineNum">     367 </span>            :     nsresult CreateOverlayElement(nsXULPrototypeElement* aPrototype,
+<span class="lineNum">     368 </span>            :                                   Element** aResult);
+<span class="lineNum">     369 </span>            : 
+<span class="lineNum">     370 </span>            :     /**
+<span class="lineNum">     371 </span>            :      * Add attributes from the prototype to the element.
+<span class="lineNum">     372 </span>            :      */
+<span class="lineNum">     373 </span>            :     nsresult AddAttributes(nsXULPrototypeElement* aPrototype, Element* aElement);
+<span class="lineNum">     374 </span>            : 
+<span class="lineNum">     375 </span>            :     /**
+<span class="lineNum">     376 </span>            :      * The prototype-script of the current transcluded script that is being
+<span class="lineNum">     377 </span>            :      * loaded.  For document.write('&lt;script src=&quot;nestedwrite.js&quot;&gt;&lt;\/script&gt;')
+<span class="lineNum">     378 </span>            :      * to work, these need to be in a stack element type, and we need to hold
+<span class="lineNum">     379 </span>            :      * the top of stack here.
+<span class="lineNum">     380 </span>            :      */
+<span class="lineNum">     381 </span>            :     nsXULPrototypeScript* mCurrentScriptProto;
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span>            :     /**
+<span class="lineNum">     384 </span>            :      * Whether the current transcluded script is being compiled off thread.
+<span class="lineNum">     385 </span>            :      * The load event is blocked while this is in progress.
+<span class="lineNum">     386 </span>            :      */
+<span class="lineNum">     387 </span>            :     bool mOffThreadCompiling;
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span>            :     /**
+<span class="lineNum">     390 </span>            :      * If the current transcluded script is being compiled off thread, the
+<span class="lineNum">     391 </span>            :      * source for that script.
+<span class="lineNum">     392 </span>            :      */
+<span class="lineNum">     393 </span>            :     char16_t* mOffThreadCompileStringBuf;
+<span class="lineNum">     394 </span>            :     size_t mOffThreadCompileStringLength;
+<span class="lineNum">     395 </span>            : 
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span>            : protected:
+<span class="lineNum">     398 </span>            :     /* Declarations related to forward references.
+<span class="lineNum">     399 </span>            :      *
+<span class="lineNum">     400 </span>            :      * Forward references are declarations which are added to the temporary
+<span class="lineNum">     401 </span>            :      * list (mForwardReferences) during the document (or overlay) load and
+<span class="lineNum">     402 </span>            :      * are resolved later, when the document loading is almost complete.
+<span class="lineNum">     403 </span>            :      */
+<span class="lineNum">     404 </span>            : 
+<span class="lineNum">     405 </span>            :     /**
+<span class="lineNum">     406 </span>            :      * The list of different types of forward references to resolve. After
+<span class="lineNum">     407 </span>            :      * a reference is resolved, it is removed from this array (and
+<span class="lineNum">     408 </span>            :      * automatically deleted)
+<span class="lineNum">     409 </span>            :      */
+<span class="lineNum">     410 </span>            :     nsTArray&lt;nsAutoPtr&lt;nsForwardReference&gt; &gt; mForwardReferences;
+<span class="lineNum">     411 </span>            : 
+<span class="lineNum">     412 </span>            :     /** Indicates what kind of forward references are still to be processed. */
+<span class="lineNum">     413 </span>            :     nsForwardReference::Phase mResolutionPhase;
+<span class="lineNum">     414 </span>            : 
+<span class="lineNum">     415 </span>            :     /**
+<span class="lineNum">     416 </span>            :      * Adds aRef to the mForwardReferences array. Takes the ownership of aRef.
+<span class="lineNum">     417 </span>            :      */
+<span class="lineNum">     418 </span>            :     nsresult AddForwardReference(nsForwardReference* aRef);
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span>            :     /**
+<span class="lineNum">     421 </span>            :      * Resolve all of the document's forward references.
+<span class="lineNum">     422 </span>            :      */
+<span class="lineNum">     423 </span>            :     nsresult ResolveForwardReferences();
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span>            :     /**
+<span class="lineNum">     426 </span>            :      * Used to resolve broadcaster references
+<span class="lineNum">     427 </span>            :      */
+<span class="lineNum">     428 </span>            :     class BroadcasterHookup : public nsForwardReference
+<span class="lineNum">     429 </span>            :     {
+<span class="lineNum">     430 </span>            :     protected:
+<span class="lineNum">     431 </span>            :         XULDocument* mDocument;              // [WEAK]
+<span class="lineNum">     432 </span>            :         RefPtr&lt;Element&gt; mObservesElement; // [OWNER]
+<span class="lineNum">     433 </span>            :         bool mResolved;
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span>            :     public:
+<span class="lineNum">     436 </span><span class="lineCov">          6 :         BroadcasterHookup(XULDocument* aDocument,</span>
+<span class="lineNum">     437 </span>            :                           Element* aObservesElement)
+<span class="lineNum">     438 </span><span class="lineCov">          6 :             : mDocument(aDocument),</span>
+<span class="lineNum">     439 </span>            :               mObservesElement(aObservesElement),
+<span class="lineNum">     440 </span><span class="lineCov">         12 :               mResolved(false)</span>
+<span class="lineNum">     441 </span>            :         {
+<span class="lineNum">     442 </span><span class="lineCov">          6 :         }</span>
+<span class="lineNum">     443 </span>            : 
+<span class="lineNum">     444 </span>            :         virtual ~BroadcasterHookup();
+<span class="lineNum">     445 </span>            : 
+<span class="lineNum">     446 </span><span class="lineCov">         18 :         virtual Phase GetPhase() override { return eHookup; }</span>
+<span class="lineNum">     447 </span>            :         virtual Result Resolve() override;
+<span class="lineNum">     448 </span>            :     };
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span>            :     friend class BroadcasterHookup;
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span>            :     /**
+<span class="lineNum">     454 </span>            :      * Used to hook up overlays
+<span class="lineNum">     455 </span>            :      */
+<span class="lineNum">     456 </span>            :     class OverlayForwardReference : public nsForwardReference
+<span class="lineNum">     457 </span>            :     {
+<span class="lineNum">     458 </span>            :     protected:
+<span class="lineNum">     459 </span>            :         XULDocument* mDocument;      // [WEAK]
+<span class="lineNum">     460 </span>            :         nsCOMPtr&lt;Element&gt; mOverlay; // [OWNER]
+<span class="lineNum">     461 </span>            :         bool mResolved;
+<span class="lineNum">     462 </span>            : 
+<span class="lineNum">     463 </span>            :         nsresult Merge(Element* aTargetNode, Element* aOverlayNode, bool aNotify);
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span>            :     public:
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :         OverlayForwardReference(XULDocument* aDocument, Element* aOverlay)</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :             : mDocument(aDocument), mOverlay(aOverlay), mResolved(false) {}</span>
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span>            :         virtual ~OverlayForwardReference();
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :         virtual Phase GetPhase() override { return eConstruction; }</span>
+<span class="lineNum">     472 </span>            :         virtual Result Resolve() override;
+<span class="lineNum">     473 </span>            :     };
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span>            :     friend class OverlayForwardReference;
+<span class="lineNum">     476 </span>            : 
+<span class="lineNum">     477 </span>            :     // The out params of FindBroadcaster only have values that make sense when
+<span class="lineNum">     478 </span>            :     // the method returns NS_FINDBROADCASTER_FOUND.  In all other cases, the
+<span class="lineNum">     479 </span>            :     // values of the out params should not be relied on (though *aListener and
+<span class="lineNum">     480 </span>            :     // *aBroadcaster do need to be released if non-null, of course).
+<span class="lineNum">     481 </span>            :     nsresult
+<span class="lineNum">     482 </span>            :     FindBroadcaster(Element* aElement,
+<span class="lineNum">     483 </span>            :                     Element** aListener,
+<span class="lineNum">     484 </span>            :                     nsString&amp; aBroadcasterID,
+<span class="lineNum">     485 </span>            :                     nsString&amp; aAttribute,
+<span class="lineNum">     486 </span>            :                     Element** aBroadcaster);
+<span class="lineNum">     487 </span>            : 
+<span class="lineNum">     488 </span>            :     nsresult
+<span class="lineNum">     489 </span>            :     CheckBroadcasterHookup(Element* aElement,
+<span class="lineNum">     490 </span>            :                            bool* aNeedsHookup,
+<span class="lineNum">     491 </span>            :                            bool* aDidResolve);
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span>            :     void
+<span class="lineNum">     494 </span>            :     SynchronizeBroadcastListener(Element *aBroadcaster,
+<span class="lineNum">     495 </span>            :                                  Element *aListener,
+<span class="lineNum">     496 </span>            :                                  const nsAString &amp;aAttr);
+<span class="lineNum">     497 </span>            : 
+<span class="lineNum">     498 </span>            :     // FIXME: This should probably be renamed, there's nothing guaranteeing that
+<span class="lineNum">     499 </span>            :     // aChild is an Element as far as I can tell!
+<span class="lineNum">     500 </span>            :     static
+<span class="lineNum">     501 </span>            :     nsresult
+<span class="lineNum">     502 </span>            :     InsertElement(nsINode* aParent, nsIContent* aChild, bool aNotify);
+<span class="lineNum">     503 </span>            : 
+<span class="lineNum">     504 </span>            :     /**
+<span class="lineNum">     505 </span>            :      * The current prototype that we are walking to construct the
+<span class="lineNum">     506 </span>            :      * content model.
+<span class="lineNum">     507 </span>            :      */
+<span class="lineNum">     508 </span>            :     RefPtr&lt;nsXULPrototypeDocument&gt; mCurrentPrototype;
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span>            :     /**
+<span class="lineNum">     511 </span>            :      * The master document (outermost, .xul) prototype, from which
+<span class="lineNum">     512 </span>            :      * all subdocuments get their security principals.
+<span class="lineNum">     513 </span>            :      */
+<span class="lineNum">     514 </span>            :     RefPtr&lt;nsXULPrototypeDocument&gt; mMasterPrototype;
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span>            :     /**
+<span class="lineNum">     517 </span>            :      * Owning references to all of the prototype documents that were
+<span class="lineNum">     518 </span>            :      * used to construct this document.
+<span class="lineNum">     519 </span>            :      */
+<span class="lineNum">     520 </span>            :     nsTArray&lt; RefPtr&lt;nsXULPrototypeDocument&gt; &gt; mPrototypes;
+<span class="lineNum">     521 </span>            : 
+<span class="lineNum">     522 </span>            :     /**
+<span class="lineNum">     523 </span>            :      * Prepare to walk the current prototype.
+<span class="lineNum">     524 </span>            :      */
+<span class="lineNum">     525 </span>            :     nsresult PrepareToWalk();
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span>            :     /**
+<span class="lineNum">     528 </span>            :      * Creates a processing instruction based on aProtoPI and inserts
+<span class="lineNum">     529 </span>            :      * it to the DOM.
+<span class="lineNum">     530 </span>            :      */
+<span class="lineNum">     531 </span>            :     nsresult
+<span class="lineNum">     532 </span>            :     CreateAndInsertPI(const nsXULPrototypePI* aProtoPI,
+<span class="lineNum">     533 </span>            :                       nsINode* aParent, nsINode* aBeforeThis);
+<span class="lineNum">     534 </span>            : 
+<span class="lineNum">     535 </span>            :     /**
+<span class="lineNum">     536 </span>            :      * Inserts the passed &lt;?xml-stylesheet ?&gt; PI at the specified
+<span class="lineNum">     537 </span>            :      * index. Loads and applies the associated stylesheet
+<span class="lineNum">     538 </span>            :      * asynchronously.
+<span class="lineNum">     539 </span>            :      * The prototype document walk can happen before the stylesheets
+<span class="lineNum">     540 </span>            :      * are loaded, but the final steps in the load process (see
+<span class="lineNum">     541 </span>            :      * DoneWalking()) are not run before all the stylesheets are done
+<span class="lineNum">     542 </span>            :      * loading.
+<span class="lineNum">     543 </span>            :      */
+<span class="lineNum">     544 </span>            :     nsresult
+<span class="lineNum">     545 </span>            :     InsertXMLStylesheetPI(const nsXULPrototypePI* aProtoPI,
+<span class="lineNum">     546 </span>            :                           nsINode* aParent,
+<span class="lineNum">     547 </span>            :                           nsINode* aBeforeThis,
+<span class="lineNum">     548 </span>            :                           nsIContent* aPINode);
+<span class="lineNum">     549 </span>            : 
+<span class="lineNum">     550 </span>            :     /**
+<span class="lineNum">     551 </span>            :      * Inserts the passed &lt;?xul-overlay ?&gt; PI at the specified index.
+<span class="lineNum">     552 </span>            :      * Schedules the referenced overlay URI for further processing.
+<span class="lineNum">     553 </span>            :      */
+<span class="lineNum">     554 </span>            :     nsresult
+<span class="lineNum">     555 </span>            :     InsertXULOverlayPI(const nsXULPrototypePI* aProtoPI,
+<span class="lineNum">     556 </span>            :                        nsINode* aParent,
+<span class="lineNum">     557 </span>            :                        nsINode* aBeforeThis,
+<span class="lineNum">     558 </span>            :                        nsIContent* aPINode);
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span>            :     /**
+<span class="lineNum">     561 </span>            :      * Add overlays from the chrome registry to the set of unprocessed
+<span class="lineNum">     562 </span>            :      * overlays still to do.
+<span class="lineNum">     563 </span>            :      */
+<span class="lineNum">     564 </span>            :     nsresult AddChromeOverlays();
+<span class="lineNum">     565 </span>            : 
+<span class="lineNum">     566 </span>            :     /**
+<span class="lineNum">     567 </span>            :      * Resume (or initiate) an interrupted (or newly prepared)
+<span class="lineNum">     568 </span>            :      * prototype walk.
+<span class="lineNum">     569 </span>            :      */
+<span class="lineNum">     570 </span>            :     nsresult ResumeWalk();
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span>            :     /**
+<span class="lineNum">     573 </span>            :      * Called at the end of ResumeWalk() and from StyleSheetLoaded().
+<span class="lineNum">     574 </span>            :      * Expects that both the prototype document walk is complete and
+<span class="lineNum">     575 </span>            :      * all referenced stylesheets finished loading.
+<span class="lineNum">     576 </span>            :      */
+<span class="lineNum">     577 </span>            :     nsresult DoneWalking();
+<span class="lineNum">     578 </span>            : 
+<span class="lineNum">     579 </span>            :     /**
+<span class="lineNum">     580 </span>            :      * Report that an overlay failed to load
+<span class="lineNum">     581 </span>            :      * @param aURI the URI of the overlay that failed to load
+<span class="lineNum">     582 </span>            :      */
+<span class="lineNum">     583 </span>            :     void ReportMissingOverlay(nsIURI* aURI);
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span>            :     class CachedChromeStreamListener : public nsIStreamListener {
+<span class="lineNum">     586 </span>            :     protected:
+<span class="lineNum">     587 </span>            :         RefPtr&lt;XULDocument&gt; mDocument;
+<span class="lineNum">     588 </span>            :         bool mProtoLoaded;
+<span class="lineNum">     589 </span>            : 
+<span class="lineNum">     590 </span>            :         virtual ~CachedChromeStreamListener();
+<span class="lineNum">     591 </span>            : 
+<span class="lineNum">     592 </span>            :     public:
+<span class="lineNum">     593 </span>            :         CachedChromeStreamListener(XULDocument* aDocument,
+<span class="lineNum">     594 </span>            :                                    bool aProtoLoaded);
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span>            :         NS_DECL_ISUPPORTS
+<span class="lineNum">     597 </span>            :         NS_DECL_NSIREQUESTOBSERVER
+<span class="lineNum">     598 </span>            :         NS_DECL_NSISTREAMLISTENER
+<span class="lineNum">     599 </span>            :     };
+<span class="lineNum">     600 </span>            : 
+<span class="lineNum">     601 </span>            :     friend class CachedChromeStreamListener;
+<span class="lineNum">     602 </span>            : 
+<span class="lineNum">     603 </span>            : 
+<span class="lineNum">     604 </span>            :     class ParserObserver : public nsIRequestObserver {
+<span class="lineNum">     605 </span>            :     protected:
+<span class="lineNum">     606 </span>            :         RefPtr&lt;XULDocument&gt; mDocument;
+<span class="lineNum">     607 </span>            :         RefPtr&lt;nsXULPrototypeDocument&gt; mPrototype;
+<span class="lineNum">     608 </span>            :         virtual ~ParserObserver();
+<span class="lineNum">     609 </span>            : 
+<span class="lineNum">     610 </span>            :     public:
+<span class="lineNum">     611 </span>            :         ParserObserver(XULDocument* aDocument,
+<span class="lineNum">     612 </span>            :                        nsXULPrototypeDocument* aPrototype);
+<span class="lineNum">     613 </span>            : 
+<span class="lineNum">     614 </span>            :         NS_DECL_ISUPPORTS
+<span class="lineNum">     615 </span>            :         NS_DECL_NSIREQUESTOBSERVER
+<span class="lineNum">     616 </span>            :     };
+<span class="lineNum">     617 </span>            : 
+<span class="lineNum">     618 </span>            :     friend class ParserObserver;
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span>            :     /**
+<span class="lineNum">     621 </span>            :      * A map from a broadcaster element to a list of listener elements.
+<span class="lineNum">     622 </span>            :      */
+<span class="lineNum">     623 </span>            :     PLDHashTable* mBroadcasterMap;
+<span class="lineNum">     624 </span>            : 
+<span class="lineNum">     625 </span>            :     nsAutoPtr&lt;nsInterfaceHashtable&lt;nsURIHashKey,nsIObserver&gt; &gt; mOverlayLoadObservers;
+<span class="lineNum">     626 </span>            :     nsAutoPtr&lt;nsInterfaceHashtable&lt;nsURIHashKey,nsIObserver&gt; &gt; mPendingOverlayLoadNotifications;
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span>            :     bool mInitialLayoutComplete;
+<span class="lineNum">     629 </span>            : 
+<span class="lineNum">     630 </span><span class="lineCov">         64 :     class nsDelayedBroadcastUpdate</span>
+<span class="lineNum">     631 </span>            :     {
+<span class="lineNum">     632 </span>            :     public:
+<span class="lineNum">     633 </span><span class="lineCov">          5 :       nsDelayedBroadcastUpdate(Element* aBroadcaster,</span>
+<span class="lineNum">     634 </span>            :                                Element* aListener,
+<span class="lineNum">     635 </span>            :                                const nsAString &amp;aAttr)
+<span class="lineNum">     636 </span><span class="lineCov">          5 :       : mBroadcaster(aBroadcaster), mListener(aListener), mAttr(aAttr),</span>
+<span class="lineNum">     637 </span><span class="lineCov">         10 :         mSetAttr(false), mNeedsAttrChange(false) {}</span>
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span><span class="lineCov">         11 :       nsDelayedBroadcastUpdate(Element* aBroadcaster,</span>
+<span class="lineNum">     640 </span>            :                                Element* aListener,
+<span class="lineNum">     641 </span>            :                                nsAtom* aAttrName,
+<span class="lineNum">     642 </span>            :                                const nsAString &amp;aAttr,
+<span class="lineNum">     643 </span>            :                                bool aSetAttr,
+<span class="lineNum">     644 </span>            :                                bool aNeedsAttrChange)
+<span class="lineNum">     645 </span><span class="lineNoCov">          0 :       : mBroadcaster(aBroadcaster), mListener(aListener), mAttr(aAttr),</span>
+<span class="lineNum">     646 </span>            :         mAttrName(aAttrName), mSetAttr(aSetAttr),
+<span class="lineNum">     647 </span><span class="lineCov">         11 :         mNeedsAttrChange(aNeedsAttrChange) {}</span>
+<span class="lineNum">     648 </span>            : 
+<span class="lineNum">     649 </span><span class="lineNoCov">          0 :       nsDelayedBroadcastUpdate(const nsDelayedBroadcastUpdate&amp; aOther)</span>
+<span class="lineNum">     650 </span><span class="lineCov">         16 :       : mBroadcaster(aOther.mBroadcaster), mListener(aOther.mListener),</span>
+<span class="lineNum">     651 </span>            :         mAttr(aOther.mAttr), mAttrName(aOther.mAttrName),
+<span class="lineNum">     652 </span><span class="lineCov">         16 :         mSetAttr(aOther.mSetAttr), mNeedsAttrChange(aOther.mNeedsAttrChange) {}</span>
+<span class="lineNum">     653 </span>            : 
+<span class="lineNum">     654 </span>            :       nsCOMPtr&lt;Element&gt;       mBroadcaster;
+<span class="lineNum">     655 </span>            :       nsCOMPtr&lt;Element&gt;       mListener;
+<span class="lineNum">     656 </span>            :       // Note if mAttrName isn't used, this is the name of the attr, otherwise
+<span class="lineNum">     657 </span>            :       // this is the value of the attribute.
+<span class="lineNum">     658 </span>            :       nsString                mAttr;
+<span class="lineNum">     659 </span>            :       RefPtr&lt;nsAtom&gt;       mAttrName;
+<span class="lineNum">     660 </span>            :       bool                    mSetAttr;
+<span class="lineNum">     661 </span>            :       bool                    mNeedsAttrChange;
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span>            :       class Comparator {
+<span class="lineNum">     664 </span>            :         public:
+<span class="lineNum">     665 </span><span class="lineCov">          1 :           static bool Equals(const nsDelayedBroadcastUpdate&amp; a, const nsDelayedBroadcastUpdate&amp; b) {</span>
+<span class="lineNum">     666 </span><span class="lineCov">          3 :             return a.mBroadcaster == b.mBroadcaster &amp;&amp; a.mListener == b.mListener &amp;&amp; a.mAttrName == b.mAttrName;</span>
+<span class="lineNum">     667 </span>            :           }
+<span class="lineNum">     668 </span>            :       };
+<span class="lineNum">     669 </span>            :     };
+<span class="lineNum">     670 </span>            : 
+<span class="lineNum">     671 </span>            :     nsTArray&lt;nsDelayedBroadcastUpdate&gt; mDelayedBroadcasters;
+<span class="lineNum">     672 </span>            :     nsTArray&lt;nsDelayedBroadcastUpdate&gt; mDelayedAttrChangeBroadcasts;
+<span class="lineNum">     673 </span>            :     bool                               mHandlingDelayedAttrChange;
+<span class="lineNum">     674 </span>            :     bool                               mHandlingDelayedBroadcasters;
+<span class="lineNum">     675 </span>            : 
+<span class="lineNum">     676 </span>            :     void MaybeBroadcast();
+<span class="lineNum">     677 </span>            : private:
+<span class="lineNum">     678 </span>            :     // helpers
+<span class="lineNum">     679 </span>            : 
+<span class="lineNum">     680 </span>            : };
+<span class="lineNum">     681 </span>            : 
+<span class="lineNum">     682 </span>            : } // namespace dom
+<span class="lineNum">     683 </span>            : } // namespace mozilla
+<span class="lineNum">     684 </span>            : 
+<span class="lineNum">     685 </span>            : inline mozilla::dom::XULDocument*
+<span class="lineNum">     686 </span><span class="lineCov">        334 : nsIDocument::AsXULDocument()</span>
+<span class="lineNum">     687 </span>            : {
+<span class="lineNum">     688 </span><span class="lineCov">        334 :   MOZ_ASSERT(IsXULDocument());</span>
+<span class="lineNum">     689 </span><span class="lineCov">        334 :   return static_cast&lt;mozilla::dom::XULDocument*&gt;(this);</span>
+<span class="lineNum">     690 </span>            : }
+<span class="lineNum">     691 </span>            : 
+<span class="lineNum">     692 </span>            : #endif // mozilla_dom_XULDocument_h
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

@@ -1,0 +1,295 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - netwerk/base/LoadInfo.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">netwerk/base</a> - LoadInfo.h<span style="font-size: 80%;"> (source / <a href="LoadInfo.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntry">1</td>
+            <td class="headerCovTableEntryHi">100.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef mozilla_LoadInfo_h
+<span class="lineNum">       8 </span>            : #define mozilla_LoadInfo_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &quot;nsIContentPolicy.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;nsILoadInfo.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;nsIPrincipal.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;nsIWeakReferenceUtils.h&quot; // for nsWeakPtr
+<span class="lineNum">      14 </span>            : #include &quot;nsIURI.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;nsTArray.h&quot;
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/BasePrincipal.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;mozilla/dom/ClientInfo.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;mozilla/dom/ServiceWorkerDescriptor.h&quot;
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : class nsINode;
+<span class="lineNum">      22 </span>            : class nsPIDOMWindowOuter;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : namespace mozilla {
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : namespace dom {
+<span class="lineNum">      27 </span>            : class PerformanceStorage;
+<span class="lineNum">      28 </span>            : class XMLHttpRequestMainThread;
+<span class="lineNum">      29 </span>            : }
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : namespace net {
+<span class="lineNum">      32 </span>            : class OptionalLoadInfoArgs;
+<span class="lineNum">      33 </span>            : } // namespace net
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : namespace ipc {
+<span class="lineNum">      36 </span>            : // we have to forward declare that function so we can use it as a friend.
+<span class="lineNum">      37 </span>            : nsresult
+<span class="lineNum">      38 </span>            : LoadInfoArgsToLoadInfo(const mozilla::net::OptionalLoadInfoArgs&amp; aLoadInfoArgs,
+<span class="lineNum">      39 </span>            :                        nsILoadInfo** outLoadInfo);
+<span class="lineNum">      40 </span>            : } // namespace ipc
+<span class="lineNum">      41 </span>            : 
+<span class="lineNum">      42 </span>            : namespace net {
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : typedef nsTArray&lt;nsCOMPtr&lt;nsIRedirectHistoryEntry&gt;&gt; RedirectHistoryArray;
+<span class="lineNum">      45 </span>            : 
+<span class="lineNum">      46 </span>            : /**
+<span class="lineNum">      47 </span>            :  * Class that provides an nsILoadInfo implementation.
+<span class="lineNum">      48 </span>            :  */
+<span class="lineNum">      49 </span>            : class LoadInfo final : public nsILoadInfo
+<span class="lineNum">      50 </span>            : {
+<span class="lineNum">      51 </span>            : public:
+<span class="lineNum">      52 </span>            :   NS_DECL_ISUPPORTS
+<span class="lineNum">      53 </span>            :   NS_DECL_NSILOADINFO
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            :   // aLoadingPrincipal MUST NOT BE NULL.
+<span class="lineNum">      56 </span>            :   LoadInfo(nsIPrincipal* aLoadingPrincipal,
+<span class="lineNum">      57 </span>            :            nsIPrincipal* aTriggeringPrincipal,
+<span class="lineNum">      58 </span>            :            nsINode* aLoadingContext,
+<span class="lineNum">      59 </span>            :            nsSecurityFlags aSecurityFlags,
+<span class="lineNum">      60 </span>            :            nsContentPolicyType aContentPolicyType,
+<span class="lineNum">      61 </span>            :            const Maybe&lt;mozilla::dom::ClientInfo&gt;&amp; aLoadingClientInfo
+<span class="lineNum">      62 </span>            :               = Maybe&lt;mozilla::dom::ClientInfo&gt;(),
+<span class="lineNum">      63 </span>            :            const Maybe&lt;mozilla::dom::ServiceWorkerDescriptor&gt;&amp; aController
+<span class="lineNum">      64 </span>            :               = Maybe&lt;mozilla::dom::ServiceWorkerDescriptor&gt;());
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            :   // Constructor used for TYPE_DOCUMENT loads which have a different
+<span class="lineNum">      67 </span>            :   // loadingContext than other loads. This ContextForTopLevelLoad is
+<span class="lineNum">      68 </span>            :   // only used for content policy checks.
+<span class="lineNum">      69 </span>            :   LoadInfo(nsPIDOMWindowOuter* aOuterWindow,
+<span class="lineNum">      70 </span>            :            nsIPrincipal* aTriggeringPrincipal,
+<span class="lineNum">      71 </span>            :            nsISupports* aContextForTopLevelLoad,
+<span class="lineNum">      72 </span>            :            nsSecurityFlags aSecurityFlags);
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            :   // create an exact copy of the loadinfo
+<span class="lineNum">      75 </span>            :   already_AddRefed&lt;nsILoadInfo&gt; Clone() const;
+<span class="lineNum">      76 </span>            :   // hands off!!! don't use CloneWithNewSecFlags unless you know
+<span class="lineNum">      77 </span>            :   // exactly what you are doing - it should only be used within
+<span class="lineNum">      78 </span>            :   // nsBaseChannel::Redirect()
+<span class="lineNum">      79 </span>            :   already_AddRefed&lt;nsILoadInfo&gt;
+<span class="lineNum">      80 </span>            :   CloneWithNewSecFlags(nsSecurityFlags aSecurityFlags) const;
+<span class="lineNum">      81 </span>            :   // creates a copy of the loadinfo which is appropriate to use for a
+<span class="lineNum">      82 </span>            :   // separate request. I.e. not for a redirect or an inner channel, but
+<span class="lineNum">      83 </span>            :   // when a separate request is made with the same security properties.
+<span class="lineNum">      84 </span>            :   already_AddRefed&lt;nsILoadInfo&gt; CloneForNewRequest() const;
+<span class="lineNum">      85 </span>            : 
+<span class="lineNum">      86 </span>            :   void SetIsPreflight();
+<span class="lineNum">      87 </span>            :   void SetUpgradeInsecureRequests();
+<span class="lineNum">      88 </span>            :   void SetBrowserUpgradeInsecureRequests();
+<span class="lineNum">      89 </span>            :   void SetBrowserWouldUpgradeInsecureRequests();
+<span class="lineNum">      90 </span>            : 
+<span class="lineNum">      91 </span>            : private:
+<span class="lineNum">      92 </span>            :   // private constructor that is only allowed to be called from within
+<span class="lineNum">      93 </span>            :   // HttpChannelParent and FTPChannelParent declared as friends undeneath.
+<span class="lineNum">      94 </span>            :   // In e10s we can not serialize nsINode, hence we store the innerWindowID.
+<span class="lineNum">      95 </span>            :   // Please note that aRedirectChain uses swapElements.
+<span class="lineNum">      96 </span>            :   LoadInfo(nsIPrincipal* aLoadingPrincipal,
+<span class="lineNum">      97 </span>            :            nsIPrincipal* aTriggeringPrincipal,
+<span class="lineNum">      98 </span>            :            nsIPrincipal* aPrincipalToInherit,
+<span class="lineNum">      99 </span>            :            nsIPrincipal* aSandboxedLoadingPrincipal,
+<span class="lineNum">     100 </span>            :            nsIURI* aResultPrincipalURI,
+<span class="lineNum">     101 </span>            :            const Maybe&lt;mozilla::dom::ClientInfo&gt;&amp; aClientInfo,
+<span class="lineNum">     102 </span>            :            const Maybe&lt;mozilla::dom::ClientInfo&gt;&amp; aReservedClientInfo,
+<span class="lineNum">     103 </span>            :            const Maybe&lt;mozilla::dom::ClientInfo&gt;&amp; aInitialClientInfo,
+<span class="lineNum">     104 </span>            :            const Maybe&lt;mozilla::dom::ServiceWorkerDescriptor&gt;&amp; aController,
+<span class="lineNum">     105 </span>            :            nsSecurityFlags aSecurityFlags,
+<span class="lineNum">     106 </span>            :            nsContentPolicyType aContentPolicyType,
+<span class="lineNum">     107 </span>            :            LoadTainting aTainting,
+<span class="lineNum">     108 </span>            :            bool aUpgradeInsecureRequests,
+<span class="lineNum">     109 </span>            :            bool aBrowserUpgradeInsecureRequests,
+<span class="lineNum">     110 </span>            :            bool aBrowserWouldUpgradeInsecureRequests,
+<span class="lineNum">     111 </span>            :            bool aVerifySignedContent,
+<span class="lineNum">     112 </span>            :            bool aEnforceSRI,
+<span class="lineNum">     113 </span>            :            bool aForceAllowDataURI,
+<span class="lineNum">     114 </span>            :            bool aAllowInsecureRedirectToDataURI,
+<span class="lineNum">     115 </span>            :            bool aSkipContentPolicyCheckForWebRequest,
+<span class="lineNum">     116 </span>            :            bool aForceInheritPrincipalDropped,
+<span class="lineNum">     117 </span>            :            uint64_t aInnerWindowID,
+<span class="lineNum">     118 </span>            :            uint64_t aOuterWindowID,
+<span class="lineNum">     119 </span>            :            uint64_t aParentOuterWindowID,
+<span class="lineNum">     120 </span>            :            uint64_t aTopOuterWindowID,
+<span class="lineNum">     121 </span>            :            uint64_t aFrameOuterWindowID,
+<span class="lineNum">     122 </span>            :            bool aEnforceSecurity,
+<span class="lineNum">     123 </span>            :            bool aInitialSecurityCheckDone,
+<span class="lineNum">     124 </span>            :            bool aIsThirdPartyRequest,
+<span class="lineNum">     125 </span>            :            bool aIsDocshellReload,
+<span class="lineNum">     126 </span>            :            const OriginAttributes&amp; aOriginAttributes,
+<span class="lineNum">     127 </span>            :            RedirectHistoryArray&amp; aRedirectChainIncludingInternalRedirects,
+<span class="lineNum">     128 </span>            :            RedirectHistoryArray&amp; aRedirectChain,
+<span class="lineNum">     129 </span>            :            nsTArray&lt;nsCOMPtr&lt;nsIPrincipal&gt;&gt;&amp;&amp; aAncestorPrincipals,
+<span class="lineNum">     130 </span>            :            const nsTArray&lt;uint64_t&gt;&amp; aAncestorOuterWindowIDs,
+<span class="lineNum">     131 </span>            :            const nsTArray&lt;nsCString&gt;&amp; aUnsafeHeaders,
+<span class="lineNum">     132 </span>            :            bool aForcePreflight,
+<span class="lineNum">     133 </span>            :            bool aIsPreflight,
+<span class="lineNum">     134 </span>            :            bool aLoadTriggeredFromExternal,
+<span class="lineNum">     135 </span>            :            bool aServiceWorkerTaintingSynthesized);
+<span class="lineNum">     136 </span>            :   LoadInfo(const LoadInfo&amp; rhs);
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            :   NS_IMETHOD GetRedirects(JSContext* aCx, JS::MutableHandle&lt;JS::Value&gt; aRedirects,
+<span class="lineNum">     139 </span>            :                           const RedirectHistoryArray&amp; aArra);
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            :   friend nsresult
+<span class="lineNum">     142 </span>            :   mozilla::ipc::LoadInfoArgsToLoadInfo(
+<span class="lineNum">     143 </span>            :     const mozilla::net::OptionalLoadInfoArgs&amp; aLoadInfoArgs,
+<span class="lineNum">     144 </span>            :     nsILoadInfo** outLoadInfo);
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span><span class="lineCov">       4752 :   ~LoadInfo() = default;</span>
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span>            :   void ComputeIsThirdPartyContext(nsPIDOMWindowOuter* aOuterWindow);
+<span class="lineNum">     149 </span>            : 
+<span class="lineNum">     150 </span>            :   // This function is the *only* function which can change the securityflags
+<span class="lineNum">     151 </span>            :   // of a loadinfo. It only exists because of the XHR code. Don't call it
+<span class="lineNum">     152 </span>            :   // from anywhere else!
+<span class="lineNum">     153 </span>            :   void SetIncludeCookiesSecFlag();
+<span class="lineNum">     154 </span>            :   friend class mozilla::dom::XMLHttpRequestMainThread;
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span>            :   // if you add a member, please also update the copy constructor and consider if
+<span class="lineNum">     157 </span>            :   // it should be merged from parent channel through ParentLoadInfoForwarderArgs.
+<span class="lineNum">     158 </span>            :   nsCOMPtr&lt;nsIPrincipal&gt;           mLoadingPrincipal;
+<span class="lineNum">     159 </span>            :   nsCOMPtr&lt;nsIPrincipal&gt;           mTriggeringPrincipal;
+<span class="lineNum">     160 </span>            :   nsCOMPtr&lt;nsIPrincipal&gt;           mPrincipalToInherit;
+<span class="lineNum">     161 </span>            :   nsCOMPtr&lt;nsIPrincipal&gt;           mSandboxedLoadingPrincipal;
+<span class="lineNum">     162 </span>            :   nsCOMPtr&lt;nsIURI&gt;                 mResultPrincipalURI;
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            :   Maybe&lt;mozilla::dom::ClientInfo&gt;               mClientInfo;
+<span class="lineNum">     165 </span>            :   UniquePtr&lt;mozilla::dom::ClientSource&gt;         mReservedClientSource;
+<span class="lineNum">     166 </span>            :   Maybe&lt;mozilla::dom::ClientInfo&gt;               mReservedClientInfo;
+<span class="lineNum">     167 </span>            :   Maybe&lt;mozilla::dom::ClientInfo&gt;               mInitialClientInfo;
+<span class="lineNum">     168 </span>            :   Maybe&lt;mozilla::dom::ServiceWorkerDescriptor&gt;  mController;
+<span class="lineNum">     169 </span>            :   RefPtr&lt;mozilla::dom::PerformanceStorage&gt;      mPerformanceStorage;
+<span class="lineNum">     170 </span>            : 
+<span class="lineNum">     171 </span>            :   nsWeakPtr                        mLoadingContext;
+<span class="lineNum">     172 </span>            :   nsWeakPtr                        mContextForTopLevelLoad;
+<span class="lineNum">     173 </span>            :   nsSecurityFlags                  mSecurityFlags;
+<span class="lineNum">     174 </span>            :   nsContentPolicyType              mInternalContentPolicyType;
+<span class="lineNum">     175 </span>            :   LoadTainting                     mTainting;
+<span class="lineNum">     176 </span>            :   bool                             mUpgradeInsecureRequests;
+<span class="lineNum">     177 </span>            :   bool                             mBrowserUpgradeInsecureRequests;
+<span class="lineNum">     178 </span>            :   bool                             mBrowserWouldUpgradeInsecureRequests;
+<span class="lineNum">     179 </span>            :   bool                             mVerifySignedContent;
+<span class="lineNum">     180 </span>            :   bool                             mEnforceSRI;
+<span class="lineNum">     181 </span>            :   bool                             mForceAllowDataURI;
+<span class="lineNum">     182 </span>            :   bool                             mAllowInsecureRedirectToDataURI;
+<span class="lineNum">     183 </span>            :   bool                             mSkipContentPolicyCheckForWebRequest;
+<span class="lineNum">     184 </span>            :   bool                             mOriginalFrameSrcLoad;
+<span class="lineNum">     185 </span>            :   bool                             mForceInheritPrincipalDropped;
+<span class="lineNum">     186 </span>            :   uint64_t                         mInnerWindowID;
+<span class="lineNum">     187 </span>            :   uint64_t                         mOuterWindowID;
+<span class="lineNum">     188 </span>            :   uint64_t                         mParentOuterWindowID;
+<span class="lineNum">     189 </span>            :   uint64_t                         mTopOuterWindowID;
+<span class="lineNum">     190 </span>            :   uint64_t                         mFrameOuterWindowID;
+<span class="lineNum">     191 </span>            :   bool                             mEnforceSecurity;
+<span class="lineNum">     192 </span>            :   bool                             mInitialSecurityCheckDone;
+<span class="lineNum">     193 </span>            :   bool                             mIsThirdPartyContext;
+<span class="lineNum">     194 </span>            :   bool                             mIsDocshellReload;
+<span class="lineNum">     195 </span>            :   OriginAttributes                 mOriginAttributes;
+<span class="lineNum">     196 </span>            :   RedirectHistoryArray             mRedirectChainIncludingInternalRedirects;
+<span class="lineNum">     197 </span>            :   RedirectHistoryArray             mRedirectChain;
+<span class="lineNum">     198 </span>            :   nsTArray&lt;nsCOMPtr&lt;nsIPrincipal&gt;&gt; mAncestorPrincipals;
+<span class="lineNum">     199 </span>            :   nsTArray&lt;uint64_t&gt;               mAncestorOuterWindowIDs;
+<span class="lineNum">     200 </span>            :   nsTArray&lt;nsCString&gt;              mCorsUnsafeHeaders;
+<span class="lineNum">     201 </span>            :   bool                             mForcePreflight;
+<span class="lineNum">     202 </span>            :   bool                             mIsPreflight;
+<span class="lineNum">     203 </span>            :   bool                             mLoadTriggeredFromExternal;
+<span class="lineNum">     204 </span>            :   bool                             mServiceWorkerTaintingSynthesized;
+<span class="lineNum">     205 </span>            : };
+<span class="lineNum">     206 </span>            : 
+<span class="lineNum">     207 </span>            : } // namespace net
+<span class="lineNum">     208 </span>            : } // namespace mozilla
+<span class="lineNum">     209 </span>            : 
+<span class="lineNum">     210 </span>            : #endif // mozilla_LoadInfo_h
+<span class="lineNum">     211 </span>            : 
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

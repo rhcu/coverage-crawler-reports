@@ -1,0 +1,2066 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - editor/libeditor/EditorBase.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">editor/libeditor</a> - EditorBase.h<span style="font-size: 80%;"> (source / <a href="EditorBase.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">39</td>
+            <td class="headerCovTableEntry">145</td>
+            <td class="headerCovTableEntryLo">26.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:42:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 2; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       3 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       4 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       5 </span>            : 
+<span class="lineNum">       6 </span>            : #ifndef mozilla_EditorBase_h
+<span class="lineNum">       7 </span>            : #define mozilla_EditorBase_h
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &quot;mozilla/Assertions.h&quot;         // for MOZ_ASSERT, etc.
+<span class="lineNum">      10 </span>            : #include &quot;mozilla/EditorDOMPoint.h&quot;     // for EditorDOMPoint
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/Maybe.h&quot;              // for Maybe
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/OwningNonNull.h&quot;      // for OwningNonNull
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/PresShell.h&quot;          // for PresShell
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/RangeBoundary.h&quot;      // for RawRangeBoundary, RangeBoundary
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/SelectionState.h&quot;     // for RangeUpdater, etc.
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/StyleSheet.h&quot;         // for StyleSheet
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/TransactionManager.h&quot; // for TransactionManager
+<span class="lineNum">      18 </span>            : #include &quot;mozilla/WeakPtr.h&quot;            // for WeakPtr
+<span class="lineNum">      19 </span>            : #include &quot;mozilla/dom/Selection.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;mozilla/dom/Text.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;nsCOMPtr.h&quot;                   // for already_AddRefed, nsCOMPtr
+<span class="lineNum">      22 </span>            : #include &quot;nsCycleCollectionParticipant.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;nsGkAtoms.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;nsIDocument.h&quot;                // for nsIDocument
+<span class="lineNum">      25 </span>            : #include &quot;nsIContentInlines.h&quot;          // for nsINode::IsEditable()
+<span class="lineNum">      26 </span>            : #include &quot;nsIEditor.h&quot;                  // for nsIEditor, etc.
+<span class="lineNum">      27 </span>            : #include &quot;nsIObserver.h&quot;                // for NS_DECL_NSIOBSERVER, etc.
+<span class="lineNum">      28 </span>            : #include &quot;nsIPlaintextEditor.h&quot;         // for nsIPlaintextEditor, etc.
+<span class="lineNum">      29 </span>            : #include &quot;nsISelectionController.h&quot;     // for nsISelectionController constants
+<span class="lineNum">      30 </span>            : #include &quot;nsISelectionListener.h&quot;       // for nsISelectionListener
+<span class="lineNum">      31 </span>            : #include &quot;nsISupportsImpl.h&quot;            // for EditorBase::Release, etc.
+<span class="lineNum">      32 </span>            : #include &quot;nsIWeakReferenceUtils.h&quot;      // for nsWeakPtr
+<span class="lineNum">      33 </span>            : #include &quot;nsLiteralString.h&quot;            // for NS_LITERAL_STRING
+<span class="lineNum">      34 </span>            : #include &quot;nsString.h&quot;                   // for nsCString
+<span class="lineNum">      35 </span>            : #include &quot;nsTArray.h&quot;                   // for nsTArray and nsAutoTArray
+<span class="lineNum">      36 </span>            : #include &quot;nsWeakReference.h&quot;            // for nsSupportsWeakReference
+<span class="lineNum">      37 </span>            : #include &quot;nscore.h&quot;                     // for nsresult, nsAString, etc.
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : class mozInlineSpellChecker;
+<span class="lineNum">      40 </span>            : class nsAtom;
+<span class="lineNum">      41 </span>            : class nsIContent;
+<span class="lineNum">      42 </span>            : class nsIDocumentStateListener;
+<span class="lineNum">      43 </span>            : class nsIEditActionListener;
+<span class="lineNum">      44 </span>            : class nsIEditorObserver;
+<span class="lineNum">      45 </span>            : class nsINode;
+<span class="lineNum">      46 </span>            : class nsIPresShell;
+<span class="lineNum">      47 </span>            : class nsISupports;
+<span class="lineNum">      48 </span>            : class nsITransaction;
+<span class="lineNum">      49 </span>            : class nsITransactionListener;
+<span class="lineNum">      50 </span>            : class nsIWidget;
+<span class="lineNum">      51 </span>            : class nsRange;
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : namespace mozilla {
+<span class="lineNum">      54 </span>            : class AddStyleSheetTransaction;
+<span class="lineNum">      55 </span>            : class AutoSelectionRestorer;
+<span class="lineNum">      56 </span>            : class AutoTopLevelEditSubActionNotifier;
+<span class="lineNum">      57 </span>            : class AutoTransactionsConserveSelection;
+<span class="lineNum">      58 </span>            : class AutoUpdateViewBatch;
+<span class="lineNum">      59 </span>            : class ChangeAttributeTransaction;
+<span class="lineNum">      60 </span>            : class CompositionTransaction;
+<span class="lineNum">      61 </span>            : class CreateElementTransaction;
+<span class="lineNum">      62 </span>            : class CSSEditUtils;
+<span class="lineNum">      63 </span>            : class DeleteNodeTransaction;
+<span class="lineNum">      64 </span>            : class DeleteTextTransaction;
+<span class="lineNum">      65 </span>            : class EditAggregateTransaction;
+<span class="lineNum">      66 </span>            : class EditorEventListener;
+<span class="lineNum">      67 </span>            : class EditTransactionBase;
+<span class="lineNum">      68 </span>            : class ErrorResult;
+<span class="lineNum">      69 </span>            : class HTMLEditor;
+<span class="lineNum">      70 </span>            : class HTMLEditUtils;
+<span class="lineNum">      71 </span>            : class IMEContentObserver;
+<span class="lineNum">      72 </span>            : class InsertNodeTransaction;
+<span class="lineNum">      73 </span>            : class InsertTextTransaction;
+<span class="lineNum">      74 </span>            : class JoinNodeTransaction;
+<span class="lineNum">      75 </span>            : class PlaceholderTransaction;
+<span class="lineNum">      76 </span>            : class RemoveStyleSheetTransaction;
+<span class="lineNum">      77 </span>            : class SplitNodeResult;
+<span class="lineNum">      78 </span>            : class SplitNodeTransaction;
+<span class="lineNum">      79 </span>            : class TextComposition;
+<span class="lineNum">      80 </span>            : class TextEditor;
+<span class="lineNum">      81 </span>            : class TextEditRules;
+<span class="lineNum">      82 </span>            : class TextInputListener;
+<span class="lineNum">      83 </span>            : class TextServicesDocument;
+<span class="lineNum">      84 </span>            : class TypeInState;
+<span class="lineNum">      85 </span>            : class WSRunObject;
+<span class="lineNum">      86 </span>            : enum class EditSubAction : int32_t;
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span>            : namespace dom {
+<span class="lineNum">      89 </span>            : class DataTransfer;
+<span class="lineNum">      90 </span>            : class DragEvent;
+<span class="lineNum">      91 </span>            : class Element;
+<span class="lineNum">      92 </span>            : class EventTarget;
+<span class="lineNum">      93 </span>            : class Text;
+<span class="lineNum">      94 </span>            : } // namespace dom
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span>            : namespace widget {
+<span class="lineNum">      97 </span>            : struct IMEState;
+<span class="lineNum">      98 </span>            : } // namespace widget
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            : /**
+<span class="lineNum">     101 </span>            :  * CachedWeakPtr stores a pointer to a class which inherits nsIWeakReference.
+<span class="lineNum">     102 </span>            :  * If the instance of the class has already been destroyed, this returns
+<span class="lineNum">     103 </span>            :  * nullptr.  Otherwise, returns cached pointer.
+<span class="lineNum">     104 </span>            :  * If class T inherits nsISupports a lot, specify Base explicitly for avoiding
+<span class="lineNum">     105 </span>            :  * ambiguous conversion to nsISupports.
+<span class="lineNum">     106 </span>            :  */
+<span class="lineNum">     107 </span>            : template&lt;class T, class Base = nsISupports&gt;
+<span class="lineNum">     108 </span><span class="lineNoCov">          0 : class CachedWeakPtr final</span>
+<span class="lineNum">     109 </span>            : {
+<span class="lineNum">     110 </span>            : public:
+<span class="lineNum">     111 </span>            :   CachedWeakPtr&lt;T, Base&gt;()
+<span class="lineNum">     112 </span>            :     : mCache(nullptr)
+<span class="lineNum">     113 </span>            :   {
+<span class="lineNum">     114 </span>            :   }
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :   explicit CachedWeakPtr&lt;T, Base&gt;(T* aObject)</span>
+<span class="lineNum">     116 </span><span class="lineNoCov">          0 :   {</span>
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 :     mWeakPtr = do_GetWeakReference(static_cast&lt;Base*&gt;(aObject));</span>
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 :     mCache = aObject;</span>
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     120 </span>            :   explicit CachedWeakPtr&lt;T, Base&gt;(const nsCOMPtr&lt;T&gt;&amp; aOther)
+<span class="lineNum">     121 </span>            :   {
+<span class="lineNum">     122 </span>            :     mWeakPtr = do_GetWeakReference(static_cast&lt;Base*&gt;(aOther.get()));
+<span class="lineNum">     123 </span>            :     mCache = aOther;
+<span class="lineNum">     124 </span>            :   }
+<span class="lineNum">     125 </span>            :   explicit CachedWeakPtr&lt;T, Base&gt;(already_AddRefed&lt;T&gt;&amp; aOther)
+<span class="lineNum">     126 </span>            :   {
+<span class="lineNum">     127 </span>            :     RefPtr&lt;T&gt; other = aOther;
+<span class="lineNum">     128 </span>            :     mWeakPtr = do_GetWeakReference(static_cast&lt;Base*&gt;(other.get()));
+<span class="lineNum">     129 </span>            :     mCache = other;
+<span class="lineNum">     130 </span>            :   }
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span>            :   CachedWeakPtr&lt;T, Base&gt;&amp; operator=(T* aObject)
+<span class="lineNum">     133 </span>            :   {
+<span class="lineNum">     134 </span>            :     mWeakPtr = do_GetWeakReference(static_cast&lt;Base*&gt;(aObject));
+<span class="lineNum">     135 </span>            :     mCache = aObject;
+<span class="lineNum">     136 </span>            :     return *this;
+<span class="lineNum">     137 </span>            :   }
+<span class="lineNum">     138 </span>            :   CachedWeakPtr&lt;T, Base&gt;&amp; operator=(const nsCOMPtr&lt;T&gt;&amp; aOther)
+<span class="lineNum">     139 </span>            :   {
+<span class="lineNum">     140 </span>            :     mWeakPtr = do_GetWeakReference(static_cast&lt;Base*&gt;(aOther.get()));
+<span class="lineNum">     141 </span>            :     mCache = aOther;
+<span class="lineNum">     142 </span>            :     return *this;
+<span class="lineNum">     143 </span>            :   }
+<span class="lineNum">     144 </span>            :   CachedWeakPtr&lt;T, Base&gt;&amp; operator=(already_AddRefed&lt;T&gt;&amp; aOther)
+<span class="lineNum">     145 </span>            :   {
+<span class="lineNum">     146 </span>            :     RefPtr&lt;T&gt; other = aOther;
+<span class="lineNum">     147 </span>            :     mWeakPtr = do_GetWeakReference(static_cast&lt;Base*&gt;(other.get()));
+<span class="lineNum">     148 </span>            :     mCache = other;
+<span class="lineNum">     149 </span>            :     return *this;
+<span class="lineNum">     150 </span>            :   }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            :   bool IsAlive() const { return mWeakPtr &amp;&amp; mWeakPtr-&gt;IsAlive(); }
+<span class="lineNum">     153 </span>            : 
+<span class="lineNum">     154 </span>            :   explicit operator bool() const { return mWeakPtr; }
+<span class="lineNum">     155 </span>            :   operator T*() const { return get(); }
+<span class="lineNum">     156 </span><span class="lineNoCov">          0 :   T* get() const</span>
+<span class="lineNum">     157 </span>            :   {
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :     if (mCache &amp;&amp; !mWeakPtr-&gt;IsAlive()) {</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :       const_cast&lt;CachedWeakPtr&lt;T, Base&gt;*&gt;(this)-&gt;mCache = nullptr;</span>
+<span class="lineNum">     160 </span>            :     }
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :     return mCache;</span>
+<span class="lineNum">     162 </span>            :   }
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            : private:
+<span class="lineNum">     165 </span>            :   nsWeakPtr mWeakPtr;
+<span class="lineNum">     166 </span>            :   T* MOZ_NON_OWNING_REF mCache;
+<span class="lineNum">     167 </span>            : };
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            : #define kMOZEditorBogusNodeAttrAtom nsGkAtoms::mozeditorbogusnode
+<span class="lineNum">     170 </span>            : #define kMOZEditorBogusNodeValue NS_LITERAL_STRING(&quot;TRUE&quot;)
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            : /**
+<span class="lineNum">     173 </span>            :  * SplitAtEdges is for EditorBase::SplitNodeDeepWithTransaction(),
+<span class="lineNum">     174 </span>            :  * HTMLEditor::InsertNodeAtPoint()
+<span class="lineNum">     175 </span>            :  */
+<span class="lineNum">     176 </span>            : enum class SplitAtEdges
+<span class="lineNum">     177 </span>            : {
+<span class="lineNum">     178 </span>            :   // EditorBase::SplitNodeDeepWithTransaction() won't split container element
+<span class="lineNum">     179 </span>            :   // nodes at their edges.  I.e., when split point is start or end of
+<span class="lineNum">     180 </span>            :   // container, it won't be split.
+<span class="lineNum">     181 </span>            :   eDoNotCreateEmptyContainer,
+<span class="lineNum">     182 </span>            :   // EditorBase::SplitNodeDeepWithTransaction() always splits containers even
+<span class="lineNum">     183 </span>            :   // if the split point is at edge of a container.  E.g., if split point is
+<span class="lineNum">     184 </span>            :   // start of an inline element, empty inline element is created as a new left
+<span class="lineNum">     185 </span>            :   // node.
+<span class="lineNum">     186 </span>            :   eAllowToCreateEmptyContainer,
+<span class="lineNum">     187 </span>            : };
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span>            : /**
+<span class="lineNum">     190 </span>            :  * Implementation of an editor object.  it will be the controller/focal point
+<span class="lineNum">     191 </span>            :  * for the main editor services. i.e. the GUIManager, publishing, transaction
+<span class="lineNum">     192 </span>            :  * manager, event interfaces. the idea for the event interfaces is to have them
+<span class="lineNum">     193 </span>            :  * delegate the actual commands to the editor independent of the XPFE
+<span class="lineNum">     194 </span>            :  * implementation.
+<span class="lineNum">     195 </span>            :  */
+<span class="lineNum">     196 </span>            : class EditorBase : public nsIEditor
+<span class="lineNum">     197 </span>            :                  , public nsISelectionListener
+<span class="lineNum">     198 </span>            :                  , public nsSupportsWeakReference
+<span class="lineNum">     199 </span>            : {
+<span class="lineNum">     200 </span>            : public:
+<span class="lineNum">     201 </span>            :   /****************************************************************************
+<span class="lineNum">     202 </span>            :    * NOTE: DO NOT MAKE YOUR NEW METHODS PUBLIC IF they are called by other
+<span class="lineNum">     203 </span>            :    *       classes under libeditor except EditorEventListener and
+<span class="lineNum">     204 </span>            :    *       HTMLEditorEventListener because each public method which may fire
+<span class="lineNum">     205 </span>            :    *       eEditorInput event will need to instantiate new stack class for
+<span class="lineNum">     206 </span>            :    *       managing input type value of eEditorInput and cache some objects
+<span class="lineNum">     207 </span>            :    *       for smarter handling.  In other words, when you add new root
+<span class="lineNum">     208 </span>            :    *       method to edit the DOM tree, you can make your new method public.
+<span class="lineNum">     209 </span>            :    ****************************************************************************/
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span>            :   typedef dom::Element Element;
+<span class="lineNum">     212 </span>            :   typedef dom::Selection Selection;
+<span class="lineNum">     213 </span>            :   typedef dom::Text Text;
+<span class="lineNum">     214 </span>            : 
+<span class="lineNum">     215 </span>            :   NS_DECL_CYCLE_COLLECTING_ISUPPORTS
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :   NS_DECL_CYCLE_COLLECTION_CLASS_AMBIGUOUS(EditorBase, nsIEditor)</span>
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            :   // nsIEditor methods
+<span class="lineNum">     219 </span>            :   NS_DECL_NSIEDITOR
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span>            :   // nsISelectionListener method
+<span class="lineNum">     222 </span>            :   NS_DECL_NSISELECTIONLISTENER
+<span class="lineNum">     223 </span>            : 
+<span class="lineNum">     224 </span>            :   /**
+<span class="lineNum">     225 </span>            :    * The default constructor. This should suffice. the setting of the
+<span class="lineNum">     226 </span>            :    * interfaces is done after the construction of the editor class.
+<span class="lineNum">     227 </span>            :    */
+<span class="lineNum">     228 </span>            :   EditorBase();
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span>            :   /**
+<span class="lineNum">     231 </span>            :    * Init is to tell the implementation of nsIEditor to begin its services
+<span class="lineNum">     232 </span>            :    * @param aDoc          The dom document interface being observed
+<span class="lineNum">     233 </span>            :    * @param aRoot         This is the root of the editable section of this
+<span class="lineNum">     234 </span>            :    *                      document. If it is null then we get root
+<span class="lineNum">     235 </span>            :    *                      from document body.
+<span class="lineNum">     236 </span>            :    * @param aSelCon       this should be used to get the selection location
+<span class="lineNum">     237 </span>            :    *                      (will be null for HTML editors)
+<span class="lineNum">     238 </span>            :    * @param aFlags        A bitmask of flags for specifying the behavior
+<span class="lineNum">     239 </span>            :    *                      of the editor.
+<span class="lineNum">     240 </span>            :    */
+<span class="lineNum">     241 </span>            :   virtual nsresult Init(nsIDocument&amp; doc,
+<span class="lineNum">     242 </span>            :                         Element* aRoot,
+<span class="lineNum">     243 </span>            :                         nsISelectionController* aSelCon,
+<span class="lineNum">     244 </span>            :                         uint32_t aFlags,
+<span class="lineNum">     245 </span>            :                         const nsAString&amp; aInitialValue);
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            :   /**
+<span class="lineNum">     248 </span>            :    * PostCreate should be called after Init, and is the time that the editor
+<span class="lineNum">     249 </span>            :    * tells its documentStateObservers that the document has been created.
+<span class="lineNum">     250 </span>            :    */
+<span class="lineNum">     251 </span>            :   nsresult PostCreate();
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            :   /**
+<span class="lineNum">     254 </span>            :    * PreDestroy is called before the editor goes away, and gives the editor a
+<span class="lineNum">     255 </span>            :    * chance to tell its documentStateObservers that the document is going away.
+<span class="lineNum">     256 </span>            :    * @param aDestroyingFrames set to true when the frames being edited
+<span class="lineNum">     257 </span>            :    * are being destroyed (so there is no need to modify any nsISelections,
+<span class="lineNum">     258 </span>            :    * nor is it safe to do so)
+<span class="lineNum">     259 </span>            :    */
+<span class="lineNum">     260 </span>            :   virtual void PreDestroy(bool aDestroyingFrames);
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineCov">         22 :   bool IsInitialized() const { return !!mDocument; }</span>
+<span class="lineNum">     263 </span>            :   bool Destroyed() const { return mDidPreDestroy; }
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineCov">          4 :   nsIDocument* GetDocument() const { return mDocument; }</span>
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineCov">          4 :   nsIPresShell* GetPresShell() const</span>
+<span class="lineNum">     268 </span>            :   {
+<span class="lineNum">     269 </span><span class="lineCov">         12 :     return mDocument ? mDocument-&gt;GetShell() : nullptr;</span>
+<span class="lineNum">     270 </span>            :   }
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :   nsPresContext* GetPresContext() const</span>
+<span class="lineNum">     272 </span>            :   {
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :     nsIPresShell* presShell = GetPresShell();</span>
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :     return presShell ? presShell-&gt;GetPresContext() : nullptr;</span>
+<span class="lineNum">     275 </span>            :   }
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span>            :   already_AddRefed&lt;nsIWidget&gt; GetWidget();
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span><span class="lineCov">         16 :   nsISelectionController* GetSelectionController() const</span>
+<span class="lineNum">     280 </span>            :   {
+<span class="lineNum">     281 </span><span class="lineCov">         32 :     if (mSelectionController) {</span>
+<span class="lineNum">     282 </span>            :       return mSelectionController;
+<span class="lineNum">     283 </span>            :     }
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :     if (!mDocument) {</span>
+<span class="lineNum">     285 </span>            :       return nullptr;
+<span class="lineNum">     286 </span>            :     }
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :     nsIPresShell* presShell = mDocument-&gt;GetShell();</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :     if (!presShell) {</span>
+<span class="lineNum">     289 </span>            :       return nullptr;
+<span class="lineNum">     290 </span>            :     }
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :     nsISelectionController* sc = static_cast&lt;PresShell*&gt;(presShell);</span>
+<span class="lineNum">     292 </span><span class="lineNoCov">          0 :     return sc;</span>
+<span class="lineNum">     293 </span>            :   }
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span>            :   nsresult GetSelection(SelectionType aSelectionType,
+<span class="lineNum">     296 </span>            :                         Selection** aSelection);
+<span class="lineNum">     297 </span>            : 
+<span class="lineNum">     298 </span><span class="lineCov">         14 :   Selection* GetSelection(SelectionType aSelectionType =</span>
+<span class="lineNum">     299 </span>            :                                           SelectionType::eNormal)
+<span class="lineNum">     300 </span>            :   {
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :     nsISelectionController* sc = GetSelectionController();</span>
+<span class="lineNum">     302 </span><span class="lineCov">         14 :     if (!sc) {</span>
+<span class="lineNum">     303 </span>            :       return nullptr;
+<span class="lineNum">     304 </span>            :     }
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :     Selection* selection = sc-&gt;GetSelection(ToRawSelectionType(aSelectionType));</span>
+<span class="lineNum">     306 </span><span class="lineCov">         14 :     return selection;</span>
+<span class="lineNum">     307 </span>            :   }
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span>            :   /**
+<span class="lineNum">     310 </span>            :    * Fast non-refcounting editor root element accessor
+<span class="lineNum">     311 </span>            :    */
+<span class="lineNum">     312 </span><span class="lineCov">         20 :   Element* GetRoot() const { return mRootElement; }</span>
+<span class="lineNum">     313 </span>            : 
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :   RangeUpdater&amp; RangeUpdaterRef() { return mRangeUpdater; }</span>
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span>            :   /**
+<span class="lineNum">     317 </span>            :    * Set or unset TextInputListener.  If setting non-nullptr when the editor
+<span class="lineNum">     318 </span>            :    * already has a TextInputListener, this will crash in debug build.
+<span class="lineNum">     319 </span>            :    */
+<span class="lineNum">     320 </span>            :   void SetTextInputListener(TextInputListener* aTextInputListener);
+<span class="lineNum">     321 </span>            : 
+<span class="lineNum">     322 </span>            :   /**
+<span class="lineNum">     323 </span>            :    * Set or unset IMEContentObserver.  If setting non-nullptr when the editor
+<span class="lineNum">     324 </span>            :    * already has an IMEContentObserver, this will crash in debug build.
+<span class="lineNum">     325 </span>            :    */
+<span class="lineNum">     326 </span>            :   void SetIMEContentObserver(IMEContentObserver* aIMEContentObserver);
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span>            :   /**
+<span class="lineNum">     329 </span>            :    * Returns current composition.
+<span class="lineNum">     330 </span>            :    */
+<span class="lineNum">     331 </span>            :   TextComposition* GetComposition() const;
+<span class="lineNum">     332 </span>            : 
+<span class="lineNum">     333 </span>            :   /**
+<span class="lineNum">     334 </span>            :    * Get preferred IME status of current widget.
+<span class="lineNum">     335 </span>            :    */
+<span class="lineNum">     336 </span>            :   virtual nsresult GetPreferredIMEState(widget::IMEState* aState);
+<span class="lineNum">     337 </span>            : 
+<span class="lineNum">     338 </span>            :   /**
+<span class="lineNum">     339 </span>            :    * Returns true if there is composition string and not fixed.
+<span class="lineNum">     340 </span>            :    */
+<span class="lineNum">     341 </span>            :   bool IsIMEComposing() const;
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span>            :   /**
+<span class="lineNum">     344 </span>            :    * Commit composition if there is.
+<span class="lineNum">     345 </span>            :    * Note that when there is a composition, this requests to commit composition
+<span class="lineNum">     346 </span>            :    * to native IME.  Therefore, when there is composition, this can do anything.
+<span class="lineNum">     347 </span>            :    * For example, the editor instance, the widget or the process itself may
+<span class="lineNum">     348 </span>            :    * be destroyed.
+<span class="lineNum">     349 </span>            :    */
+<span class="lineNum">     350 </span>            :   nsresult CommitComposition();
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span>            :   /**
+<span class="lineNum">     353 </span>            :    * ToggleTextDirection() toggles text-direction of the root element.
+<span class="lineNum">     354 </span>            :    */
+<span class="lineNum">     355 </span>            :   nsresult ToggleTextDirection();
+<span class="lineNum">     356 </span>            : 
+<span class="lineNum">     357 </span>            :   /**
+<span class="lineNum">     358 </span>            :    * SwitchTextDirectionTo() sets the text-direction of the root element to
+<span class="lineNum">     359 </span>            :    * LTR or RTL.
+<span class="lineNum">     360 </span>            :    */
+<span class="lineNum">     361 </span>            :   enum class TextDirection
+<span class="lineNum">     362 </span>            :   {
+<span class="lineNum">     363 </span>            :     eLTR,
+<span class="lineNum">     364 </span>            :     eRTL,
+<span class="lineNum">     365 </span>            :   };
+<span class="lineNum">     366 </span>            :   void SwitchTextDirectionTo(TextDirection aTextDirection);
+<span class="lineNum">     367 </span>            : 
+<span class="lineNum">     368 </span>            :   /**
+<span class="lineNum">     369 </span>            :    * Finalizes selection and caret for the editor.
+<span class="lineNum">     370 </span>            :    */
+<span class="lineNum">     371 </span>            :   nsresult FinalizeSelection();
+<span class="lineNum">     372 </span>            : 
+<span class="lineNum">     373 </span>            :   /**
+<span class="lineNum">     374 </span>            :    * Returns true if selection is in an editable element and both the range
+<span class="lineNum">     375 </span>            :    * start and the range end are editable.  E.g., even if the selection range
+<span class="lineNum">     376 </span>            :    * includes non-editable elements, returns true when one of common ancestors
+<span class="lineNum">     377 </span>            :    * of the range start and the range end is editable.  Otherwise, false.
+<span class="lineNum">     378 </span>            :    */
+<span class="lineNum">     379 </span>            :   bool IsSelectionEditable();
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span>            :   /**
+<span class="lineNum">     382 </span>            :    * Returns number of undo or redo items.
+<span class="lineNum">     383 </span>            :    */
+<span class="lineNum">     384 </span><span class="lineCov">          1 :   size_t NumberOfUndoItems() const</span>
+<span class="lineNum">     385 </span>            :   {
+<span class="lineNum">     386 </span><span class="lineCov">          3 :     return mTransactionManager ? mTransactionManager-&gt;NumberOfUndoItems() : 0;</span>
+<span class="lineNum">     387 </span>            :   }
+<span class="lineNum">     388 </span><span class="lineCov">          1 :   size_t NumberOfRedoItems() const</span>
+<span class="lineNum">     389 </span>            :   {
+<span class="lineNum">     390 </span><span class="lineCov">          3 :     return mTransactionManager ? mTransactionManager-&gt;NumberOfRedoItems() : 0;</span>
+<span class="lineNum">     391 </span>            :   }
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span>            :   /**
+<span class="lineNum">     394 </span>            :    * Returns true if this editor can store transactions for undo/redo.
+<span class="lineNum">     395 </span>            :    */
+<span class="lineNum">     396 </span>            :   bool IsUndoRedoEnabled() const
+<span class="lineNum">     397 </span>            :   {
+<span class="lineNum">     398 </span><span class="lineCov">          4 :     return !!mTransactionManager;</span>
+<span class="lineNum">     399 </span>            :   }
+<span class="lineNum">     400 </span>            : 
+<span class="lineNum">     401 </span>            :   /**
+<span class="lineNum">     402 </span>            :    * Return true if it's possible to undo/redo right now.
+<span class="lineNum">     403 </span>            :    */
+<span class="lineNum">     404 </span><span class="lineCov">          1 :   bool CanUndo() const</span>
+<span class="lineNum">     405 </span>            :   {
+<span class="lineNum">     406 </span><span class="lineCov">          1 :     return IsUndoRedoEnabled() &amp;&amp; NumberOfUndoItems() &gt; 0;</span>
+<span class="lineNum">     407 </span>            :   }
+<span class="lineNum">     408 </span><span class="lineCov">          1 :   bool CanRedo() const</span>
+<span class="lineNum">     409 </span>            :   {
+<span class="lineNum">     410 </span><span class="lineCov">          1 :     return IsUndoRedoEnabled() &amp;&amp; NumberOfRedoItems() &gt; 0;</span>
+<span class="lineNum">     411 </span>            :   }
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span>            :   /**
+<span class="lineNum">     414 </span>            :    * Enables or disables undo/redo feature.  Returns true if it succeeded,
+<span class="lineNum">     415 </span>            :    * otherwise, e.g., we're undoing or redoing, returns false.
+<span class="lineNum">     416 </span>            :    */
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :   bool EnableUndoRedo(int32_t aMaxTransactionCount = -1)</span>
+<span class="lineNum">     418 </span>            :   {
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :     if (!mTransactionManager) {</span>
+<span class="lineNum">     420 </span><span class="lineCov">          1 :       mTransactionManager = new TransactionManager();</span>
+<span class="lineNum">     421 </span>            :     }
+<span class="lineNum">     422 </span><span class="lineCov">          2 :     return mTransactionManager-&gt;EnableUndoRedo(aMaxTransactionCount);</span>
+<span class="lineNum">     423 </span>            :   }
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :   bool DisableUndoRedo()</span>
+<span class="lineNum">     425 </span>            :   {
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :     if (!mTransactionManager) {</span>
+<span class="lineNum">     427 </span>            :       return true;
+<span class="lineNum">     428 </span>            :     }
+<span class="lineNum">     429 </span>            :     // XXX Even we clear the transaction manager, IsUndoRedoEnabled() keep
+<span class="lineNum">     430 </span>            :     //     returning true...
+<span class="lineNum">     431 </span><span class="lineNoCov">          0 :     return mTransactionManager-&gt;DisableUndoRedo();</span>
+<span class="lineNum">     432 </span>            :   }
+<span class="lineNum">     433 </span><span class="lineCov">          1 :   bool ClearUndoRedo()</span>
+<span class="lineNum">     434 </span>            :   {
+<span class="lineNum">     435 </span><span class="lineCov">          2 :     if (!mTransactionManager) {</span>
+<span class="lineNum">     436 </span>            :       return true;
+<span class="lineNum">     437 </span>            :     }
+<span class="lineNum">     438 </span><span class="lineNoCov">          0 :     return mTransactionManager-&gt;ClearUndoRedo();</span>
+<span class="lineNum">     439 </span>            :   }
+<span class="lineNum">     440 </span>            : 
+<span class="lineNum">     441 </span>            :   /**
+<span class="lineNum">     442 </span>            :    * Adds or removes transaction listener to or from the transaction manager.
+<span class="lineNum">     443 </span>            :    * Note that TransactionManager does not check if the listener is in the
+<span class="lineNum">     444 </span>            :    * array.  So, caller of AddTransactionListener() needs to manage if it's
+<span class="lineNum">     445 </span>            :    * already been registered to the transaction manager.
+<span class="lineNum">     446 </span>            :    */
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :   bool AddTransactionListener(nsITransactionListener&amp; aListener)</span>
+<span class="lineNum">     448 </span>            :   {
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :     if (!mTransactionManager) {</span>
+<span class="lineNum">     450 </span>            :       return false;
+<span class="lineNum">     451 </span>            :     }
+<span class="lineNum">     452 </span><span class="lineNoCov">          0 :     return mTransactionManager-&gt;AddTransactionListener(aListener);</span>
+<span class="lineNum">     453 </span>            :   }
+<span class="lineNum">     454 </span><span class="lineNoCov">          0 :   bool RemoveTransactionListener(nsITransactionListener&amp; aListener)</span>
+<span class="lineNum">     455 </span>            :   {
+<span class="lineNum">     456 </span><span class="lineNoCov">          0 :     if (!mTransactionManager) {</span>
+<span class="lineNum">     457 </span>            :       return false;
+<span class="lineNum">     458 </span>            :     }
+<span class="lineNum">     459 </span><span class="lineNoCov">          0 :     return mTransactionManager-&gt;RemoveTransactionListener(aListener);</span>
+<span class="lineNum">     460 </span>            :   }
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span>            :   virtual nsresult HandleKeyPressEvent(WidgetKeyboardEvent* aKeyboardEvent);
+<span class="lineNum">     463 </span>            : 
+<span class="lineNum">     464 </span>            :   virtual dom::EventTarget* GetDOMEventTarget() = 0;
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span>            :   /**
+<span class="lineNum">     467 </span>            :    * Accessor methods to flags.
+<span class="lineNum">     468 </span>            :    */
+<span class="lineNum">     469 </span>            :   uint32_t Flags() const { return mFlags; }
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :   nsresult AddFlags(uint32_t aFlags)</span>
+<span class="lineNum">     472 </span>            :   {
+<span class="lineNum">     473 </span><span class="lineNoCov">          0 :     const uint32_t kOldFlags = Flags();</span>
+<span class="lineNum">     474 </span><span class="lineNoCov">          0 :     const uint32_t kNewFlags = (kOldFlags | aFlags);</span>
+<span class="lineNum">     475 </span><span class="lineNoCov">          0 :     if (kNewFlags == kOldFlags) {</span>
+<span class="lineNum">     476 </span>            :       return NS_OK;
+<span class="lineNum">     477 </span>            :     }
+<span class="lineNum">     478 </span><span class="lineNoCov">          0 :     return SetFlags(kNewFlags); // virtual call and may be expensive.</span>
+<span class="lineNum">     479 </span>            :   }
+<span class="lineNum">     480 </span><span class="lineCov">          1 :   nsresult RemoveFlags(uint32_t aFlags)</span>
+<span class="lineNum">     481 </span>            :   {
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :     const uint32_t kOldFlags = Flags();</span>
+<span class="lineNum">     483 </span><span class="lineCov">          1 :     const uint32_t kNewFlags = (kOldFlags &amp; ~aFlags);</span>
+<span class="lineNum">     484 </span><span class="lineCov">          1 :     if (kNewFlags == kOldFlags) {</span>
+<span class="lineNum">     485 </span>            :       return NS_OK;
+<span class="lineNum">     486 </span>            :     }
+<span class="lineNum">     487 </span><span class="lineCov">          1 :     return SetFlags(kNewFlags); // virtual call and may be expensive.</span>
+<span class="lineNum">     488 </span>            :   }
+<span class="lineNum">     489 </span>            :   nsresult AddAndRemoveFlags(uint32_t aAddingFlags, uint32_t aRemovingFlags)
+<span class="lineNum">     490 </span>            :   {
+<span class="lineNum">     491 </span>            :     MOZ_ASSERT(!(aAddingFlags &amp; aRemovingFlags),
+<span class="lineNum">     492 </span>            :                &quot;Same flags are specified both adding and removing&quot;);
+<span class="lineNum">     493 </span>            :     const uint32_t kOldFlags = Flags();
+<span class="lineNum">     494 </span>            :     const uint32_t kNewFlags = ((kOldFlags | aAddingFlags) &amp; ~aRemovingFlags);
+<span class="lineNum">     495 </span>            :     if (kNewFlags == kOldFlags) {
+<span class="lineNum">     496 </span>            :       return NS_OK;
+<span class="lineNum">     497 </span>            :     }
+<span class="lineNum">     498 </span>            :     return SetFlags(kNewFlags); // virtual call and may be expensive.
+<span class="lineNum">     499 </span>            :   }
+<span class="lineNum">     500 </span>            : 
+<span class="lineNum">     501 </span>            :   bool IsPlaintextEditor() const
+<span class="lineNum">     502 </span>            :   {
+<span class="lineNum">     503 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorPlaintextMask) != 0;</span>
+<span class="lineNum">     504 </span>            :   }
+<span class="lineNum">     505 </span>            : 
+<span class="lineNum">     506 </span>            :   bool IsSingleLineEditor() const
+<span class="lineNum">     507 </span>            :   {
+<span class="lineNum">     508 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorSingleLineMask) != 0;</span>
+<span class="lineNum">     509 </span>            :   }
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span>            :   bool IsPasswordEditor() const
+<span class="lineNum">     512 </span>            :   {
+<span class="lineNum">     513 </span><span class="lineCov">         10 :     return (mFlags &amp; nsIPlaintextEditor::eEditorPasswordMask) != 0;</span>
+<span class="lineNum">     514 </span>            :   }
+<span class="lineNum">     515 </span>            : 
+<span class="lineNum">     516 </span>            :   // FYI: Both IsRightToLeft() and IsLeftToRight() may return false if
+<span class="lineNum">     517 </span>            :   //      the editor inherits the content node's direction.
+<span class="lineNum">     518 </span>            :   bool IsRightToLeft() const
+<span class="lineNum">     519 </span>            :   {
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorRightToLeft) != 0;</span>
+<span class="lineNum">     521 </span>            :   }
+<span class="lineNum">     522 </span>            :   bool IsLeftToRight() const
+<span class="lineNum">     523 </span>            :   {
+<span class="lineNum">     524 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorLeftToRight) != 0;</span>
+<span class="lineNum">     525 </span>            :   }
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span>            :   bool IsReadonly() const
+<span class="lineNum">     528 </span>            :   {
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorReadonlyMask) != 0;</span>
+<span class="lineNum">     530 </span>            :   }
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span>            :   bool IsDisabled() const
+<span class="lineNum">     533 </span>            :   {
+<span class="lineNum">     534 </span><span class="lineCov">          1 :     return (mFlags &amp; nsIPlaintextEditor::eEditorDisabledMask) != 0;</span>
+<span class="lineNum">     535 </span>            :   }
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span>            :   bool IsInputFiltered() const
+<span class="lineNum">     538 </span>            :   {
+<span class="lineNum">     539 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorFilterInputMask) != 0;</span>
+<span class="lineNum">     540 </span>            :   }
+<span class="lineNum">     541 </span>            : 
+<span class="lineNum">     542 </span>            :   bool IsMailEditor() const
+<span class="lineNum">     543 </span>            :   {
+<span class="lineNum">     544 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorMailMask) != 0;</span>
+<span class="lineNum">     545 </span>            :   }
+<span class="lineNum">     546 </span>            : 
+<span class="lineNum">     547 </span>            :   bool IsWrapHackEnabled() const
+<span class="lineNum">     548 </span>            :   {
+<span class="lineNum">     549 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorEnableWrapHackMask) != 0;</span>
+<span class="lineNum">     550 </span>            :   }
+<span class="lineNum">     551 </span>            : 
+<span class="lineNum">     552 </span>            :   bool IsFormWidget() const
+<span class="lineNum">     553 </span>            :   {
+<span class="lineNum">     554 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorWidgetMask) != 0;</span>
+<span class="lineNum">     555 </span>            :   }
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span>            :   bool NoCSS() const
+<span class="lineNum">     558 </span>            :   {
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorNoCSSMask) != 0;</span>
+<span class="lineNum">     560 </span>            :   }
+<span class="lineNum">     561 </span>            : 
+<span class="lineNum">     562 </span>            :   bool IsInteractionAllowed() const
+<span class="lineNum">     563 </span>            :   {
+<span class="lineNum">     564 </span><span class="lineCov">          1 :     return (mFlags &amp; nsIPlaintextEditor::eEditorAllowInteraction) != 0;</span>
+<span class="lineNum">     565 </span>            :   }
+<span class="lineNum">     566 </span>            : 
+<span class="lineNum">     567 </span>            :   bool DontEchoPassword() const
+<span class="lineNum">     568 </span>            :   {
+<span class="lineNum">     569 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorDontEchoPassword) != 0;</span>
+<span class="lineNum">     570 </span>            :   }
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span>            :   bool ShouldSkipSpellCheck() const
+<span class="lineNum">     573 </span>            :   {
+<span class="lineNum">     574 </span><span class="lineNoCov">          0 :     return (mFlags &amp; nsIPlaintextEditor::eEditorSkipSpellCheck) != 0;</span>
+<span class="lineNum">     575 </span>            :   }
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span><span class="lineNoCov">          0 :   bool IsTabbable() const</span>
+<span class="lineNum">     578 </span>            :   {
+<span class="lineNum">     579 </span><span class="lineNoCov">          0 :     return IsSingleLineEditor() || IsPasswordEditor() || IsFormWidget() ||</span>
+<span class="lineNum">     580 </span><span class="lineNoCov">          0 :            IsInteractionAllowed();</span>
+<span class="lineNum">     581 </span>            :   }
+<span class="lineNum">     582 </span>            : 
+<span class="lineNum">     583 </span>            :   bool HasIndependentSelection() const
+<span class="lineNum">     584 </span>            :   {
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :     return !!mSelectionController;</span>
+<span class="lineNum">     586 </span>            :   }
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span>            :   bool IsModifiable() const
+<span class="lineNum">     589 </span>            :   {
+<span class="lineNum">     590 </span><span class="lineCov">          2 :     return !IsReadonly();</span>
+<span class="lineNum">     591 </span>            :   }
+<span class="lineNum">     592 </span>            : 
+<span class="lineNum">     593 </span>            :   /**
+<span class="lineNum">     594 </span>            :    * IsInEditSubAction() return true while the instance is handling an edit
+<span class="lineNum">     595 </span>            :    * sub-action.  Otherwise, false.
+<span class="lineNum">     596 </span>            :    */
+<span class="lineNum">     597 </span>            :   bool IsInEditSubAction() const { return mIsInEditSubAction; }
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span>            :   /**
+<span class="lineNum">     600 </span>            :    * SuppressDispatchingInputEvent() suppresses or unsuppresses dispatching
+<span class="lineNum">     601 </span>            :    * &quot;input&quot; event.
+<span class="lineNum">     602 </span>            :    */
+<span class="lineNum">     603 </span>            :   void SuppressDispatchingInputEvent(bool aSuppress)
+<span class="lineNum">     604 </span>            :   {
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :     mDispatchInputEvent = !aSuppress;</span>
+<span class="lineNum">     606 </span>            :   }
+<span class="lineNum">     607 </span>            : 
+<span class="lineNum">     608 </span>            :   /**
+<span class="lineNum">     609 </span>            :    * IsSuppressingDispatchingInputEvent() returns true if the editor stops
+<span class="lineNum">     610 </span>            :    * dispatching input event.  Otherwise, false.
+<span class="lineNum">     611 </span>            :    */
+<span class="lineNum">     612 </span>            :   bool IsSuppressingDispatchingInputEvent() const
+<span class="lineNum">     613 </span>            :   {
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :     return !mDispatchInputEvent;</span>
+<span class="lineNum">     615 </span>            :   }
+<span class="lineNum">     616 </span>            : 
+<span class="lineNum">     617 </span>            :   /**
+<span class="lineNum">     618 </span>            :    * Returns true if markNodeDirty() has any effect.  Returns false if
+<span class="lineNum">     619 </span>            :    * markNodeDirty() is a no-op.
+<span class="lineNum">     620 </span>            :    */
+<span class="lineNum">     621 </span><span class="lineCov">          1 :   bool OutputsMozDirty() const</span>
+<span class="lineNum">     622 </span>            :   {
+<span class="lineNum">     623 </span>            :     // Return true for Composer (!IsInteractionAllowed()) or mail
+<span class="lineNum">     624 </span>            :     // (IsMailEditor()), but false for webpages.
+<span class="lineNum">     625 </span><span class="lineCov">          2 :     return !IsInteractionAllowed() || IsMailEditor();</span>
+<span class="lineNum">     626 </span>            :   }
+<span class="lineNum">     627 </span>            : 
+<span class="lineNum">     628 </span>            :   /**
+<span class="lineNum">     629 </span>            :    * Get the focused content, if we're focused.  Returns null otherwise.
+<span class="lineNum">     630 </span>            :    */
+<span class="lineNum">     631 </span>            :   virtual nsIContent* GetFocusedContent();
+<span class="lineNum">     632 </span>            : 
+<span class="lineNum">     633 </span>            :   /**
+<span class="lineNum">     634 </span>            :    * Get the focused content for the argument of some IMEStateManager's
+<span class="lineNum">     635 </span>            :    * methods.
+<span class="lineNum">     636 </span>            :    */
+<span class="lineNum">     637 </span>            :   virtual already_AddRefed&lt;nsIContent&gt; GetFocusedContentForIME();
+<span class="lineNum">     638 </span>            : 
+<span class="lineNum">     639 </span>            :   /**
+<span class="lineNum">     640 </span>            :    * Whether the aGUIEvent should be handled by this editor or not.  When this
+<span class="lineNum">     641 </span>            :    * returns false, The aGUIEvent shouldn't be handled on this editor,
+<span class="lineNum">     642 </span>            :    * i.e., The aGUIEvent should be handled by another inner editor or ancestor
+<span class="lineNum">     643 </span>            :    * elements.
+<span class="lineNum">     644 </span>            :    */
+<span class="lineNum">     645 </span>            :   virtual bool IsAcceptableInputEvent(WidgetGUIEvent* aGUIEvent);
+<span class="lineNum">     646 </span>            : 
+<span class="lineNum">     647 </span>            :   /**
+<span class="lineNum">     648 </span>            :    * FindSelectionRoot() returns a selection root of this editor when aNode
+<span class="lineNum">     649 </span>            :    * gets focus.  aNode must be a content node or a document node.  When the
+<span class="lineNum">     650 </span>            :    * target isn't a part of this editor, returns nullptr.  If this is for
+<span class="lineNum">     651 </span>            :    * designMode, you should set the document node to aNode except that an
+<span class="lineNum">     652 </span>            :    * element in the document has focus.
+<span class="lineNum">     653 </span>            :    */
+<span class="lineNum">     654 </span>            :   virtual already_AddRefed&lt;nsIContent&gt; FindSelectionRoot(nsINode* aNode);
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span>            :   /**
+<span class="lineNum">     657 </span>            :    * This method has to be called by EditorEventListener::Focus.
+<span class="lineNum">     658 </span>            :    * All actions that have to be done when the editor is focused needs to be
+<span class="lineNum">     659 </span>            :    * added here.
+<span class="lineNum">     660 </span>            :    */
+<span class="lineNum">     661 </span>            :   void OnFocus(dom::EventTarget* aFocusEventTarget);
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span>            :   /** Resyncs spellchecking state (enabled/disabled).  This should be called
+<span class="lineNum">     664 </span>            :     * when anything that affects spellchecking state changes, such as the
+<span class="lineNum">     665 </span>            :     * spellcheck attribute value.
+<span class="lineNum">     666 </span>            :     */
+<span class="lineNum">     667 </span>            :   void SyncRealTimeSpell();
+<span class="lineNum">     668 </span>            : 
+<span class="lineNum">     669 </span>            : protected: // May be called by friends.
+<span class="lineNum">     670 </span>            :   /****************************************************************************
+<span class="lineNum">     671 </span>            :    * Some classes like TextEditRules, HTMLEditRules, WSRunObject which are
+<span class="lineNum">     672 </span>            :    * part of handling edit actions are allowed to call the following protected
+<span class="lineNum">     673 </span>            :    * methods.  However, those methods won't prepare caches of some objects
+<span class="lineNum">     674 </span>            :    * which are necessary for them.  So, if you want some following methods
+<span class="lineNum">     675 </span>            :    * to do that for you, you need to create a wrapper method in public scope
+<span class="lineNum">     676 </span>            :    * and call it.
+<span class="lineNum">     677 </span>            :    ****************************************************************************/
+<span class="lineNum">     678 </span>            : 
+<span class="lineNum">     679 </span>            :   /**
+<span class="lineNum">     680 </span>            :    * InsertTextWithTransaction() inserts aStringToInsert to aPointToInsert or
+<span class="lineNum">     681 </span>            :    * better insertion point around it.  If aPointToInsert isn't in a text node,
+<span class="lineNum">     682 </span>            :    * this method looks for the nearest point in a text node with
+<span class="lineNum">     683 </span>            :    * FindBetterInsertionPoint().  If there is no text node, this creates
+<span class="lineNum">     684 </span>            :    * new text node and put aStringToInsert to it.
+<span class="lineNum">     685 </span>            :    *
+<span class="lineNum">     686 </span>            :    * @param aDocument       The document of this editor.
+<span class="lineNum">     687 </span>            :    * @param aStringToInsert The string to insert.
+<span class="lineNum">     688 </span>            :    * @param aPointToInser   The point to insert aStringToInsert.
+<span class="lineNum">     689 </span>            :    *                        Must be valid DOM point.
+<span class="lineNum">     690 </span>            :    * @param aPointAfterInsertedString
+<span class="lineNum">     691 </span>            :    *                        The point after inserted aStringToInsert.
+<span class="lineNum">     692 </span>            :    *                        So, when this method actually inserts string,
+<span class="lineNum">     693 </span>            :    *                        this is set to a point in the text node.
+<span class="lineNum">     694 </span>            :    *                        Otherwise, this may be set to aPointToInsert.
+<span class="lineNum">     695 </span>            :    * @return                When this succeeds to insert the string or
+<span class="lineNum">     696 </span>            :    *                        does nothing during composition, returns NS_OK.
+<span class="lineNum">     697 </span>            :    *                        Otherwise, an error code.
+<span class="lineNum">     698 </span>            :    */
+<span class="lineNum">     699 </span>            :   virtual nsresult
+<span class="lineNum">     700 </span>            :   InsertTextWithTransaction(nsIDocument&amp; aDocument,
+<span class="lineNum">     701 </span>            :                             const nsAString&amp; aStringToInsert,
+<span class="lineNum">     702 </span>            :                             const EditorRawDOMPoint&amp; aPointToInsert,
+<span class="lineNum">     703 </span>            :                             EditorRawDOMPoint* aPointAfterInsertedString =
+<span class="lineNum">     704 </span>            :                               nullptr);
+<span class="lineNum">     705 </span>            : 
+<span class="lineNum">     706 </span>            :   /**
+<span class="lineNum">     707 </span>            :    * InsertTextIntoTextNodeWithTransaction() inserts aStringToInsert into
+<span class="lineNum">     708 </span>            :    * aOffset of aTextNode with transaction.
+<span class="lineNum">     709 </span>            :    *
+<span class="lineNum">     710 </span>            :    * @param aStringToInsert     String to be inserted.
+<span class="lineNum">     711 </span>            :    * @param aTextNode           Text node to contain aStringToInsert.
+<span class="lineNum">     712 </span>            :    * @param aOffset             Offset at insertion point in aTextNode.
+<span class="lineNum">     713 </span>            :    * @param aSuppressIME        true if it's not a part of IME composition.
+<span class="lineNum">     714 </span>            :    *                            E.g., adjusting whitespaces during composition.
+<span class="lineNum">     715 </span>            :    *                            false, otherwise.
+<span class="lineNum">     716 </span>            :    */
+<span class="lineNum">     717 </span>            :   nsresult
+<span class="lineNum">     718 </span>            :   InsertTextIntoTextNodeWithTransaction(const nsAString&amp; aStringToInsert,
+<span class="lineNum">     719 </span>            :                                         Text&amp; aTextNode, int32_t aOffset,
+<span class="lineNum">     720 </span>            :                                         bool aSuppressIME = false);
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span>            :   nsresult SetTextImpl(Selection&amp; aSelection,
+<span class="lineNum">     723 </span>            :                        const nsAString&amp; aString,
+<span class="lineNum">     724 </span>            :                        Text&amp; aTextNode);
+<span class="lineNum">     725 </span>            : 
+<span class="lineNum">     726 </span>            :   /**
+<span class="lineNum">     727 </span>            :    * DeleteNodeWithTransaction() removes aNode from the DOM tree.
+<span class="lineNum">     728 </span>            :    *
+<span class="lineNum">     729 </span>            :    * @param aNode       The node which will be removed form the DOM tree.
+<span class="lineNum">     730 </span>            :    */
+<span class="lineNum">     731 </span>            :   nsresult DeleteNodeWithTransaction(nsINode&amp; aNode);
+<span class="lineNum">     732 </span>            : 
+<span class="lineNum">     733 </span>            :   /**
+<span class="lineNum">     734 </span>            :    * InsertNodeWithTransaction() inserts aContentToInsert before the child
+<span class="lineNum">     735 </span>            :    * specified by aPointToInsert.
+<span class="lineNum">     736 </span>            :    *
+<span class="lineNum">     737 </span>            :    * @param aContentToInsert    The node to be inserted.
+<span class="lineNum">     738 </span>            :    * @param aPointToInsert      The insertion point of aContentToInsert.
+<span class="lineNum">     739 </span>            :    *                            If this refers end of the container, the
+<span class="lineNum">     740 </span>            :    *                            transaction will append the node to the
+<span class="lineNum">     741 </span>            :    *                            container.  Otherwise, will insert the node
+<span class="lineNum">     742 </span>            :    *                            before child node referred by this.
+<span class="lineNum">     743 </span>            :    */
+<span class="lineNum">     744 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">     745 </span>            :   nsresult
+<span class="lineNum">     746 </span>            :   InsertNodeWithTransaction(nsIContent&amp; aContentToInsert,
+<span class="lineNum">     747 </span>            :                             const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPointToInsert);
+<span class="lineNum">     748 </span>            : 
+<span class="lineNum">     749 </span>            :   /**
+<span class="lineNum">     750 </span>            :    * ReplaceContainerWithTransaction() creates new element whose name is
+<span class="lineNum">     751 </span>            :    * aTagName, moves all children in aOldContainer to the new element, then,
+<span class="lineNum">     752 </span>            :    * removes aOldContainer from the DOM tree.
+<span class="lineNum">     753 </span>            :    *
+<span class="lineNum">     754 </span>            :    * @param aOldContainer       The element node which should be replaced
+<span class="lineNum">     755 </span>            :    *                            with new element.
+<span class="lineNum">     756 </span>            :    * @param aTagName            The name of new element node.
+<span class="lineNum">     757 </span>            :    */
+<span class="lineNum">     758 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :   ReplaceContainerWithTransaction(Element&amp; aOldContainer,</span>
+<span class="lineNum">     760 </span>            :                                   nsAtom&amp; aTagName)
+<span class="lineNum">     761 </span>            :   {
+<span class="lineNum">     762 </span>            :     return ReplaceContainerWithTransactionInternal(aOldContainer, aTagName,
+<span class="lineNum">     763 </span>            :                                                    *nsGkAtoms::_empty,
+<span class="lineNum">     764 </span><span class="lineNoCov">          0 :                                                    EmptyString(), false);</span>
+<span class="lineNum">     765 </span>            :   }
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span>            :   /**
+<span class="lineNum">     768 </span>            :    * ReplaceContainerAndCloneAttributesWithTransaction() creates new element
+<span class="lineNum">     769 </span>            :    * whose name is aTagName, copies all attributes from aOldContainer to the
+<span class="lineNum">     770 </span>            :    * new element, moves all children in aOldContainer to the new element, then,
+<span class="lineNum">     771 </span>            :    * removes aOldContainer from the DOM tree.
+<span class="lineNum">     772 </span>            :    *
+<span class="lineNum">     773 </span>            :    * @param aOldContainer       The element node which should be replaced
+<span class="lineNum">     774 </span>            :    *                            with new element.
+<span class="lineNum">     775 </span>            :    * @param aTagName            The name of new element node.
+<span class="lineNum">     776 </span>            :    */
+<span class="lineNum">     777 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :   ReplaceContainerAndCloneAttributesWithTransaction(Element&amp; aOldContainer,</span>
+<span class="lineNum">     779 </span>            :                                                     nsAtom&amp; aTagName)
+<span class="lineNum">     780 </span>            :   {
+<span class="lineNum">     781 </span>            :     return ReplaceContainerWithTransactionInternal(aOldContainer, aTagName,
+<span class="lineNum">     782 </span>            :                                                    *nsGkAtoms::_empty,
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :                                                    EmptyString(), true);</span>
+<span class="lineNum">     784 </span>            :   }
+<span class="lineNum">     785 </span>            : 
+<span class="lineNum">     786 </span>            :   /**
+<span class="lineNum">     787 </span>            :    * ReplaceContainerWithTransaction() creates new element whose name is
+<span class="lineNum">     788 </span>            :    * aTagName, sets aAttributes of the new element to aAttributeValue, moves
+<span class="lineNum">     789 </span>            :    * all children in aOldContainer to the new element, then, removes
+<span class="lineNum">     790 </span>            :    * aOldContainer from the DOM tree.
+<span class="lineNum">     791 </span>            :    *
+<span class="lineNum">     792 </span>            :    * @param aOldContainer       The element node which should be replaced
+<span class="lineNum">     793 </span>            :    *                            with new element.
+<span class="lineNum">     794 </span>            :    * @param aTagName            The name of new element node.
+<span class="lineNum">     795 </span>            :    * @param aAttribute          Attribute name to be set to the new element.
+<span class="lineNum">     796 </span>            :    * @param aAttributeValue     Attribute value to be set to aAttribute.
+<span class="lineNum">     797 </span>            :    */
+<span class="lineNum">     798 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">     799 </span>            :   ReplaceContainerWithTransaction(Element&amp; aOldContainer,
+<span class="lineNum">     800 </span>            :                                   nsAtom&amp; aTagName,
+<span class="lineNum">     801 </span>            :                                   nsAtom&amp; aAttribute,
+<span class="lineNum">     802 </span>            :                                   const nsAString&amp; aAttributeValue)
+<span class="lineNum">     803 </span>            :   {
+<span class="lineNum">     804 </span>            :     return ReplaceContainerWithTransactionInternal(aOldContainer, aTagName,
+<span class="lineNum">     805 </span>            :                                                    aAttribute,
+<span class="lineNum">     806 </span>            :                                                    aAttributeValue, false);
+<span class="lineNum">     807 </span>            :   }
+<span class="lineNum">     808 </span>            : 
+<span class="lineNum">     809 </span>            :   /**
+<span class="lineNum">     810 </span>            :    * CloneAttributesWithTransaction() clones all attributes from
+<span class="lineNum">     811 </span>            :    * aSourceElement to aDestElement after removing all attributes in
+<span class="lineNum">     812 </span>            :    * aDestElement.
+<span class="lineNum">     813 </span>            :    */
+<span class="lineNum">     814 </span>            :   void CloneAttributesWithTransaction(Element&amp; aDestElement,
+<span class="lineNum">     815 </span>            :                                       Element&amp; aSourceElement);
+<span class="lineNum">     816 </span>            : 
+<span class="lineNum">     817 </span>            :   /**
+<span class="lineNum">     818 </span>            :    * RemoveContainerWithTransaction() removes aElement from the DOM tree and
+<span class="lineNum">     819 </span>            :    * moves all its children to the parent of aElement.
+<span class="lineNum">     820 </span>            :    *
+<span class="lineNum">     821 </span>            :    * @param aElement            The element to be removed.
+<span class="lineNum">     822 </span>            :    */
+<span class="lineNum">     823 </span>            :   nsresult RemoveContainerWithTransaction(Element&amp; aElement);
+<span class="lineNum">     824 </span>            : 
+<span class="lineNum">     825 </span>            :   /**
+<span class="lineNum">     826 </span>            :    * InsertContainerWithTransaction() creates new element whose name is
+<span class="lineNum">     827 </span>            :    * aTagName, moves aContent into the new element, then, inserts the new
+<span class="lineNum">     828 </span>            :    * element into where aContent was.
+<span class="lineNum">     829 </span>            :    * Note that this method does not check if aContent is valid child of
+<span class="lineNum">     830 </span>            :    * the new element.  So, callers need to guarantee it.
+<span class="lineNum">     831 </span>            :    *
+<span class="lineNum">     832 </span>            :    * @param aContent            The content which will be wrapped with new
+<span class="lineNum">     833 </span>            :    *                            element.
+<span class="lineNum">     834 </span>            :    * @param aTagName            Element name of new element which will wrap
+<span class="lineNum">     835 </span>            :    *                            aContent and be inserted into where aContent
+<span class="lineNum">     836 </span>            :    *                            was.
+<span class="lineNum">     837 </span>            :    * @return                    The new element.
+<span class="lineNum">     838 </span>            :    */
+<span class="lineNum">     839 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">     840 </span><span class="lineNoCov">          0 :   InsertContainerWithTransaction(nsIContent&amp; aContent, nsAtom&amp; aTagName)</span>
+<span class="lineNum">     841 </span>            :   {
+<span class="lineNum">     842 </span>            :     return InsertContainerWithTransactionInternal(aContent, aTagName,
+<span class="lineNum">     843 </span>            :                                                   *nsGkAtoms::_empty,
+<span class="lineNum">     844 </span><span class="lineNoCov">          0 :                                                   EmptyString());</span>
+<span class="lineNum">     845 </span>            :   }
+<span class="lineNum">     846 </span>            : 
+<span class="lineNum">     847 </span>            :   /**
+<span class="lineNum">     848 </span>            :    * InsertContainerWithTransaction() creates new element whose name is
+<span class="lineNum">     849 </span>            :    * aTagName, sets its aAttribute to aAttributeValue, moves aContent into the
+<span class="lineNum">     850 </span>            :    * new element, then, inserts the new element into where aContent was.
+<span class="lineNum">     851 </span>            :    * Note that this method does not check if aContent is valid child of
+<span class="lineNum">     852 </span>            :    * the new element.  So, callers need to guarantee it.
+<span class="lineNum">     853 </span>            :    *
+<span class="lineNum">     854 </span>            :    * @param aContent            The content which will be wrapped with new
+<span class="lineNum">     855 </span>            :    *                            element.
+<span class="lineNum">     856 </span>            :    * @param aTagName            Element name of new element which will wrap
+<span class="lineNum">     857 </span>            :    *                            aContent and be inserted into where aContent
+<span class="lineNum">     858 </span>            :    *                            was.
+<span class="lineNum">     859 </span>            :    * @param aAttribute          Attribute which should be set to the new
+<span class="lineNum">     860 </span>            :    *                            element.
+<span class="lineNum">     861 </span>            :    * @param aAttributeValue     Value to be set to aAttribute.
+<span class="lineNum">     862 </span>            :    * @return                    The new element.
+<span class="lineNum">     863 </span>            :    */
+<span class="lineNum">     864 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">     865 </span>            :   InsertContainerWithTransaction(nsIContent&amp; aContent, nsAtom&amp; aTagName,
+<span class="lineNum">     866 </span>            :                                  nsAtom&amp; aAttribute,
+<span class="lineNum">     867 </span>            :                                  const nsAString&amp; aAttributeValue)
+<span class="lineNum">     868 </span>            :   {
+<span class="lineNum">     869 </span>            :     return InsertContainerWithTransactionInternal(aContent, aTagName,
+<span class="lineNum">     870 </span><span class="lineNoCov">          0 :                                                   aAttribute, aAttributeValue);</span>
+<span class="lineNum">     871 </span>            :   }
+<span class="lineNum">     872 </span>            : 
+<span class="lineNum">     873 </span>            :   /**
+<span class="lineNum">     874 </span>            :    * SplitNodeWithTransaction() creates a transaction to create a new node
+<span class="lineNum">     875 </span>            :    * (left node) identical to an existing node (right node), and split the
+<span class="lineNum">     876 </span>            :    * contents between the same point in both nodes, then, execute the
+<span class="lineNum">     877 </span>            :    * transaction.
+<span class="lineNum">     878 </span>            :    *
+<span class="lineNum">     879 </span>            :    * @param aStartOfRightNode   The point to split.  Its container will be
+<span class="lineNum">     880 </span>            :    *                            the right node, i.e., become the new node's
+<span class="lineNum">     881 </span>            :    *                            next sibling.  And the point will be start
+<span class="lineNum">     882 </span>            :    *                            of the right node.
+<span class="lineNum">     883 </span>            :    * @param aError              If succeed, returns no error.  Otherwise, an
+<span class="lineNum">     884 </span>            :    *                            error.
+<span class="lineNum">     885 </span>            :    */
+<span class="lineNum">     886 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">     887 </span>            :   already_AddRefed&lt;nsIContent&gt;
+<span class="lineNum">     888 </span>            :   SplitNodeWithTransaction(const EditorDOMPointBase&lt;PT, CT&gt;&amp; aStartOfRightNode,
+<span class="lineNum">     889 </span>            :                            ErrorResult&amp; aResult);
+<span class="lineNum">     890 </span>            : 
+<span class="lineNum">     891 </span>            :   /**
+<span class="lineNum">     892 </span>            :    * JoinNodesWithTransaction() joins aLeftNode and aRightNode.  Content of
+<span class="lineNum">     893 </span>            :    * aLeftNode will be merged into aRightNode.  Actual implemenation of this
+<span class="lineNum">     894 </span>            :    * method is JoinNodesImpl().  So, see its explanation for the detail.
+<span class="lineNum">     895 </span>            :    *
+<span class="lineNum">     896 </span>            :    * @param aLeftNode   Will be removed from the DOM tree.
+<span class="lineNum">     897 </span>            :    * @param aRightNode  The node which will be new container of the content of
+<span class="lineNum">     898 </span>            :    *                    aLeftNode.
+<span class="lineNum">     899 </span>            :    */
+<span class="lineNum">     900 </span>            :   nsresult JoinNodesWithTransaction(nsINode&amp; aLeftNode, nsINode&amp; aRightNode);
+<span class="lineNum">     901 </span>            : 
+<span class="lineNum">     902 </span>            :   /**
+<span class="lineNum">     903 </span>            :    * MoveNodeWithTransaction() moves aContent to aPointToInsert.
+<span class="lineNum">     904 </span>            :    *
+<span class="lineNum">     905 </span>            :    * @param aContent        The node to be moved.
+<span class="lineNum">     906 </span>            :    */
+<span class="lineNum">     907 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">     908 </span>            :   nsresult
+<span class="lineNum">     909 </span>            :   MoveNodeWithTransaction(nsIContent&amp; aContent,
+<span class="lineNum">     910 </span>            :                           const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPointToInsert);
+<span class="lineNum">     911 </span>            : 
+<span class="lineNum">     912 </span>            :   /**
+<span class="lineNum">     913 </span>            :    * MoveNodeToEndWithTransaction() moves aContent to end of aNewContainer.
+<span class="lineNum">     914 </span>            :    *
+<span class="lineNum">     915 </span>            :    * @param aContent        The node to be moved.
+<span class="lineNum">     916 </span>            :    * @param aNewContainer   The new container which will contain aContent as
+<span class="lineNum">     917 </span>            :    *                        its last child.
+<span class="lineNum">     918 </span>            :    */
+<span class="lineNum">     919 </span>            :   nsresult
+<span class="lineNum">     920 </span><span class="lineNoCov">          0 :   MoveNodeToEndWithTransaction(nsIContent&amp; aContent,</span>
+<span class="lineNum">     921 </span>            :                                nsINode&amp; aNewContainer)
+<span class="lineNum">     922 </span>            :   {
+<span class="lineNum">     923 </span><span class="lineNoCov">          0 :     EditorRawDOMPoint pointToInsert;</span>
+<span class="lineNum">     924 </span><span class="lineNoCov">          0 :     pointToInsert.SetToEndOf(&amp;aNewContainer);</span>
+<span class="lineNum">     925 </span><span class="lineNoCov">          0 :     return MoveNodeWithTransaction(aContent, pointToInsert);</span>
+<span class="lineNum">     926 </span>            :   }
+<span class="lineNum">     927 </span>            : 
+<span class="lineNum">     928 </span>            :   /**
+<span class="lineNum">     929 </span>            :    * MoveAllChildren() moves all children of aContainer to before
+<span class="lineNum">     930 </span>            :    * aPointToInsert.GetChild().
+<span class="lineNum">     931 </span>            :    * See explanation of MoveChildren() for the detail of the behavior.
+<span class="lineNum">     932 </span>            :    *
+<span class="lineNum">     933 </span>            :    * @param aContainer          The container node whose all children should
+<span class="lineNum">     934 </span>            :    *                            be moved.
+<span class="lineNum">     935 </span>            :    * @param aPointToInsert      The insertion point.  The container must not
+<span class="lineNum">     936 </span>            :    *                            be a data node like a text node.
+<span class="lineNum">     937 </span>            :    * @param aError              The result.  If this succeeds to move children,
+<span class="lineNum">     938 </span>            :    *                            returns NS_OK.  Otherwise, an error.
+<span class="lineNum">     939 </span>            :    */
+<span class="lineNum">     940 </span>            :   void MoveAllChildren(nsINode&amp; aContainer,
+<span class="lineNum">     941 </span>            :                        const EditorRawDOMPoint&amp; aPointToInsert,
+<span class="lineNum">     942 </span>            :                        ErrorResult&amp; aError);
+<span class="lineNum">     943 </span>            : 
+<span class="lineNum">     944 </span>            :   /**
+<span class="lineNum">     945 </span>            :    * MovePreviousSiblings() moves all siblings before aChild (i.e., aChild
+<span class="lineNum">     946 </span>            :    * won't be moved) to before aPointToInsert.GetChild().
+<span class="lineNum">     947 </span>            :    * See explanation of MoveChildren() for the detail of the behavior.
+<span class="lineNum">     948 </span>            :    *
+<span class="lineNum">     949 </span>            :    * @param aChild              The node which is next sibling of the last
+<span class="lineNum">     950 </span>            :    *                            node to be moved.
+<span class="lineNum">     951 </span>            :    * @param aPointToInsert      The insertion point.  The container must not
+<span class="lineNum">     952 </span>            :    *                            be a data node like a text node.
+<span class="lineNum">     953 </span>            :    * @param aError              The result.  If this succeeds to move children,
+<span class="lineNum">     954 </span>            :    *                            returns NS_OK.  Otherwise, an error.
+<span class="lineNum">     955 </span>            :    */
+<span class="lineNum">     956 </span>            :   void MovePreviousSiblings(nsIContent&amp; aChild,
+<span class="lineNum">     957 </span>            :                             const EditorRawDOMPoint&amp; aPointToInsert,
+<span class="lineNum">     958 </span>            :                             ErrorResult&amp; aError);
+<span class="lineNum">     959 </span>            : 
+<span class="lineNum">     960 </span>            :   /**
+<span class="lineNum">     961 </span>            :    * MoveChildren() moves all children between aFirstChild and aLastChild to
+<span class="lineNum">     962 </span>            :    * before aPointToInsert.GetChild().
+<span class="lineNum">     963 </span>            :    * If some children are moved to different container while this method
+<span class="lineNum">     964 </span>            :    * moves other children, they are just ignored.
+<span class="lineNum">     965 </span>            :    * If the child node referred by aPointToInsert is moved to different
+<span class="lineNum">     966 </span>            :    * container while this method moves children, returns error.
+<span class="lineNum">     967 </span>            :    *
+<span class="lineNum">     968 </span>            :    * @param aFirstChild         The first child which should be moved to
+<span class="lineNum">     969 </span>            :    *                            aPointToInsert.
+<span class="lineNum">     970 </span>            :    * @param aLastChild          The last child which should be moved.  This
+<span class="lineNum">     971 </span>            :    *                            must be a sibling of aFirstChild and it should
+<span class="lineNum">     972 </span>            :    *                            be positioned after aFirstChild in the DOM tree
+<span class="lineNum">     973 </span>            :    *                            order.
+<span class="lineNum">     974 </span>            :    * @param aPointToInsert      The insertion point.  The container must not
+<span class="lineNum">     975 </span>            :    *                            be a data node like a text node.
+<span class="lineNum">     976 </span>            :    * @param aError              The result.  If this succeeds to move children,
+<span class="lineNum">     977 </span>            :    *                            returns NS_OK.  Otherwise, an error.
+<span class="lineNum">     978 </span>            :    */
+<span class="lineNum">     979 </span>            :   void MoveChildren(nsIContent&amp; aFirstChild,
+<span class="lineNum">     980 </span>            :                     nsIContent&amp; aLastChild,
+<span class="lineNum">     981 </span>            :                     const EditorRawDOMPoint&amp; aPointToInsert,
+<span class="lineNum">     982 </span>            :                     ErrorResult&amp; aError);
+<span class="lineNum">     983 </span>            : 
+<span class="lineNum">     984 </span>            :   /**
+<span class="lineNum">     985 </span>            :    * CloneAttributeWithTransaction() copies aAttribute of aSourceElement to
+<span class="lineNum">     986 </span>            :    * aDestElement.  If aSourceElement doesn't have aAttribute, this removes
+<span class="lineNum">     987 </span>            :    * aAttribute from aDestElement.
+<span class="lineNum">     988 </span>            :    *
+<span class="lineNum">     989 </span>            :    * @param aAttribute          Attribute name to be cloned.
+<span class="lineNum">     990 </span>            :    * @param aDestElement        Element node which will be set aAttribute or
+<span class="lineNum">     991 </span>            :    *                            whose aAttribute will be removed.
+<span class="lineNum">     992 </span>            :    * @param aSourceElement      Element node which provides the value of
+<span class="lineNum">     993 </span>            :    *                            aAttribute in aDestElement.
+<span class="lineNum">     994 </span>            :    */
+<span class="lineNum">     995 </span>            :   nsresult CloneAttributeWithTransaction(nsAtom&amp; aAttribute,
+<span class="lineNum">     996 </span>            :                                          Element&amp; aDestElement,
+<span class="lineNum">     997 </span>            :                                          Element&amp; aSourceElement);
+<span class="lineNum">     998 </span>            : 
+<span class="lineNum">     999 </span>            :   /**
+<span class="lineNum">    1000 </span>            :    * RemoveAttributeWithTransaction() removes aAttribute from aElement.
+<span class="lineNum">    1001 </span>            :    *
+<span class="lineNum">    1002 </span>            :    * @param aElement        Element node which will lose aAttribute.
+<span class="lineNum">    1003 </span>            :    * @param aAttribute      Attribute name to be removed from aElement.
+<span class="lineNum">    1004 </span>            :    */
+<span class="lineNum">    1005 </span>            :   nsresult RemoveAttributeWithTransaction(Element&amp; aElement,
+<span class="lineNum">    1006 </span>            :                                           nsAtom&amp; aAttribute);
+<span class="lineNum">    1007 </span>            : 
+<span class="lineNum">    1008 </span>            :   virtual nsresult RemoveAttributeOrEquivalent(Element* aElement,
+<span class="lineNum">    1009 </span>            :                                                nsAtom* aAttribute,
+<span class="lineNum">    1010 </span>            :                                                bool aSuppressTransaction) = 0;
+<span class="lineNum">    1011 </span>            : 
+<span class="lineNum">    1012 </span>            :   /**
+<span class="lineNum">    1013 </span>            :    * SetAttributeWithTransaction() sets aAttribute of aElement to aValue.
+<span class="lineNum">    1014 </span>            :    *
+<span class="lineNum">    1015 </span>            :    * @param aElement        Element node which will have aAttribute.
+<span class="lineNum">    1016 </span>            :    * @param aAttribute      Attribute name to be set.
+<span class="lineNum">    1017 </span>            :    * @param aValue          Attribute value be set to aAttribute.
+<span class="lineNum">    1018 </span>            :    */
+<span class="lineNum">    1019 </span>            :   nsresult SetAttributeWithTransaction(Element&amp; aElement,
+<span class="lineNum">    1020 </span>            :                                        nsAtom&amp; aAttribute,
+<span class="lineNum">    1021 </span>            :                                        const nsAString&amp; aValue);
+<span class="lineNum">    1022 </span>            : 
+<span class="lineNum">    1023 </span>            :   virtual nsresult SetAttributeOrEquivalent(Element* aElement,
+<span class="lineNum">    1024 </span>            :                                             nsAtom* aAttribute,
+<span class="lineNum">    1025 </span>            :                                             const nsAString&amp; aValue,
+<span class="lineNum">    1026 </span>            :                                             bool aSuppressTransaction) = 0;
+<span class="lineNum">    1027 </span>            : 
+<span class="lineNum">    1028 </span>            :   /**
+<span class="lineNum">    1029 </span>            :    * Method to replace certain CreateElementNS() calls.
+<span class="lineNum">    1030 </span>            :    *
+<span class="lineNum">    1031 </span>            :    * @param aTag        Tag you want.
+<span class="lineNum">    1032 </span>            :    */
+<span class="lineNum">    1033 </span>            :   already_AddRefed&lt;Element&gt; CreateHTMLContent(nsAtom* aTag);
+<span class="lineNum">    1034 </span>            : 
+<span class="lineNum">    1035 </span>            :   /**
+<span class="lineNum">    1036 </span>            :    * Creates text node which is marked as &quot;maybe modified frequently&quot;.
+<span class="lineNum">    1037 </span>            :    */
+<span class="lineNum">    1038 </span>            :   static already_AddRefed&lt;nsTextNode&gt; CreateTextNode(nsIDocument&amp; aDocument,
+<span class="lineNum">    1039 </span>            :                                                      const nsAString&amp; aData);
+<span class="lineNum">    1040 </span>            : 
+<span class="lineNum">    1041 </span>            :   /**
+<span class="lineNum">    1042 </span>            :    * Create an element node whose name is aTag at before aPointToInsert.  When
+<span class="lineNum">    1043 </span>            :    * this succeed to create an element node, this sets aPointToInsert to the
+<span class="lineNum">    1044 </span>            :    * new element because the relation of child and offset may be broken.
+<span class="lineNum">    1045 </span>            :    * If the caller needs to collapse the selection to next to the new element
+<span class="lineNum">    1046 </span>            :    * node, it should call |aPointToInsert.AdvanceOffset()| after calling this.
+<span class="lineNum">    1047 </span>            :    *
+<span class="lineNum">    1048 </span>            :    * @param aTag            The element name to create.
+<span class="lineNum">    1049 </span>            :    * @param aPointToInsert  The insertion point of new element.  If this refers
+<span class="lineNum">    1050 </span>            :    *                        end of the container or after, the transaction
+<span class="lineNum">    1051 </span>            :    *                        will append the element to the container.
+<span class="lineNum">    1052 </span>            :    *                        Otherwise, will insert the element before the
+<span class="lineNum">    1053 </span>            :    *                        child node referred by this.
+<span class="lineNum">    1054 </span>            :    * @return                The created new element node.
+<span class="lineNum">    1055 </span>            :    */
+<span class="lineNum">    1056 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1057 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">    1058 </span>            :   CreateNodeWithTransaction(nsAtom&amp; aTag,
+<span class="lineNum">    1059 </span>            :                             const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPointToInsert);
+<span class="lineNum">    1060 </span>            : 
+<span class="lineNum">    1061 </span>            :   /**
+<span class="lineNum">    1062 </span>            :    * Create an aggregate transaction for delete selection.  The result may
+<span class="lineNum">    1063 </span>            :    * include DeleteNodeTransactions and/or DeleteTextTransactions as its
+<span class="lineNum">    1064 </span>            :    * children.
+<span class="lineNum">    1065 </span>            :    *
+<span class="lineNum">    1066 </span>            :    * @param aAction             The action caused removing the selection.
+<span class="lineNum">    1067 </span>            :    * @param aRemovingNode       The node to be removed.
+<span class="lineNum">    1068 </span>            :    * @param aOffset             The start offset of the range in aRemovingNode.
+<span class="lineNum">    1069 </span>            :    * @param aLength             The length of the range in aRemovingNode.
+<span class="lineNum">    1070 </span>            :    * @return                    If it can remove the selection, returns an
+<span class="lineNum">    1071 </span>            :    *                            aggregate transaction which has some
+<span class="lineNum">    1072 </span>            :    *                            DeleteNodeTransactions and/or
+<span class="lineNum">    1073 </span>            :    *                            DeleteTextTransactions as its children.
+<span class="lineNum">    1074 </span>            :    */
+<span class="lineNum">    1075 </span>            :   already_AddRefed&lt;EditAggregateTransaction&gt;
+<span class="lineNum">    1076 </span>            :     CreateTxnForDeleteSelection(EDirection aAction,
+<span class="lineNum">    1077 </span>            :                                 nsINode** aNode,
+<span class="lineNum">    1078 </span>            :                                 int32_t* aOffset,
+<span class="lineNum">    1079 </span>            :                                 int32_t* aLength);
+<span class="lineNum">    1080 </span>            : 
+<span class="lineNum">    1081 </span>            :   /**
+<span class="lineNum">    1082 </span>            :    * Create a transaction for removing the nodes and/or text in aRange.
+<span class="lineNum">    1083 </span>            :    *
+<span class="lineNum">    1084 </span>            :    * @param aRangeToDelete      The range to be removed.
+<span class="lineNum">    1085 </span>            :    * @param aAction             The action caused removing the range.
+<span class="lineNum">    1086 </span>            :    * @param aRemovingNode       The node to be removed.
+<span class="lineNum">    1087 </span>            :    * @param aOffset             The start offset of the range in aRemovingNode.
+<span class="lineNum">    1088 </span>            :    * @param aLength             The length of the range in aRemovingNode.
+<span class="lineNum">    1089 </span>            :    * @return                    The transaction to remove the range.  Its type
+<span class="lineNum">    1090 </span>            :    *                            is DeleteNodeTransaction or
+<span class="lineNum">    1091 </span>            :    *                            DeleteTextTransaction.
+<span class="lineNum">    1092 </span>            :    */
+<span class="lineNum">    1093 </span>            :   already_AddRefed&lt;EditTransactionBase&gt;
+<span class="lineNum">    1094 </span>            :     CreateTxnForDeleteRange(nsRange* aRangeToDelete,
+<span class="lineNum">    1095 </span>            :                             EDirection aAction,
+<span class="lineNum">    1096 </span>            :                             nsINode** aRemovingNode,
+<span class="lineNum">    1097 </span>            :                             int32_t* aOffset,
+<span class="lineNum">    1098 </span>            :                             int32_t* aLength);
+<span class="lineNum">    1099 </span>            : 
+<span class="lineNum">    1100 </span>            :   /**
+<span class="lineNum">    1101 </span>            :    * DeleteTextWithTransaction() removes text in the range from aCharData.
+<span class="lineNum">    1102 </span>            :    *
+<span class="lineNum">    1103 </span>            :    * @param aCharData           The data node which should be modified.
+<span class="lineNum">    1104 </span>            :    * @param aOffset             Start offset of removing text in aCharData.
+<span class="lineNum">    1105 </span>            :    * @param aLength             Length of removing text.
+<span class="lineNum">    1106 </span>            :    */
+<span class="lineNum">    1107 </span>            :   nsresult DeleteTextWithTransaction(dom::CharacterData&amp; aCharacterData,
+<span class="lineNum">    1108 </span>            :                                      uint32_t aOffset, uint32_t aLength);
+<span class="lineNum">    1109 </span>            : 
+<span class="lineNum">    1110 </span>            :   /**
+<span class="lineNum">    1111 </span>            :    * ReplaceContainerWithTransactionInternal() is implementation of
+<span class="lineNum">    1112 </span>            :    * ReplaceContainerWithTransaction() and
+<span class="lineNum">    1113 </span>            :    * ReplaceContainerAndCloneAttributesWithTransaction().
+<span class="lineNum">    1114 </span>            :    *
+<span class="lineNum">    1115 </span>            :    * @param aOldContainer       The element which will be replaced with new
+<span class="lineNum">    1116 </span>            :    *                            element.
+<span class="lineNum">    1117 </span>            :    * @param aTagName            The name of new element node.
+<span class="lineNum">    1118 </span>            :    * @param aAttribute          Attribute name which will be set to the new
+<span class="lineNum">    1119 </span>            :    *                            element.  This will be ignored if
+<span class="lineNum">    1120 </span>            :    *                            aCloneAllAttributes is set to true.
+<span class="lineNum">    1121 </span>            :    * @param aAttributeValue     Attribute value which will be set to
+<span class="lineNum">    1122 </span>            :    *                            aAttribute.
+<span class="lineNum">    1123 </span>            :    * @param aCloneAllAttributes If true, all attributes of aOldContainer will
+<span class="lineNum">    1124 </span>            :    *                            be copied to the new element.
+<span class="lineNum">    1125 </span>            :    */
+<span class="lineNum">    1126 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">    1127 </span>            :   ReplaceContainerWithTransactionInternal(Element&amp; aElement,
+<span class="lineNum">    1128 </span>            :                                           nsAtom&amp; aTagName,
+<span class="lineNum">    1129 </span>            :                                           nsAtom&amp; aAttribute,
+<span class="lineNum">    1130 </span>            :                                           const nsAString&amp; aAttributeValue,
+<span class="lineNum">    1131 </span>            :                                           bool aCloneAllAttributes);
+<span class="lineNum">    1132 </span>            : 
+<span class="lineNum">    1133 </span>            :   /**
+<span class="lineNum">    1134 </span>            :    * InsertContainerWithTransactionInternal() creates new element whose name is
+<span class="lineNum">    1135 </span>            :    * aTagName, moves aContent into the new element, then, inserts the new
+<span class="lineNum">    1136 </span>            :    * element into where aContent was.  If aAttribute is not nsGkAtoms::_empty,
+<span class="lineNum">    1137 </span>            :    * aAttribute of the new element will be set to aAttributeValue.
+<span class="lineNum">    1138 </span>            :    *
+<span class="lineNum">    1139 </span>            :    * @param aContent            The content which will be wrapped with new
+<span class="lineNum">    1140 </span>            :    *                            element.
+<span class="lineNum">    1141 </span>            :    * @param aTagName            Element name of new element which will wrap
+<span class="lineNum">    1142 </span>            :    *                            aContent and be inserted into where aContent
+<span class="lineNum">    1143 </span>            :    *                            was.
+<span class="lineNum">    1144 </span>            :    * @param aAttribute          Attribute which should be set to the new
+<span class="lineNum">    1145 </span>            :    *                            element.  If this is nsGkAtoms::_empty,
+<span class="lineNum">    1146 </span>            :    *                            this does not set any attributes to the new
+<span class="lineNum">    1147 </span>            :    *                            element.
+<span class="lineNum">    1148 </span>            :    * @param aAttributeValue     Value to be set to aAttribute.
+<span class="lineNum">    1149 </span>            :    * @return                    The new element.
+<span class="lineNum">    1150 </span>            :    */
+<span class="lineNum">    1151 </span>            :   already_AddRefed&lt;Element&gt;
+<span class="lineNum">    1152 </span>            :   InsertContainerWithTransactionInternal(nsIContent&amp; aContent,
+<span class="lineNum">    1153 </span>            :                                          nsAtom&amp; aTagName,
+<span class="lineNum">    1154 </span>            :                                          nsAtom&amp; aAttribute,
+<span class="lineNum">    1155 </span>            :                                          const nsAString&amp; aAttributeValue);
+<span class="lineNum">    1156 </span>            : 
+<span class="lineNum">    1157 </span>            :   /**
+<span class="lineNum">    1158 </span>            :    * DoSplitNode() creates a new node (left node) identical to an existing
+<span class="lineNum">    1159 </span>            :    * node (right node), and split the contents between the same point in both
+<span class="lineNum">    1160 </span>            :    * nodes.
+<span class="lineNum">    1161 </span>            :    *
+<span class="lineNum">    1162 </span>            :    * @param aStartOfRightNode   The point to split.  Its container will be
+<span class="lineNum">    1163 </span>            :    *                            the right node, i.e., become the new node's
+<span class="lineNum">    1164 </span>            :    *                            next sibling.  And the point will be start
+<span class="lineNum">    1165 </span>            :    *                            of the right node.
+<span class="lineNum">    1166 </span>            :    * @param aNewLeftNode        The new node called as left node, so, this
+<span class="lineNum">    1167 </span>            :    *                            becomes the container of aPointToSplit's
+<span class="lineNum">    1168 </span>            :    *                            previous sibling.
+<span class="lineNum">    1169 </span>            :    * @param aError              Must have not already failed.
+<span class="lineNum">    1170 </span>            :    *                            If succeed to insert aLeftNode before the
+<span class="lineNum">    1171 </span>            :    *                            right node and remove unnecessary contents
+<span class="lineNum">    1172 </span>            :    *                            (and collapse selection at end of the left
+<span class="lineNum">    1173 </span>            :    *                            node if necessary), returns no error.
+<span class="lineNum">    1174 </span>            :    *                            Otherwise, an error.
+<span class="lineNum">    1175 </span>            :    */
+<span class="lineNum">    1176 </span>            :   void DoSplitNode(const EditorDOMPoint&amp; aStartOfRightNode,
+<span class="lineNum">    1177 </span>            :                    nsIContent&amp; aNewLeftNode,
+<span class="lineNum">    1178 </span>            :                    ErrorResult&amp; aError);
+<span class="lineNum">    1179 </span>            : 
+<span class="lineNum">    1180 </span>            :   /**
+<span class="lineNum">    1181 </span>            :    * DoJoinNodes() merges contents in aNodeToJoin to aNodeToKeep and remove
+<span class="lineNum">    1182 </span>            :    * aNodeToJoin from the DOM tree.  aNodeToJoin and aNodeToKeep must have
+<span class="lineNum">    1183 </span>            :    * same parent, aParent.  Additionally, if one of aNodeToJoin or aNodeToKeep
+<span class="lineNum">    1184 </span>            :    * is a text node, the other must be a text node.
+<span class="lineNum">    1185 </span>            :    *
+<span class="lineNum">    1186 </span>            :    * @param aNodeToKeep   The node that will remain after the join.
+<span class="lineNum">    1187 </span>            :    * @param aNodeToJoin   The node that will be joined with aNodeToKeep.
+<span class="lineNum">    1188 </span>            :    *                      There is no requirement that the two nodes be of the
+<span class="lineNum">    1189 </span>            :    *                      same type.
+<span class="lineNum">    1190 </span>            :    * @param aParent       The parent of aNodeToKeep
+<span class="lineNum">    1191 </span>            :    */
+<span class="lineNum">    1192 </span>            :   nsresult DoJoinNodes(nsINode* aNodeToKeep,
+<span class="lineNum">    1193 </span>            :                        nsINode* aNodeToJoin,
+<span class="lineNum">    1194 </span>            :                        nsINode* aParent);
+<span class="lineNum">    1195 </span>            : 
+<span class="lineNum">    1196 </span>            :   /**
+<span class="lineNum">    1197 </span>            :    * SplitNodeDeepWithTransaction() splits aMostAncestorToSplit deeply.
+<span class="lineNum">    1198 </span>            :    *
+<span class="lineNum">    1199 </span>            :    * @param aMostAncestorToSplit        The most ancestor node which should be
+<span class="lineNum">    1200 </span>            :    *                                    split.
+<span class="lineNum">    1201 </span>            :    * @param aStartOfDeepestRightNode    The start point of deepest right node.
+<span class="lineNum">    1202 </span>            :    *                                    This point must be descendant of
+<span class="lineNum">    1203 </span>            :    *                                    aMostAncestorToSplit.
+<span class="lineNum">    1204 </span>            :    * @param aSplitAtEdges               Whether the caller allows this to
+<span class="lineNum">    1205 </span>            :    *                                    create empty container element when
+<span class="lineNum">    1206 </span>            :    *                                    split point is start or end of an
+<span class="lineNum">    1207 </span>            :    *                                    element.
+<span class="lineNum">    1208 </span>            :    * @return                            SplitPoint() returns split point in
+<span class="lineNum">    1209 </span>            :    *                                    aMostAncestorToSplit.  The point must
+<span class="lineNum">    1210 </span>            :    *                                    be good to insert something if the
+<span class="lineNum">    1211 </span>            :    *                                    caller want to do it.
+<span class="lineNum">    1212 </span>            :    */
+<span class="lineNum">    1213 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1214 </span>            :   SplitNodeResult
+<span class="lineNum">    1215 </span>            :   SplitNodeDeepWithTransaction(
+<span class="lineNum">    1216 </span>            :     nsIContent&amp; aMostAncestorToSplit,
+<span class="lineNum">    1217 </span>            :     const EditorDOMPointBase&lt;PT, CT&gt;&amp; aDeepestStartOfRightNode,
+<span class="lineNum">    1218 </span>            :     SplitAtEdges aSplitAtEdges);
+<span class="lineNum">    1219 </span>            : 
+<span class="lineNum">    1220 </span>            :   /**
+<span class="lineNum">    1221 </span>            :    * JoinNodesDeepWithTransaction() joins aLeftNode and aRightNode &quot;deeply&quot;.
+<span class="lineNum">    1222 </span>            :    * First, they are joined simply, then, new right node is assumed as the
+<span class="lineNum">    1223 </span>            :    * child at length of the left node before joined and new left node is
+<span class="lineNum">    1224 </span>            :    * assumed as its previous sibling.  Then, they will be joined again.
+<span class="lineNum">    1225 </span>            :    * And then, these steps are repeated.
+<span class="lineNum">    1226 </span>            :    *
+<span class="lineNum">    1227 </span>            :    * @param aLeftNode   The node which will be removed form the tree.
+<span class="lineNum">    1228 </span>            :    * @param aRightNode  The node which will be inserted the contents of
+<span class="lineNum">    1229 </span>            :    *                    aLeftNode.
+<span class="lineNum">    1230 </span>            :    * @return            The point of the first child of the last right node.
+<span class="lineNum">    1231 </span>            :    */
+<span class="lineNum">    1232 </span>            :   EditorDOMPoint JoinNodesDeepWithTransaction(nsIContent&amp; aLeftNode,
+<span class="lineNum">    1233 </span>            :                                               nsIContent&amp; aRightNode);
+<span class="lineNum">    1234 </span>            : 
+<span class="lineNum">    1235 </span>            :   /**
+<span class="lineNum">    1236 </span>            :    * Note that aSelection is optional and can be nullptr.
+<span class="lineNum">    1237 </span>            :    */
+<span class="lineNum">    1238 </span>            :   nsresult DoTransaction(Selection* aSelection,
+<span class="lineNum">    1239 </span>            :                          nsITransaction* aTxn);
+<span class="lineNum">    1240 </span>            : 
+<span class="lineNum">    1241 </span>            :   virtual bool IsBlockNode(nsINode* aNode);
+<span class="lineNum">    1242 </span>            : 
+<span class="lineNum">    1243 </span>            :   /**
+<span class="lineNum">    1244 </span>            :    * Set outOffset to the offset of aChild in the parent.
+<span class="lineNum">    1245 </span>            :    * Returns the parent of aChild.
+<span class="lineNum">    1246 </span>            :    */
+<span class="lineNum">    1247 </span>            :   static nsINode* GetNodeLocation(nsINode* aChild, int32_t* aOffset);
+<span class="lineNum">    1248 </span>            : 
+<span class="lineNum">    1249 </span>            :   /**
+<span class="lineNum">    1250 </span>            :    * Get the previous node.
+<span class="lineNum">    1251 </span>            :    */
+<span class="lineNum">    1252 </span>            :   nsIContent* GetPreviousNode(const EditorRawDOMPoint&amp; aPoint)
+<span class="lineNum">    1253 </span>            :   {
+<span class="lineNum">    1254 </span>            :     return GetPreviousNodeInternal(aPoint, false, true, false);
+<span class="lineNum">    1255 </span>            :   }
+<span class="lineNum">    1256 </span>            :   nsIContent* GetPreviousElementOrText(const EditorRawDOMPoint&amp; aPoint)
+<span class="lineNum">    1257 </span>            :   {
+<span class="lineNum">    1258 </span>            :     return GetPreviousNodeInternal(aPoint, false, false, false);
+<span class="lineNum">    1259 </span>            :   }
+<span class="lineNum">    1260 </span><span class="lineNoCov">          0 :   nsIContent* GetPreviousEditableNode(const EditorRawDOMPoint&amp; aPoint)</span>
+<span class="lineNum">    1261 </span>            :   {
+<span class="lineNum">    1262 </span><span class="lineNoCov">          0 :     return GetPreviousNodeInternal(aPoint, true, true, false);</span>
+<span class="lineNum">    1263 </span>            :   }
+<span class="lineNum">    1264 </span>            :   nsIContent* GetPreviousNodeInBlock(const EditorRawDOMPoint&amp; aPoint)
+<span class="lineNum">    1265 </span>            :   {
+<span class="lineNum">    1266 </span>            :     return GetPreviousNodeInternal(aPoint, false, true, true);
+<span class="lineNum">    1267 </span>            :   }
+<span class="lineNum">    1268 </span>            :   nsIContent* GetPreviousElementOrTextInBlock(const EditorRawDOMPoint&amp; aPoint)
+<span class="lineNum">    1269 </span>            :   {
+<span class="lineNum">    1270 </span>            :     return GetPreviousNodeInternal(aPoint, false, false, true);
+<span class="lineNum">    1271 </span>            :   }
+<span class="lineNum">    1272 </span><span class="lineNoCov">          0 :   nsIContent* GetPreviousEditableNodeInBlock(</span>
+<span class="lineNum">    1273 </span>            :                 const EditorRawDOMPoint&amp; aPoint)
+<span class="lineNum">    1274 </span>            :   {
+<span class="lineNum">    1275 </span><span class="lineNoCov">          0 :     return GetPreviousNodeInternal(aPoint, true, true, true);</span>
+<span class="lineNum">    1276 </span>            :   }
+<span class="lineNum">    1277 </span>            :   nsIContent* GetPreviousNode(nsINode&amp; aNode)
+<span class="lineNum">    1278 </span>            :   {
+<span class="lineNum">    1279 </span>            :     return GetPreviousNodeInternal(aNode, false, true, false);
+<span class="lineNum">    1280 </span>            :   }
+<span class="lineNum">    1281 </span><span class="lineNoCov">          0 :   nsIContent* GetPreviousElementOrText(nsINode&amp; aNode)</span>
+<span class="lineNum">    1282 </span>            :   {
+<span class="lineNum">    1283 </span><span class="lineNoCov">          0 :     return GetPreviousNodeInternal(aNode, false, false, false);</span>
+<span class="lineNum">    1284 </span>            :   }
+<span class="lineNum">    1285 </span><span class="lineNoCov">          0 :   nsIContent* GetPreviousEditableNode(nsINode&amp; aNode)</span>
+<span class="lineNum">    1286 </span>            :   {
+<span class="lineNum">    1287 </span><span class="lineNoCov">          0 :     return GetPreviousNodeInternal(aNode, true, true, false);</span>
+<span class="lineNum">    1288 </span>            :   }
+<span class="lineNum">    1289 </span>            :   nsIContent* GetPreviousNodeInBlock(nsINode&amp; aNode)
+<span class="lineNum">    1290 </span>            :   {
+<span class="lineNum">    1291 </span>            :     return GetPreviousNodeInternal(aNode, false, true, true);
+<span class="lineNum">    1292 </span>            :   }
+<span class="lineNum">    1293 </span><span class="lineNoCov">          0 :   nsIContent* GetPreviousElementOrTextInBlock(nsINode&amp; aNode)</span>
+<span class="lineNum">    1294 </span>            :   {
+<span class="lineNum">    1295 </span><span class="lineNoCov">          0 :     return GetPreviousNodeInternal(aNode, false, false, true);</span>
+<span class="lineNum">    1296 </span>            :   }
+<span class="lineNum">    1297 </span><span class="lineNoCov">          0 :   nsIContent* GetPreviousEditableNodeInBlock(nsINode&amp; aNode)</span>
+<span class="lineNum">    1298 </span>            :   {
+<span class="lineNum">    1299 </span><span class="lineNoCov">          0 :     return GetPreviousNodeInternal(aNode, true, true, true);</span>
+<span class="lineNum">    1300 </span>            :   }
+<span class="lineNum">    1301 </span>            : 
+<span class="lineNum">    1302 </span>            :   /**
+<span class="lineNum">    1303 </span>            :    * Get the next node.
+<span class="lineNum">    1304 </span>            :    *
+<span class="lineNum">    1305 </span>            :    * Note that methods taking EditorRawDOMPoint behavior includes the
+<span class="lineNum">    1306 </span>            :    * child at offset as search target.  E.g., following code causes infinite
+<span class="lineNum">    1307 </span>            :    * loop.
+<span class="lineNum">    1308 </span>            :    *
+<span class="lineNum">    1309 </span>            :    * EditorRawDOMPoint point(aEditableNode);
+<span class="lineNum">    1310 </span>            :    * while (nsIContent* content = GetNextEditableNode(point)) {
+<span class="lineNum">    1311 </span>            :    *   // Do something...
+<span class="lineNum">    1312 </span>            :    *   point.Set(content);
+<span class="lineNum">    1313 </span>            :    * }
+<span class="lineNum">    1314 </span>            :    *
+<span class="lineNum">    1315 </span>            :    * Following code must be you expected:
+<span class="lineNum">    1316 </span>            :    *
+<span class="lineNum">    1317 </span>            :    * while (nsIContent* content = GetNextEditableNode(point)) {
+<span class="lineNum">    1318 </span>            :    *   // Do something...
+<span class="lineNum">    1319 </span>            :    *   DebugOnly&lt;bool&gt; advanced = point.Advanced();
+<span class="lineNum">    1320 </span>            :    *   MOZ_ASSERT(advanced);
+<span class="lineNum">    1321 </span>            :    *   point.Set(point.GetChild());
+<span class="lineNum">    1322 </span>            :    * }
+<span class="lineNum">    1323 </span>            :    *
+<span class="lineNum">    1324 </span>            :    * On the other hand, the methods taking nsINode behavior must be what
+<span class="lineNum">    1325 </span>            :    * you want.  They start to search the result from next node of the given
+<span class="lineNum">    1326 </span>            :    * node.
+<span class="lineNum">    1327 </span>            :    */
+<span class="lineNum">    1328 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1329 </span><span class="lineNoCov">          0 :   nsIContent* GetNextNode(const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPoint)</span>
+<span class="lineNum">    1330 </span>            :   {
+<span class="lineNum">    1331 </span><span class="lineNoCov">          0 :     return GetNextNodeInternal(aPoint, false, true, false);</span>
+<span class="lineNum">    1332 </span>            :   }
+<span class="lineNum">    1333 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1334 </span>            :   nsIContent* GetNextElementOrText(const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPoint)
+<span class="lineNum">    1335 </span>            :   {
+<span class="lineNum">    1336 </span>            :     return GetNextNodeInternal(aPoint, false, false, false);
+<span class="lineNum">    1337 </span>            :   }
+<span class="lineNum">    1338 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1339 </span><span class="lineNoCov">          0 :   nsIContent* GetNextEditableNode(const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPoint)</span>
+<span class="lineNum">    1340 </span>            :   {
+<span class="lineNum">    1341 </span><span class="lineNoCov">          0 :     return GetNextNodeInternal(aPoint, true, true, false);</span>
+<span class="lineNum">    1342 </span>            :   }
+<span class="lineNum">    1343 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1344 </span>            :   nsIContent* GetNextNodeInBlock(const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPoint)
+<span class="lineNum">    1345 </span>            :   {
+<span class="lineNum">    1346 </span>            :     return GetNextNodeInternal(aPoint, false, true, true);
+<span class="lineNum">    1347 </span>            :   }
+<span class="lineNum">    1348 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1349 </span>            :   nsIContent* GetNextElementOrTextInBlock(
+<span class="lineNum">    1350 </span>            :                 const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPoint)
+<span class="lineNum">    1351 </span>            :   {
+<span class="lineNum">    1352 </span>            :     return GetNextNodeInternal(aPoint, false, false, true);
+<span class="lineNum">    1353 </span>            :   }
+<span class="lineNum">    1354 </span>            :   template&lt;typename PT, typename CT&gt;
+<span class="lineNum">    1355 </span><span class="lineNoCov">          0 :   nsIContent* GetNextEditableNodeInBlock(</span>
+<span class="lineNum">    1356 </span>            :                 const EditorDOMPointBase&lt;PT, CT&gt;&amp; aPoint)
+<span class="lineNum">    1357 </span>            :   {
+<span class="lineNum">    1358 </span><span class="lineNoCov">          0 :     return GetNextNodeInternal(aPoint, true, true, true);</span>
+<span class="lineNum">    1359 </span>            :   }
+<span class="lineNum">    1360 </span>            :   nsIContent* GetNextNode(nsINode&amp; aNode)
+<span class="lineNum">    1361 </span>            :   {
+<span class="lineNum">    1362 </span>            :     return GetNextNodeInternal(aNode, false, true, false);
+<span class="lineNum">    1363 </span>            :   }
+<span class="lineNum">    1364 </span><span class="lineNoCov">          0 :   nsIContent* GetNextElementOrText(nsINode&amp; aNode)</span>
+<span class="lineNum">    1365 </span>            :   {
+<span class="lineNum">    1366 </span><span class="lineNoCov">          0 :     return GetNextNodeInternal(aNode, false, false, false);</span>
+<span class="lineNum">    1367 </span>            :   }
+<span class="lineNum">    1368 </span><span class="lineNoCov">          0 :   nsIContent* GetNextEditableNode(nsINode&amp; aNode)</span>
+<span class="lineNum">    1369 </span>            :   {
+<span class="lineNum">    1370 </span><span class="lineNoCov">          0 :     return GetNextNodeInternal(aNode, true, true, false);</span>
+<span class="lineNum">    1371 </span>            :   }
+<span class="lineNum">    1372 </span>            :   nsIContent* GetNextNodeInBlock(nsINode&amp; aNode)
+<span class="lineNum">    1373 </span>            :   {
+<span class="lineNum">    1374 </span>            :     return GetNextNodeInternal(aNode, false, true, true);
+<span class="lineNum">    1375 </span>            :   }
+<span class="lineNum">    1376 </span><span class="lineNoCov">          0 :   nsIContent* GetNextElementOrTextInBlock(nsINode&amp; aNode)</span>
+<span class="lineNum">    1377 </span>            :   {
+<span class="lineNum">    1378 </span><span class="lineNoCov">          0 :     return GetNextNodeInternal(aNode, false, false, true);</span>
+<span class="lineNum">    1379 </span>            :   }
+<span class="lineNum">    1380 </span><span class="lineNoCov">          0 :   nsIContent* GetNextEditableNodeInBlock(nsINode&amp; aNode)</span>
+<span class="lineNum">    1381 </span>            :   {
+<span class="lineNum">    1382 </span><span class="lineNoCov">          0 :     return GetNextNodeInternal(aNode, true, true, true);</span>
+<span class="lineNum">    1383 </span>            :   }
+<span class="lineNum">    1384 </span>            : 
+<span class="lineNum">    1385 </span>            :   /**
+<span class="lineNum">    1386 </span>            :    * Get the rightmost child of aCurrentNode;
+<span class="lineNum">    1387 </span>            :    * return nullptr if aCurrentNode has no children.
+<span class="lineNum">    1388 </span>            :    */
+<span class="lineNum">    1389 </span>            :   nsIContent* GetRightmostChild(nsINode* aCurrentNode,
+<span class="lineNum">    1390 </span>            :                                 bool bNoBlockCrossing = false);
+<span class="lineNum">    1391 </span>            : 
+<span class="lineNum">    1392 </span>            :   /**
+<span class="lineNum">    1393 </span>            :    * Get the leftmost child of aCurrentNode;
+<span class="lineNum">    1394 </span>            :    * return nullptr if aCurrentNode has no children.
+<span class="lineNum">    1395 </span>            :    */
+<span class="lineNum">    1396 </span>            :   nsIContent* GetLeftmostChild(nsINode *aCurrentNode,
+<span class="lineNum">    1397 </span>            :                                bool bNoBlockCrossing = false);
+<span class="lineNum">    1398 </span>            : 
+<span class="lineNum">    1399 </span>            :   /**
+<span class="lineNum">    1400 </span>            :    * Returns true if aParent can contain a child of type aTag.
+<span class="lineNum">    1401 </span>            :    */
+<span class="lineNum">    1402 </span>            :   bool CanContain(nsINode&amp; aParent, nsIContent&amp; aChild) const;
+<span class="lineNum">    1403 </span>            :   bool CanContainTag(nsINode&amp; aParent, nsAtom&amp; aTag) const;
+<span class="lineNum">    1404 </span>            :   bool TagCanContain(nsAtom&amp; aParentTag, nsIContent&amp; aChild) const;
+<span class="lineNum">    1405 </span>            :   virtual bool TagCanContainTag(nsAtom&amp; aParentTag, nsAtom&amp; aChildTag) const;
+<span class="lineNum">    1406 </span>            : 
+<span class="lineNum">    1407 </span>            :   /**
+<span class="lineNum">    1408 </span>            :    * Returns true if aNode is our root node.
+<span class="lineNum">    1409 </span>            :    */
+<span class="lineNum">    1410 </span>            :   bool IsRoot(nsINode* inNode);
+<span class="lineNum">    1411 </span>            :   bool IsEditorRoot(nsINode* aNode);
+<span class="lineNum">    1412 </span>            : 
+<span class="lineNum">    1413 </span>            :   /**
+<span class="lineNum">    1414 </span>            :    * Returns true if aNode is a descendant of our root node.
+<span class="lineNum">    1415 </span>            :    */
+<span class="lineNum">    1416 </span>            :   bool IsDescendantOfRoot(nsINode* inNode);
+<span class="lineNum">    1417 </span>            :   bool IsDescendantOfEditorRoot(nsINode* aNode);
+<span class="lineNum">    1418 </span>            : 
+<span class="lineNum">    1419 </span>            :   /**
+<span class="lineNum">    1420 </span>            :    * Returns true if aNode is a container.
+<span class="lineNum">    1421 </span>            :    */
+<span class="lineNum">    1422 </span>            :   virtual bool IsContainer(nsINode* aNode);
+<span class="lineNum">    1423 </span>            : 
+<span class="lineNum">    1424 </span>            :   /**
+<span class="lineNum">    1425 </span>            :    * returns true if aNode is an editable node.
+<span class="lineNum">    1426 </span>            :    */
+<span class="lineNum">    1427 </span><span class="lineCov">          6 :   bool IsEditable(nsINode* aNode)</span>
+<span class="lineNum">    1428 </span>            :   {
+<span class="lineNum">    1429 </span><span class="lineNoCov">          0 :     NS_ENSURE_TRUE(aNode, false);</span>
+<span class="lineNum">    1430 </span>            : 
+<span class="lineNum">    1431 </span><span class="lineNoCov">          0 :     if (!aNode-&gt;IsContent() || IsMozEditorBogusNode(aNode) ||</span>
+<span class="lineNum">    1432 </span><span class="lineCov">          6 :         !IsModifiableNode(aNode)) {</span>
+<span class="lineNum">    1433 </span>            :       return false;
+<span class="lineNum">    1434 </span>            :     }
+<span class="lineNum">    1435 </span>            : 
+<span class="lineNum">    1436 </span><span class="lineCov">          6 :     switch (aNode-&gt;NodeType()) {</span>
+<span class="lineNum">    1437 </span>            :       case nsINode::ELEMENT_NODE:
+<span class="lineNum">    1438 </span>            :         // In HTML editors, if we're dealing with an element, then ask it
+<span class="lineNum">    1439 </span>            :         // whether it's editable.
+<span class="lineNum">    1440 </span><span class="lineCov">          6 :         return mIsHTMLEditorClass ? aNode-&gt;IsEditable() : true;</span>
+<span class="lineNum">    1441 </span>            :       case nsINode::TEXT_NODE:
+<span class="lineNum">    1442 </span>            :         // Text nodes are considered to be editable by both typed of editors.
+<span class="lineNum">    1443 </span>            :         return true;
+<span class="lineNum">    1444 </span>            :       default:
+<span class="lineNum">    1445 </span><span class="lineNoCov">          0 :         return false;</span>
+<span class="lineNum">    1446 </span>            :     }
+<span class="lineNum">    1447 </span>            :   }
+<span class="lineNum">    1448 </span>            : 
+<span class="lineNum">    1449 </span>            :   /**
+<span class="lineNum">    1450 </span>            :    * Returns true if aNode is a usual element node (not bogus node) or
+<span class="lineNum">    1451 </span>            :    * a text node.  In other words, returns true if aNode is a usual element
+<span class="lineNum">    1452 </span>            :    * node or visible data node.
+<span class="lineNum">    1453 </span>            :    */
+<span class="lineNum">    1454 </span><span class="lineNoCov">          0 :   bool IsElementOrText(const nsINode&amp; aNode) const</span>
+<span class="lineNum">    1455 </span>            :   {
+<span class="lineNum">    1456 </span><span class="lineNoCov">          0 :     if (!aNode.IsContent() || IsMozEditorBogusNode(&amp;aNode)) {</span>
+<span class="lineNum">    1457 </span>            :       return false;
+<span class="lineNum">    1458 </span>            :     }
+<span class="lineNum">    1459 </span><span class="lineNoCov">          0 :     return aNode.NodeType() == nsINode::ELEMENT_NODE ||</span>
+<span class="lineNum">    1460 </span><span class="lineNoCov">          0 :            aNode.NodeType() == nsINode::TEXT_NODE;</span>
+<span class="lineNum">    1461 </span>            :   }
+<span class="lineNum">    1462 </span>            : 
+<span class="lineNum">    1463 </span>            :   /**
+<span class="lineNum">    1464 </span>            :    * Returns true if aNode is a MozEditorBogus node.
+<span class="lineNum">    1465 </span>            :    */
+<span class="lineNum">    1466 </span><span class="lineCov">          6 :   bool IsMozEditorBogusNode(const nsINode* aNode) const</span>
+<span class="lineNum">    1467 </span>            :   {
+<span class="lineNum">    1468 </span><span class="lineNoCov">          0 :     return aNode &amp;&amp; aNode-&gt;IsElement() &amp;&amp;</span>
+<span class="lineNum">    1469 </span><span class="lineCov">          6 :            aNode-&gt;AsElement()-&gt;AttrValueIs(kNameSpaceID_None,</span>
+<span class="lineNum">    1470 </span>            :                kMOZEditorBogusNodeAttrAtom, kMOZEditorBogusNodeValue,
+<span class="lineNum">    1471 </span><span class="lineNoCov">          0 :                eCaseMatters);</span>
+<span class="lineNum">    1472 </span>            :   }
+<span class="lineNum">    1473 </span>            : 
+<span class="lineNum">    1474 </span>            :   /**
+<span class="lineNum">    1475 </span>            :    * Counts number of editable child nodes.
+<span class="lineNum">    1476 </span>            :    */
+<span class="lineNum">    1477 </span>            :   uint32_t CountEditableChildren(nsINode* aNode);
+<span class="lineNum">    1478 </span>            : 
+<span class="lineNum">    1479 </span>            :   /**
+<span class="lineNum">    1480 </span>            :    * Find the deep first and last children.
+<span class="lineNum">    1481 </span>            :    */
+<span class="lineNum">    1482 </span>            :   nsINode* GetFirstEditableNode(nsINode* aRoot);
+<span class="lineNum">    1483 </span>            : 
+<span class="lineNum">    1484 </span>            :   /**
+<span class="lineNum">    1485 </span>            :    * Returns true when inserting text should be a part of current composition.
+<span class="lineNum">    1486 </span>            :    */
+<span class="lineNum">    1487 </span>            :   bool ShouldHandleIMEComposition() const;
+<span class="lineNum">    1488 </span>            : 
+<span class="lineNum">    1489 </span>            :   /**
+<span class="lineNum">    1490 </span>            :    * From html rules code - migration in progress.
+<span class="lineNum">    1491 </span>            :    */
+<span class="lineNum">    1492 </span>            :   virtual bool AreNodesSameType(nsIContent* aNode1, nsIContent* aNode2);
+<span class="lineNum">    1493 </span>            : 
+<span class="lineNum">    1494 </span><span class="lineNoCov">          0 :   static bool IsTextNode(nsINode* aNode)</span>
+<span class="lineNum">    1495 </span>            :   {
+<span class="lineNum">    1496 </span><span class="lineNoCov">          0 :     return aNode-&gt;NodeType() == nsINode::TEXT_NODE;</span>
+<span class="lineNum">    1497 </span>            :   }
+<span class="lineNum">    1498 </span>            : 
+<span class="lineNum">    1499 </span>            :   virtual bool IsModifiableNode(nsINode* aNode);
+<span class="lineNum">    1500 </span>            : 
+<span class="lineNum">    1501 </span>            :   /**
+<span class="lineNum">    1502 </span>            :    * GetNodeAtRangeOffsetPoint() returns the node at this position in a range,
+<span class="lineNum">    1503 </span>            :    * assuming that the container is the node itself if it's a text node, or
+<span class="lineNum">    1504 </span>            :    * the node's parent otherwise.
+<span class="lineNum">    1505 </span>            :    */
+<span class="lineNum">    1506 </span>            :   static nsIContent* GetNodeAtRangeOffsetPoint(nsINode* aContainer,
+<span class="lineNum">    1507 </span>            :                                                int32_t aOffset)
+<span class="lineNum">    1508 </span>            :   {
+<span class="lineNum">    1509 </span>            :     return GetNodeAtRangeOffsetPoint(RawRangeBoundary(aContainer, aOffset));
+<span class="lineNum">    1510 </span>            :   }
+<span class="lineNum">    1511 </span>            :   static nsIContent* GetNodeAtRangeOffsetPoint(const RawRangeBoundary&amp; aPoint);
+<span class="lineNum">    1512 </span>            : 
+<span class="lineNum">    1513 </span>            :   static EditorRawDOMPoint GetStartPoint(Selection* aSelection);
+<span class="lineNum">    1514 </span>            :   static EditorRawDOMPoint GetEndPoint(Selection* aSelection);
+<span class="lineNum">    1515 </span>            : 
+<span class="lineNum">    1516 </span>            :   static nsresult GetEndChildNode(Selection* aSelection,
+<span class="lineNum">    1517 </span>            :                                   nsIContent** aEndNode);
+<span class="lineNum">    1518 </span>            : 
+<span class="lineNum">    1519 </span>            :   /**
+<span class="lineNum">    1520 </span>            :    * CollapseSelectionToEnd() collapses the selection to the end of the editor.
+<span class="lineNum">    1521 </span>            :    */
+<span class="lineNum">    1522 </span>            :   nsresult CollapseSelectionToEnd(Selection* aSelection);
+<span class="lineNum">    1523 </span>            : 
+<span class="lineNum">    1524 </span>            :   /**
+<span class="lineNum">    1525 </span>            :    * Helpers to add a node to the selection.
+<span class="lineNum">    1526 </span>            :    * Used by table cell selection methods.
+<span class="lineNum">    1527 </span>            :    */
+<span class="lineNum">    1528 </span>            :   nsresult CreateRange(nsINode* aStartContainer, int32_t aStartOffset,
+<span class="lineNum">    1529 </span>            :                        nsINode* aEndContainer, int32_t aEndOffset,
+<span class="lineNum">    1530 </span>            :                        nsRange** aRange);
+<span class="lineNum">    1531 </span>            : 
+<span class="lineNum">    1532 </span>            :   static bool IsPreformatted(nsINode* aNode);
+<span class="lineNum">    1533 </span>            : 
+<span class="lineNum">    1534 </span>            :   bool GetShouldTxnSetSelection();
+<span class="lineNum">    1535 </span>            : 
+<span class="lineNum">    1536 </span>            :   nsresult HandleInlineSpellCheck(EditSubAction aEditSubAction,
+<span class="lineNum">    1537 </span>            :                                   Selection&amp; aSelection,
+<span class="lineNum">    1538 </span>            :                                   nsINode* previousSelectedNode,
+<span class="lineNum">    1539 </span>            :                                   uint32_t previousSelectedOffset,
+<span class="lineNum">    1540 </span>            :                                   nsINode* aStartContainer,
+<span class="lineNum">    1541 </span>            :                                   uint32_t aStartOffset,
+<span class="lineNum">    1542 </span>            :                                   nsINode* aEndContainer,
+<span class="lineNum">    1543 </span>            :                                   uint32_t aEndOffset);
+<span class="lineNum">    1544 </span>            : 
+<span class="lineNum">    1545 </span>            :   /**
+<span class="lineNum">    1546 </span>            :    * Likewise, but gets the editor's root instead, which is different for HTML
+<span class="lineNum">    1547 </span>            :    * editors.
+<span class="lineNum">    1548 </span>            :    */
+<span class="lineNum">    1549 </span>            :   virtual Element* GetEditorRoot();
+<span class="lineNum">    1550 </span>            : 
+<span class="lineNum">    1551 </span>            :   /**
+<span class="lineNum">    1552 </span>            :    * Likewise, but gets the text control element instead of the root for
+<span class="lineNum">    1553 </span>            :    * plaintext editors.
+<span class="lineNum">    1554 </span>            :    */
+<span class="lineNum">    1555 </span>            :   Element* GetExposedRoot();
+<span class="lineNum">    1556 </span>            : 
+<span class="lineNum">    1557 </span>            :   /**
+<span class="lineNum">    1558 </span>            :    * Whether the editor is active on the DOM window.  Note that when this
+<span class="lineNum">    1559 </span>            :    * returns true but GetFocusedContent() returns null, it means that this editor was
+<span class="lineNum">    1560 </span>            :    * focused when the DOM window was active.
+<span class="lineNum">    1561 </span>            :    */
+<span class="lineNum">    1562 </span>            :   virtual bool IsActiveInDOMWindow();
+<span class="lineNum">    1563 </span>            : 
+<span class="lineNum">    1564 </span>            :   /**
+<span class="lineNum">    1565 </span>            :    * GetIMESelectionStartOffsetIn() returns the start offset of IME selection in
+<span class="lineNum">    1566 </span>            :    * the aTextNode.  If there is no IME selection, returns -1.
+<span class="lineNum">    1567 </span>            :    */
+<span class="lineNum">    1568 </span>            :   int32_t GetIMESelectionStartOffsetIn(nsINode* aTextNode);
+<span class="lineNum">    1569 </span>            : 
+<span class="lineNum">    1570 </span>            :   /**
+<span class="lineNum">    1571 </span>            :    * FindBetterInsertionPoint() tries to look for better insertion point which
+<span class="lineNum">    1572 </span>            :    * is typically the nearest text node and offset in it.
+<span class="lineNum">    1573 </span>            :    *
+<span class="lineNum">    1574 </span>            :    * @param aPoint      Insertion point which the callers found.
+<span class="lineNum">    1575 </span>            :    * @return            Better insertion point if there is.  If not returns
+<span class="lineNum">    1576 </span>            :    *                    same point as aPoint.
+<span class="lineNum">    1577 </span>            :    */
+<span class="lineNum">    1578 </span>            :   EditorRawDOMPoint FindBetterInsertionPoint(const EditorRawDOMPoint&amp; aPoint);
+<span class="lineNum">    1579 </span>            : 
+<span class="lineNum">    1580 </span>            :   /**
+<span class="lineNum">    1581 </span>            :    * HideCaret() hides caret with nsCaret::AddForceHide() or may show carent
+<span class="lineNum">    1582 </span>            :    * with nsCaret::RemoveForceHide().  This does NOT set visibility of
+<span class="lineNum">    1583 </span>            :    * nsCaret.  Therefore, this is stateless.
+<span class="lineNum">    1584 </span>            :    */
+<span class="lineNum">    1585 </span>            :   void HideCaret(bool aHide);
+<span class="lineNum">    1586 </span>            : 
+<span class="lineNum">    1587 </span>            : protected: // Called by helper classes.
+<span class="lineNum">    1588 </span>            : 
+<span class="lineNum">    1589 </span>            :   /**
+<span class="lineNum">    1590 </span>            :    * OnStartToHandleTopLevelEditSubAction() is called when
+<span class="lineNum">    1591 </span>            :    * mTopLevelEditSubAction is EditSubAction::eNone and somebody starts to
+<span class="lineNum">    1592 </span>            :    * handle aEditSubAction.
+<span class="lineNum">    1593 </span>            :    *
+<span class="lineNum">    1594 </span>            :    * @param aEditSubAction      Top level edit sub action which will be
+<span class="lineNum">    1595 </span>            :    *                            handled soon.
+<span class="lineNum">    1596 </span>            :    * @param aDirection          Direction of aEditSubAction.
+<span class="lineNum">    1597 </span>            :    */
+<span class="lineNum">    1598 </span>            :   virtual void
+<span class="lineNum">    1599 </span>            :   OnStartToHandleTopLevelEditSubAction(EditSubAction aEditSubAction,
+<span class="lineNum">    1600 </span>            :                                        nsIEditor::EDirection aDirection);
+<span class="lineNum">    1601 </span>            : 
+<span class="lineNum">    1602 </span>            :   /**
+<span class="lineNum">    1603 </span>            :    * OnEndHandlingTopLevelEditSubAction() is called after
+<span class="lineNum">    1604 </span>            :    * mTopLevelEditSubAction is handled.
+<span class="lineNum">    1605 </span>            :    */
+<span class="lineNum">    1606 </span>            :   virtual void OnEndHandlingTopLevelEditSubAction();
+<span class="lineNum">    1607 </span>            : 
+<span class="lineNum">    1608 </span>            :   /**
+<span class="lineNum">    1609 </span>            :    * Routines for managing the preservation of selection across
+<span class="lineNum">    1610 </span>            :    * various editor actions.
+<span class="lineNum">    1611 </span>            :    */
+<span class="lineNum">    1612 </span>            :   bool ArePreservingSelection();
+<span class="lineNum">    1613 </span>            :   void PreserveSelectionAcrossActions(Selection* aSel);
+<span class="lineNum">    1614 </span>            :   nsresult RestorePreservedSelection(Selection* aSel);
+<span class="lineNum">    1615 </span>            :   void StopPreservingSelection();
+<span class="lineNum">    1616 </span>            : 
+<span class="lineNum">    1617 </span>            :   /**
+<span class="lineNum">    1618 </span>            :    * (Begin|End)PlaceholderTransaction() are called by AutoPlaceholderBatch.
+<span class="lineNum">    1619 </span>            :    * This set of methods are similar to the (Begin|End)Transaction(), but do
+<span class="lineNum">    1620 </span>            :    * not use the transaction managers batching feature.  Instead we use a
+<span class="lineNum">    1621 </span>            :    * placeholder transaction to wrap up any further transaction while the
+<span class="lineNum">    1622 </span>            :    * batch is open.  The advantage of this is that placeholder transactions
+<span class="lineNum">    1623 </span>            :    * can later merge, if needed.  Merging is unavailable between transaction
+<span class="lineNum">    1624 </span>            :    * manager batches.
+<span class="lineNum">    1625 </span>            :    */
+<span class="lineNum">    1626 </span>            :   void BeginPlaceholderTransaction(nsAtom* aTransactionName);
+<span class="lineNum">    1627 </span>            :   void EndPlaceholderTransaction();
+<span class="lineNum">    1628 </span>            : 
+<span class="lineNum">    1629 </span>            :   void BeginUpdateViewBatch();
+<span class="lineNum">    1630 </span>            :   virtual nsresult EndUpdateViewBatch();
+<span class="lineNum">    1631 </span>            : 
+<span class="lineNum">    1632 </span>            : protected: // Shouldn't be used by friend classes
+<span class="lineNum">    1633 </span>            :   /**
+<span class="lineNum">    1634 </span>            :    * The default destructor. This should suffice. Should this be pure virtual
+<span class="lineNum">    1635 </span>            :    * for someone to derive from the EditorBase later? I don't believe so.
+<span class="lineNum">    1636 </span>            :    */
+<span class="lineNum">    1637 </span>            :   virtual ~EditorBase();
+<span class="lineNum">    1638 </span>            : 
+<span class="lineNum">    1639 </span>            :   /**
+<span class="lineNum">    1640 </span>            :    * SelectAllInternal() should be used instead of SelectAll() in editor
+<span class="lineNum">    1641 </span>            :    * because SelectAll() creates AutoEditActionSetter but we should avoid
+<span class="lineNum">    1642 </span>            :    * to create it as far as possible.
+<span class="lineNum">    1643 </span>            :    */
+<span class="lineNum">    1644 </span>            :   virtual nsresult SelectAllInternal();
+<span class="lineNum">    1645 </span>            : 
+<span class="lineNum">    1646 </span>            :   nsresult DetermineCurrentDirection();
+<span class="lineNum">    1647 </span>            :   void FireInputEvent();
+<span class="lineNum">    1648 </span>            : 
+<span class="lineNum">    1649 </span>            :   /**
+<span class="lineNum">    1650 </span>            :    * Called after a transaction is done successfully.
+<span class="lineNum">    1651 </span>            :    */
+<span class="lineNum">    1652 </span>            :   void DoAfterDoTransaction(nsITransaction *aTxn);
+<span class="lineNum">    1653 </span>            : 
+<span class="lineNum">    1654 </span>            :   /**
+<span class="lineNum">    1655 </span>            :    * Called after a transaction is undone successfully.
+<span class="lineNum">    1656 </span>            :    */
+<span class="lineNum">    1657 </span>            : 
+<span class="lineNum">    1658 </span>            :   void DoAfterUndoTransaction();
+<span class="lineNum">    1659 </span>            : 
+<span class="lineNum">    1660 </span>            :   /**
+<span class="lineNum">    1661 </span>            :    * Called after a transaction is redone successfully.
+<span class="lineNum">    1662 </span>            :    */
+<span class="lineNum">    1663 </span>            :   void DoAfterRedoTransaction();
+<span class="lineNum">    1664 </span>            : 
+<span class="lineNum">    1665 </span>            :   /**
+<span class="lineNum">    1666 </span>            :    * Tell the doc state listeners that the doc state has changed.
+<span class="lineNum">    1667 </span>            :    */
+<span class="lineNum">    1668 </span>            :   enum TDocumentListenerNotification
+<span class="lineNum">    1669 </span>            :   {
+<span class="lineNum">    1670 </span>            :     eDocumentCreated,
+<span class="lineNum">    1671 </span>            :     eDocumentToBeDestroyed,
+<span class="lineNum">    1672 </span>            :     eDocumentStateChanged
+<span class="lineNum">    1673 </span>            :   };
+<span class="lineNum">    1674 </span>            :   nsresult NotifyDocumentListeners(
+<span class="lineNum">    1675 </span>            :              TDocumentListenerNotification aNotificationType);
+<span class="lineNum">    1676 </span>            : 
+<span class="lineNum">    1677 </span>            :   /**
+<span class="lineNum">    1678 </span>            :    * Make the given selection span the entire document.
+<span class="lineNum">    1679 </span>            :    */
+<span class="lineNum">    1680 </span>            :   virtual nsresult SelectEntireDocument(Selection* aSelection);
+<span class="lineNum">    1681 </span>            : 
+<span class="lineNum">    1682 </span>            :   /**
+<span class="lineNum">    1683 </span>            :    * Helper method for scrolling the selection into view after
+<span class="lineNum">    1684 </span>            :    * an edit operation. aScrollToAnchor should be true if you
+<span class="lineNum">    1685 </span>            :    * want to scroll to the point where the selection was started.
+<span class="lineNum">    1686 </span>            :    * If false, it attempts to scroll the end of the selection into view.
+<span class="lineNum">    1687 </span>            :    *
+<span class="lineNum">    1688 </span>            :    * Editor methods *should* call this method instead of the versions
+<span class="lineNum">    1689 </span>            :    * in the various selection interfaces, since this version makes sure
+<span class="lineNum">    1690 </span>            :    * that the editor's sync/async settings for reflowing, painting, and
+<span class="lineNum">    1691 </span>            :    * scrolling match.
+<span class="lineNum">    1692 </span>            :    */
+<span class="lineNum">    1693 </span>            :   nsresult ScrollSelectionIntoView(bool aScrollToAnchor);
+<span class="lineNum">    1694 </span>            : 
+<span class="lineNum">    1695 </span>            :   /**
+<span class="lineNum">    1696 </span>            :    * Helper for GetPreviousNodeInternal() and GetNextNodeInternal().
+<span class="lineNum">    1697 </span>            :    */
+<span class="lineNum">    1698 </span>            :   nsIContent* FindNextLeafNode(nsINode* aCurrentNode,
+<span class="lineNum">    1699 </span>            :                                bool aGoForward,
+<span class="lineNum">    1700 </span>            :                                bool bNoBlockCrossing);
+<span class="lineNum">    1701 </span>            :   nsIContent* FindNode(nsINode* aCurrentNode,
+<span class="lineNum">    1702 </span>            :                        bool aGoForward,
+<span class="lineNum">    1703 </span>            :                        bool aEditableNode,
+<span class="lineNum">    1704 </span>            :                        bool aFindAnyDataNode,
+<span class="lineNum">    1705 </span>            :                        bool bNoBlockCrossing);
+<span class="lineNum">    1706 </span>            : 
+<span class="lineNum">    1707 </span>            :   /**
+<span class="lineNum">    1708 </span>            :    * Get the node immediately previous node of aNode.
+<span class="lineNum">    1709 </span>            :    * @param atNode               The node from which we start the search.
+<span class="lineNum">    1710 </span>            :    * @param aFindEditableNode    If true, only return an editable node.
+<span class="lineNum">    1711 </span>            :    * @param aFindAnyDataNode     If true, may return invisible data node
+<span class="lineNum">    1712 </span>            :    *                             like Comment.
+<span class="lineNum">    1713 </span>            :    * @param aNoBlockCrossing     If true, don't move across &quot;block&quot; nodes,
+<span class="lineNum">    1714 </span>            :    *                             whatever that means.
+<span class="lineNum">    1715 </span>            :    * @return                     The node that occurs before aNode in
+<span class="lineNum">    1716 </span>            :    *                             the tree, skipping non-editable nodes if
+<span class="lineNum">    1717 </span>            :    *                             aFindEditableNode is true.  If there is no
+<span class="lineNum">    1718 </span>            :    *                             previous node, returns nullptr.
+<span class="lineNum">    1719 </span>            :    */
+<span class="lineNum">    1720 </span>            :   nsIContent* GetPreviousNodeInternal(nsINode&amp; aNode,
+<span class="lineNum">    1721 </span>            :                                       bool aFindEditableNode,
+<span class="lineNum">    1722 </span>            :                                       bool aFindAnyDataNode,
+<span class="lineNum">    1723 </span>            :                                       bool aNoBlockCrossing);
+<span class="lineNum">    1724 </span>            : 
+<span class="lineNum">    1725 </span>            :   /**
+<span class="lineNum">    1726 </span>            :    * And another version that takes a point in DOM tree rather than a node.
+<span class="lineNum">    1727 </span>            :    */
+<span class="lineNum">    1728 </span>            :   nsIContent* GetPreviousNodeInternal(const EditorRawDOMPoint&amp; aPoint,
+<span class="lineNum">    1729 </span>            :                                       bool aFindEditableNode,
+<span class="lineNum">    1730 </span>            :                                       bool aFindAnyDataNode,
+<span class="lineNum">    1731 </span>            :                                       bool aNoBlockCrossing);
+<span class="lineNum">    1732 </span>            : 
+<span class="lineNum">    1733 </span>            :   /**
+<span class="lineNum">    1734 </span>            :    * Get the node immediately next node of aNode.
+<span class="lineNum">    1735 </span>            :    * @param aNode                The node from which we start the search.
+<span class="lineNum">    1736 </span>            :    * @param aFindEditableNode    If true, only return an editable node.
+<span class="lineNum">    1737 </span>            :    * @param aFindAnyDataNode     If true, may return invisible data node
+<span class="lineNum">    1738 </span>            :    *                             like Comment.
+<span class="lineNum">    1739 </span>            :    * @param aNoBlockCrossing     If true, don't move across &quot;block&quot; nodes,
+<span class="lineNum">    1740 </span>            :    *                             whatever that means.
+<span class="lineNum">    1741 </span>            :    * @return                     The node that occurs after aNode in the
+<span class="lineNum">    1742 </span>            :    *                             tree, skipping non-editable nodes if
+<span class="lineNum">    1743 </span>            :    *                             aFindEditableNode is true.  If there is no
+<span class="lineNum">    1744 </span>            :    *                             next node, returns nullptr.
+<span class="lineNum">    1745 </span>            :    */
+<span class="lineNum">    1746 </span>            :   nsIContent* GetNextNodeInternal(nsINode&amp; aNode,
+<span class="lineNum">    1747 </span>            :                                   bool aFindEditableNode,
+<span class="lineNum">    1748 </span>            :                                   bool aFindAnyDataNode,
+<span class="lineNum">    1749 </span>            :                                   bool bNoBlockCrossing);
+<span class="lineNum">    1750 </span>            : 
+<span class="lineNum">    1751 </span>            :   /**
+<span class="lineNum">    1752 </span>            :    * And another version that takes a point in DOM tree rather than a node.
+<span class="lineNum">    1753 </span>            :    */
+<span class="lineNum">    1754 </span>            :   nsIContent* GetNextNodeInternal(const EditorRawDOMPoint&amp; aPoint,
+<span class="lineNum">    1755 </span>            :                                   bool aFindEditableNode,
+<span class="lineNum">    1756 </span>            :                                   bool aFindAnyDataNode,
+<span class="lineNum">    1757 </span>            :                                   bool aNoBlockCrossing);
+<span class="lineNum">    1758 </span>            : 
+<span class="lineNum">    1759 </span>            : 
+<span class="lineNum">    1760 </span>            :   virtual nsresult InstallEventListeners();
+<span class="lineNum">    1761 </span>            :   virtual void CreateEventListeners();
+<span class="lineNum">    1762 </span>            :   virtual void RemoveEventListeners();
+<span class="lineNum">    1763 </span>            : 
+<span class="lineNum">    1764 </span>            :   /**
+<span class="lineNum">    1765 </span>            :    * Get the input event target. This might return null.
+<span class="lineNum">    1766 </span>            :    */
+<span class="lineNum">    1767 </span>            :   virtual already_AddRefed&lt;nsIContent&gt; GetInputEventTargetContent() = 0;
+<span class="lineNum">    1768 </span>            : 
+<span class="lineNum">    1769 </span>            :   /**
+<span class="lineNum">    1770 </span>            :    * Return true if spellchecking should be enabled for this editor.
+<span class="lineNum">    1771 </span>            :    */
+<span class="lineNum">    1772 </span>            :   bool GetDesiredSpellCheckState();
+<span class="lineNum">    1773 </span>            : 
+<span class="lineNum">    1774 </span>            :   bool CanEnableSpellCheck()
+<span class="lineNum">    1775 </span>            :   {
+<span class="lineNum">    1776 </span>            :     // Check for password/readonly/disabled, which are not spellchecked
+<span class="lineNum">    1777 </span>            :     // regardless of DOM. Also, check to see if spell check should be skipped
+<span class="lineNum">    1778 </span>            :     // or not.
+<span class="lineNum">    1779 </span>            :     return !IsPasswordEditor() &amp;&amp; !IsReadonly() &amp;&amp; !IsDisabled() &amp;&amp;
+<span class="lineNum">    1780 </span>            :            !ShouldSkipSpellCheck();
+<span class="lineNum">    1781 </span>            :   }
+<span class="lineNum">    1782 </span>            : 
+<span class="lineNum">    1783 </span>            :   /**
+<span class="lineNum">    1784 </span>            :    * InitializeSelectionAncestorLimit() is called by InitializeSelection().
+<span class="lineNum">    1785 </span>            :    * When this is called, each implementation has to call
+<span class="lineNum">    1786 </span>            :    * aSelection.SetAncestorLimiter() with aAnotherLimit.
+<span class="lineNum">    1787 </span>            :    *
+<span class="lineNum">    1788 </span>            :    * @param aSelection          The selection.
+<span class="lineNum">    1789 </span>            :    * @param aAncestorLimit      New ancestor limit of aSelection.  This always
+<span class="lineNum">    1790 </span>            :    *                            has parent node.  So, it's always safe to
+<span class="lineNum">    1791 </span>            :    *                            call SetAncestorLimit() with this node.
+<span class="lineNum">    1792 </span>            :    */
+<span class="lineNum">    1793 </span>            :   virtual void InitializeSelectionAncestorLimit(Selection&amp; aSelection,
+<span class="lineNum">    1794 </span>            :                                                 nsIContent&amp; aAncestorLimit);
+<span class="lineNum">    1795 </span>            : 
+<span class="lineNum">    1796 </span>            :   /**
+<span class="lineNum">    1797 </span>            :    * Return the offset of aChild in aParent.  Asserts fatally if parent or
+<span class="lineNum">    1798 </span>            :    * child is null, or parent is not child's parent.
+<span class="lineNum">    1799 </span>            :    * FYI: aChild must not be being removed from aParent.  In such case, these
+<span class="lineNum">    1800 </span>            :    *      methods may return wrong index if aChild doesn't have previous
+<span class="lineNum">    1801 </span>            :    *      sibling or next sibling.
+<span class="lineNum">    1802 </span>            :    */
+<span class="lineNum">    1803 </span>            :   static int32_t GetChildOffset(nsINode* aChild,
+<span class="lineNum">    1804 </span>            :                                 nsINode* aParent);
+<span class="lineNum">    1805 </span>            : 
+<span class="lineNum">    1806 </span>            :   /**
+<span class="lineNum">    1807 </span>            :    * Creates a range with just the supplied node and appends that to the
+<span class="lineNum">    1808 </span>            :    * selection.
+<span class="lineNum">    1809 </span>            :    */
+<span class="lineNum">    1810 </span>            :   nsresult AppendNodeToSelectionAsRange(nsINode* aNode);
+<span class="lineNum">    1811 </span>            : 
+<span class="lineNum">    1812 </span>            :   /**
+<span class="lineNum">    1813 </span>            :    * When you are using AppendNodeToSelectionAsRange(), call this first to
+<span class="lineNum">    1814 </span>            :    * start a new selection.
+<span class="lineNum">    1815 </span>            :    */
+<span class="lineNum">    1816 </span>            :   nsresult ClearSelection();
+<span class="lineNum">    1817 </span>            : 
+<span class="lineNum">    1818 </span>            :   /**
+<span class="lineNum">    1819 </span>            :    * Initializes selection and caret for the editor.  If aEventTarget isn't
+<span class="lineNum">    1820 </span>            :    * a host of the editor, i.e., the editor doesn't get focus, this does
+<span class="lineNum">    1821 </span>            :    * nothing.
+<span class="lineNum">    1822 </span>            :    */
+<span class="lineNum">    1823 </span>            :   nsresult InitializeSelection(dom::EventTarget* aFocusEventTarget);
+<span class="lineNum">    1824 </span>            : 
+<span class="lineNum">    1825 </span>            :   /**
+<span class="lineNum">    1826 </span>            :    * Used to insert content from a data transfer into the editable area.
+<span class="lineNum">    1827 </span>            :    * This is called for each item in the data transfer, with the index of
+<span class="lineNum">    1828 </span>            :    * each item passed as aIndex.
+<span class="lineNum">    1829 </span>            :    */
+<span class="lineNum">    1830 </span>            :   virtual nsresult InsertFromDataTransfer(dom::DataTransfer* aDataTransfer,
+<span class="lineNum">    1831 </span>            :                                           int32_t aIndex,
+<span class="lineNum">    1832 </span>            :                                           nsIDocument* aSourceDoc,
+<span class="lineNum">    1833 </span>            :                                           nsINode* aDestinationNode,
+<span class="lineNum">    1834 </span>            :                                           int32_t aDestOffset,
+<span class="lineNum">    1835 </span>            :                                           bool aDoDeleteSelection) = 0;
+<span class="lineNum">    1836 </span>            : 
+<span class="lineNum">    1837 </span>            :   enum NotificationForEditorObservers
+<span class="lineNum">    1838 </span>            :   {
+<span class="lineNum">    1839 </span>            :     eNotifyEditorObserversOfEnd,
+<span class="lineNum">    1840 </span>            :     eNotifyEditorObserversOfBefore,
+<span class="lineNum">    1841 </span>            :     eNotifyEditorObserversOfCancel
+<span class="lineNum">    1842 </span>            :   };
+<span class="lineNum">    1843 </span>            :   void NotifyEditorObservers(NotificationForEditorObservers aNotification);
+<span class="lineNum">    1844 </span>            : 
+<span class="lineNum">    1845 </span>            : private:
+<span class="lineNum">    1846 </span>            :   nsCOMPtr&lt;nsISelectionController&gt; mSelectionController;
+<span class="lineNum">    1847 </span>            :   nsCOMPtr&lt;nsIDocument&gt; mDocument;
+<span class="lineNum">    1848 </span>            : 
+<span class="lineNum">    1849 </span>            : 
+<span class="lineNum">    1850 </span>            :   /**
+<span class="lineNum">    1851 </span>            :    * SetTextDirectionTo() sets text-direction of the root element.
+<span class="lineNum">    1852 </span>            :    * Should use SwitchTextDirectionTo() or ToggleTextDirection() instead.
+<span class="lineNum">    1853 </span>            :    * This is a helper class of them.
+<span class="lineNum">    1854 </span>            :    */
+<span class="lineNum">    1855 </span>            :   nsresult SetTextDirectionTo(TextDirection aTextDirection);
+<span class="lineNum">    1856 </span>            : protected:
+<span class="lineNum">    1857 </span>            :   enum Tristate
+<span class="lineNum">    1858 </span>            :   {
+<span class="lineNum">    1859 </span>            :     eTriUnset,
+<span class="lineNum">    1860 </span>            :     eTriFalse,
+<span class="lineNum">    1861 </span>            :     eTriTrue
+<span class="lineNum">    1862 </span>            :   };
+<span class="lineNum">    1863 </span>            : 
+<span class="lineNum">    1864 </span>            :   // MIME type of the doc we are editing.
+<span class="lineNum">    1865 </span>            :   nsCString mContentMIMEType;
+<span class="lineNum">    1866 </span>            : 
+<span class="lineNum">    1867 </span>            :   RefPtr&lt;mozInlineSpellChecker&gt; mInlineSpellChecker;
+<span class="lineNum">    1868 </span>            :   // Reference to text services document for mInlineSpellChecker.
+<span class="lineNum">    1869 </span>            :   RefPtr&lt;TextServicesDocument&gt; mTextServicesDocument;
+<span class="lineNum">    1870 </span>            : 
+<span class="lineNum">    1871 </span>            :   RefPtr&lt;TransactionManager&gt; mTransactionManager;
+<span class="lineNum">    1872 </span>            :   // Cached root node.
+<span class="lineNum">    1873 </span>            :   RefPtr&lt;Element&gt; mRootElement;
+<span class="lineNum">    1874 </span>            :   // The form field as an event receiver.
+<span class="lineNum">    1875 </span>            :   nsCOMPtr&lt;dom::EventTarget&gt; mEventTarget;
+<span class="lineNum">    1876 </span>            :   RefPtr&lt;EditorEventListener&gt; mEventListener;
+<span class="lineNum">    1877 </span>            :   // Strong reference to placeholder for begin/end batch purposes.
+<span class="lineNum">    1878 </span>            :   RefPtr&lt;PlaceholderTransaction&gt; mPlaceholderTransaction;
+<span class="lineNum">    1879 </span>            :   // Name of placeholder transaction.
+<span class="lineNum">    1880 </span>            :   nsAtom* mPlaceholderName;
+<span class="lineNum">    1881 </span>            :   // Saved selection state for placeholder transaction batching.
+<span class="lineNum">    1882 </span>            :   mozilla::Maybe&lt;SelectionState&gt; mSelState;
+<span class="lineNum">    1883 </span>            :   // IME composition this is not null between compositionstart and
+<span class="lineNum">    1884 </span>            :   // compositionend.
+<span class="lineNum">    1885 </span>            :   RefPtr&lt;TextComposition&gt; mComposition;
+<span class="lineNum">    1886 </span>            : 
+<span class="lineNum">    1887 </span>            :   RefPtr&lt;TextEditRules&gt; mRules;
+<span class="lineNum">    1888 </span>            : 
+<span class="lineNum">    1889 </span>            :   RefPtr&lt;TextInputListener&gt; mTextInputListener;
+<span class="lineNum">    1890 </span>            : 
+<span class="lineNum">    1891 </span>            :   RefPtr&lt;IMEContentObserver&gt; mIMEContentObserver;
+<span class="lineNum">    1892 </span>            : 
+<span class="lineNum">    1893 </span>            :   // Listens to all low level actions on the doc.
+<span class="lineNum">    1894 </span>            :   typedef AutoTArray&lt;OwningNonNull&lt;nsIEditActionListener&gt;, 5&gt;
+<span class="lineNum">    1895 </span>            :             AutoActionListenerArray;
+<span class="lineNum">    1896 </span>            :   AutoActionListenerArray mActionListeners;
+<span class="lineNum">    1897 </span>            :   // Just notify once per high level change.
+<span class="lineNum">    1898 </span>            :   typedef AutoTArray&lt;OwningNonNull&lt;nsIEditorObserver&gt;, 3&gt;
+<span class="lineNum">    1899 </span>            :             AutoEditorObserverArray;
+<span class="lineNum">    1900 </span>            :   AutoEditorObserverArray mEditorObservers;
+<span class="lineNum">    1901 </span>            :   // Listen to overall doc state (dirty or not, just created, etc.).
+<span class="lineNum">    1902 </span>            :   typedef AutoTArray&lt;OwningNonNull&lt;nsIDocumentStateListener&gt;, 1&gt;
+<span class="lineNum">    1903 </span>            :             AutoDocumentStateListenerArray;
+<span class="lineNum">    1904 </span>            :   AutoDocumentStateListenerArray mDocStateListeners;
+<span class="lineNum">    1905 </span>            : 
+<span class="lineNum">    1906 </span>            :   // Cached selection for AutoSelectionRestorer.
+<span class="lineNum">    1907 </span>            :   SelectionState mSavedSel;
+<span class="lineNum">    1908 </span>            :   // Utility class object for maintaining preserved ranges.
+<span class="lineNum">    1909 </span>            :   RangeUpdater mRangeUpdater;
+<span class="lineNum">    1910 </span>            : 
+<span class="lineNum">    1911 </span>            :   // Number of modifications (for undo/redo stack).
+<span class="lineNum">    1912 </span>            :   uint32_t mModCount;
+<span class="lineNum">    1913 </span>            :   // Behavior flags. See nsIPlaintextEditor.idl for the flags we use.
+<span class="lineNum">    1914 </span>            :   uint32_t mFlags;
+<span class="lineNum">    1915 </span>            : 
+<span class="lineNum">    1916 </span>            :   int32_t mUpdateCount;
+<span class="lineNum">    1917 </span>            : 
+<span class="lineNum">    1918 </span>            :   // Nesting count for batching.
+<span class="lineNum">    1919 </span>            :   int32_t mPlaceholderBatch;
+<span class="lineNum">    1920 </span>            :   // The top level edit sub-action.
+<span class="lineNum">    1921 </span>            :   EditSubAction mTopLevelEditSubAction;
+<span class="lineNum">    1922 </span>            : 
+<span class="lineNum">    1923 </span>            :   // The top level edit sub-action's direction.
+<span class="lineNum">    1924 </span>            :   EDirection mDirection;
+<span class="lineNum">    1925 </span>            :   // -1 = not initialized
+<span class="lineNum">    1926 </span>            :   int8_t mDocDirtyState;
+<span class="lineNum">    1927 </span>            :   // A Tristate value.
+<span class="lineNum">    1928 </span>            :   uint8_t mSpellcheckCheckboxState;
+<span class="lineNum">    1929 </span>            : 
+<span class="lineNum">    1930 </span>            :   // Turn off for conservative selection adjustment by transactions.
+<span class="lineNum">    1931 </span>            :   bool mShouldTxnSetSelection;
+<span class="lineNum">    1932 </span>            :   // Whether PreDestroy has been called.
+<span class="lineNum">    1933 </span>            :   bool mDidPreDestroy;
+<span class="lineNum">    1934 </span>            :   // Whether PostCreate has been called.
+<span class="lineNum">    1935 </span>            :   bool mDidPostCreate;
+<span class="lineNum">    1936 </span>            :   bool mDispatchInputEvent;
+<span class="lineNum">    1937 </span>            :   // True while the instance is handling an edit sub-action.
+<span class="lineNum">    1938 </span>            :   bool mIsInEditSubAction;
+<span class="lineNum">    1939 </span>            :   // Whether caret is hidden forcibly.
+<span class="lineNum">    1940 </span>            :   bool mHidingCaret;
+<span class="lineNum">    1941 </span>            :   // Whether spellchecker dictionary is initialized after focused.
+<span class="lineNum">    1942 </span>            :   bool mSpellCheckerDictionaryUpdated;
+<span class="lineNum">    1943 </span>            :   // Whether we are an HTML editor class.
+<span class="lineNum">    1944 </span>            :   bool mIsHTMLEditorClass;
+<span class="lineNum">    1945 </span>            : 
+<span class="lineNum">    1946 </span>            :   friend class AutoPlaceholderBatch;
+<span class="lineNum">    1947 </span>            :   friend class AutoSelectionRestorer;
+<span class="lineNum">    1948 </span>            :   friend class AutoTopLevelEditSubActionNotifier;
+<span class="lineNum">    1949 </span>            :   friend class AutoTransactionsConserveSelection;
+<span class="lineNum">    1950 </span>            :   friend class AutoUpdateViewBatch;
+<span class="lineNum">    1951 </span>            :   friend class CompositionTransaction;
+<span class="lineNum">    1952 </span>            :   friend class CreateElementTransaction;
+<span class="lineNum">    1953 </span>            :   friend class CSSEditUtils;
+<span class="lineNum">    1954 </span>            :   friend class DeleteNodeTransaction;
+<span class="lineNum">    1955 </span>            :   friend class DeleteTextTransaction;
+<span class="lineNum">    1956 </span>            :   friend class HTMLEditRules;
+<span class="lineNum">    1957 </span>            :   friend class HTMLEditUtils;
+<span class="lineNum">    1958 </span>            :   friend class InsertNodeTransaction;
+<span class="lineNum">    1959 </span>            :   friend class InsertTextTransaction;
+<span class="lineNum">    1960 </span>            :   friend class JoinNodeTransaction;
+<span class="lineNum">    1961 </span>            :   friend class SplitNodeTransaction;
+<span class="lineNum">    1962 </span>            :   friend class TextEditRules;
+<span class="lineNum">    1963 </span>            :   friend class TypeInState;
+<span class="lineNum">    1964 </span>            :   friend class WSRunObject;
+<span class="lineNum">    1965 </span>            :   friend class nsIEditor;
+<span class="lineNum">    1966 </span>            : };
+<span class="lineNum">    1967 </span>            : 
+<span class="lineNum">    1968 </span>            : } // namespace mozilla
+<span class="lineNum">    1969 </span>            : 
+<span class="lineNum">    1970 </span>            : mozilla::EditorBase*
+<span class="lineNum">    1971 </span>            : nsIEditor::AsEditorBase()
+<span class="lineNum">    1972 </span>            : {
+<span class="lineNum">    1973 </span>            :   return static_cast&lt;mozilla::EditorBase*&gt;(this);
+<span class="lineNum">    1974 </span>            : }
+<span class="lineNum">    1975 </span>            : 
+<span class="lineNum">    1976 </span>            : const mozilla::EditorBase*
+<span class="lineNum">    1977 </span>            : nsIEditor::AsEditorBase() const
+<span class="lineNum">    1978 </span>            : {
+<span class="lineNum">    1979 </span>            :   return static_cast&lt;const mozilla::EditorBase*&gt;(this);
+<span class="lineNum">    1980 </span>            : }
+<span class="lineNum">    1981 </span>            : 
+<span class="lineNum">    1982 </span>            : #endif // #ifndef mozilla_EditorBase_h
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

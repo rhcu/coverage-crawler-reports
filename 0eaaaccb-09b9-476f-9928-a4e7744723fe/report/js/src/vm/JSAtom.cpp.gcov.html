@@ -1,0 +1,882 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - js/src/vm/JSAtom.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../../index.html">top level</a> - <a href="index.html">js/src/vm</a> - JSAtom.cpp<span style="font-size: 80%;"> (source / <a href="JSAtom.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">44</td>
+            <td class="headerCovTableEntry">324</td>
+            <td class="headerCovTableEntryLo">13.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-</a>
+<span class="lineNum">       2 </span>            :  * vim: set ts=8 sts=4 et sw=4 tw=99:
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : /*
+<span class="lineNum">       8 </span>            :  * JS atom table.
+<span class="lineNum">       9 </span>            :  */
+<span class="lineNum">      10 </span>            : 
+<span class="lineNum">      11 </span>            : #include &quot;vm/JSAtom-inl.h&quot;
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/ArrayUtils.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/EndianUtils.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/RangedPtr.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/Unused.h&quot;
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : #include &lt;string.h&gt;
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : #include &quot;jstypes.h&quot;
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span>            : #include &quot;builtin/String.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;gc/Marking.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;util/Text.h&quot;
+<span class="lineNum">      25 </span>            : #include &quot;vm/JSContext.h&quot;
+<span class="lineNum">      26 </span>            : #include &quot;vm/SymbolType.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;vm/Xdr.h&quot;
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : #include &quot;gc/AtomMarking-inl.h&quot;
+<span class="lineNum">      30 </span>            : #include &quot;vm/JSContext-inl.h&quot;
+<span class="lineNum">      31 </span>            : #include &quot;vm/JSObject-inl.h&quot;
+<span class="lineNum">      32 </span>            : #include &quot;vm/Realm-inl.h&quot;
+<span class="lineNum">      33 </span>            : #include &quot;vm/StringType-inl.h&quot;
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : using namespace js;
+<span class="lineNum">      36 </span>            : using namespace js::gc;
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : using mozilla::ArrayEnd;
+<span class="lineNum">      39 </span>            : using mozilla::ArrayLength;
+<span class="lineNum">      40 </span>            : using mozilla::Maybe;
+<span class="lineNum">      41 </span>            : using mozilla::Nothing;
+<span class="lineNum">      42 </span>            : using mozilla::RangedPtr;
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 : struct js::AtomHasher::Lookup</span>
+<span class="lineNum">      45 </span>            : {
+<span class="lineNum">      46 </span>            :     union {
+<span class="lineNum">      47 </span>            :         const JS::Latin1Char* latin1Chars;
+<span class="lineNum">      48 </span>            :         const char16_t* twoByteChars;
+<span class="lineNum">      49 </span>            :     };
+<span class="lineNum">      50 </span>            :     bool isLatin1;
+<span class="lineNum">      51 </span>            :     size_t length;
+<span class="lineNum">      52 </span>            :     const JSAtom* atom; /* Optional. */
+<span class="lineNum">      53 </span>            :     JS::AutoCheckCannotGC nogc;
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            :     HashNumber hash;
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 :     MOZ_ALWAYS_INLINE Lookup(const char16_t* chars, size_t length)</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :       : twoByteChars(chars), isLatin1(false), length(length), atom(nullptr),</span>
+<span class="lineNum">      59 </span><span class="lineNoCov">          0 :         hash(mozilla::HashString(chars, length))</span>
+<span class="lineNum">      60 </span><span class="lineNoCov">          0 :     {}</span>
+<span class="lineNum">      61 </span>            : 
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :     MOZ_ALWAYS_INLINE Lookup(const JS::Latin1Char* chars, size_t length)</span>
+<span class="lineNum">      63 </span><span class="lineNoCov">          0 :       : latin1Chars(chars), isLatin1(true), length(length), atom(nullptr),</span>
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :         hash(mozilla::HashString(chars, length))</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :     {}</span>
+<span class="lineNum">      66 </span>            : 
+<span class="lineNum">      67 </span><span class="lineNoCov">          0 :     inline explicit Lookup(const JSAtom* atom)</span>
+<span class="lineNum">      68 </span><span class="lineNoCov">          0 :       : isLatin1(atom-&gt;hasLatin1Chars()), length(atom-&gt;length()), atom(atom),</span>
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :         hash(atom-&gt;hash())</span>
+<span class="lineNum">      70 </span>            :     {
+<span class="lineNum">      71 </span><span class="lineNoCov">          0 :         if (isLatin1) {</span>
+<span class="lineNum">      72 </span><span class="lineNoCov">          0 :             latin1Chars = atom-&gt;latin1Chars(nogc);</span>
+<span class="lineNum">      73 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(mozilla::HashString(latin1Chars, length) == hash);</span>
+<span class="lineNum">      74 </span>            :         } else {
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :             twoByteChars = atom-&gt;twoByteChars(nogc);</span>
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(mozilla::HashString(twoByteChars, length) == hash);</span>
+<span class="lineNum">      77 </span>            :         }
+<span class="lineNum">      78 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">      79 </span>            : };
+<span class="lineNum">      80 </span>            : 
+<span class="lineNum">      81 </span>            : inline HashNumber
+<span class="lineNum">      82 </span>            : js::AtomHasher::hash(const Lookup&amp; l)
+<span class="lineNum">      83 </span>            : {
+<span class="lineNum">      84 </span>            :     return l.hash;
+<span class="lineNum">      85 </span>            : }
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : MOZ_ALWAYS_INLINE bool
+<span class="lineNum">      88 </span><span class="lineNoCov">          0 : js::AtomHasher::match(const AtomStateEntry&amp; entry, const Lookup&amp; lookup)</span>
+<span class="lineNum">      89 </span>            : {
+<span class="lineNum">      90 </span><span class="lineNoCov">          0 :     JSAtom* key = entry.asPtrUnbarriered();</span>
+<span class="lineNum">      91 </span><span class="lineNoCov">          0 :     if (lookup.atom)</span>
+<span class="lineNum">      92 </span><span class="lineNoCov">          0 :         return lookup.atom == key;</span>
+<span class="lineNum">      93 </span><span class="lineNoCov">          0 :     if (key-&gt;length() != lookup.length || key-&gt;hash() != lookup.hash)</span>
+<span class="lineNum">      94 </span>            :         return false;
+<span class="lineNum">      95 </span>            : 
+<span class="lineNum">      96 </span><span class="lineNoCov">          0 :     if (key-&gt;hasLatin1Chars()) {</span>
+<span class="lineNum">      97 </span><span class="lineNoCov">          0 :         const Latin1Char* keyChars = key-&gt;latin1Chars(lookup.nogc);</span>
+<span class="lineNum">      98 </span><span class="lineNoCov">          0 :         if (lookup.isLatin1)</span>
+<span class="lineNum">      99 </span><span class="lineNoCov">          0 :             return mozilla::PodEqual(keyChars, lookup.latin1Chars, lookup.length);</span>
+<span class="lineNum">     100 </span><span class="lineNoCov">          0 :         return EqualChars(keyChars, lookup.twoByteChars, lookup.length);</span>
+<span class="lineNum">     101 </span>            :     }
+<span class="lineNum">     102 </span>            : 
+<span class="lineNum">     103 </span><span class="lineNoCov">          0 :     const char16_t* keyChars = key-&gt;twoByteChars(lookup.nogc);</span>
+<span class="lineNum">     104 </span><span class="lineNoCov">          0 :     if (lookup.isLatin1)</span>
+<span class="lineNum">     105 </span><span class="lineNoCov">          0 :         return EqualChars(lookup.latin1Chars, keyChars, lookup.length);</span>
+<span class="lineNum">     106 </span><span class="lineNoCov">          0 :     return mozilla::PodEqual(keyChars, lookup.twoByteChars, lookup.length);</span>
+<span class="lineNum">     107 </span>            : }
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span>            : inline JSAtom*
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 : js::AtomStateEntry::asPtr(JSContext* cx) const</span>
+<span class="lineNum">     111 </span>            : {
+<span class="lineNum">     112 </span><span class="lineNoCov">          0 :     JSAtom* atom = asPtrUnbarriered();</span>
+<span class="lineNum">     113 </span><span class="lineNoCov">          0 :     if (!cx-&gt;helperThread())</span>
+<span class="lineNum">     114 </span><span class="lineNoCov">          0 :         JSString::readBarrier(atom);</span>
+<span class="lineNum">     115 </span><span class="lineNoCov">          0 :     return atom;</span>
+<span class="lineNum">     116 </span>            : }
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            : const char*
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 : js::AtomToPrintableString(JSContext* cx, JSAtom* atom, JSAutoByteString* bytes)</span>
+<span class="lineNum">     120 </span>            : {
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :     JSString* str = QuoteString(cx, atom, 0);</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :     if (!str)</span>
+<span class="lineNum">     123 </span>            :         return nullptr;
+<span class="lineNum">     124 </span><span class="lineNoCov">          0 :     return bytes-&gt;encodeLatin1(cx, str);</span>
+<span class="lineNum">     125 </span>            : }
+<span class="lineNum">     126 </span>            : 
+<span class="lineNum">     127 </span>            : #define DEFINE_PROTO_STRING(name,init,clasp) const char js_##name##_str[] = #name;
+<span class="lineNum">     128 </span>            : JS_FOR_EACH_PROTOTYPE(DEFINE_PROTO_STRING)
+<span class="lineNum">     129 </span>            : #undef DEFINE_PROTO_STRING
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span>            : #define CONST_CHAR_STR(idpart, id, text) const char js_##idpart##_str[] = text;
+<span class="lineNum">     132 </span>            : FOR_EACH_COMMON_PROPERTYNAME(CONST_CHAR_STR)
+<span class="lineNum">     133 </span>            : #undef CONST_CHAR_STR
+<span class="lineNum">     134 </span>            : 
+<span class="lineNum">     135 </span>            : // Use a low initial capacity for atom hash tables to avoid penalizing runtimes
+<span class="lineNum">     136 </span>            : // which create a small number of atoms.
+<span class="lineNum">     137 </span>            : static const uint32_t JS_STRING_HASH_COUNT = 64;
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            : MOZ_ALWAYS_INLINE AtomSet::Ptr
+<span class="lineNum">     140 </span>            : js::FrozenAtomSet::readonlyThreadsafeLookup(const AtomSet::Lookup&amp; l) const
+<span class="lineNum">     141 </span>            : {
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :     return mSet-&gt;readonlyThreadsafeLookup(l);</span>
+<span class="lineNum">     143 </span>            : }
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span>            : struct CommonNameInfo
+<span class="lineNum">     146 </span>            : {
+<span class="lineNum">     147 </span>            :     const char* str;
+<span class="lineNum">     148 </span>            :     size_t length;
+<span class="lineNum">     149 </span>            : };
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            : bool
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 : JSRuntime::initializeAtoms(JSContext* cx)</span>
+<span class="lineNum">     153 </span>            : {
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :     atoms_ = js_new&lt;AtomSet&gt;();</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :     if (!atoms_ || !atoms_-&gt;init(JS_STRING_HASH_COUNT))</span>
+<span class="lineNum">     156 </span>            :         return false;
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            :     // |permanentAtoms| hasn't been created yet.
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!permanentAtoms);</span>
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :     if (parentRuntime) {</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         staticStrings = parentRuntime-&gt;staticStrings;</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         commonNames = parentRuntime-&gt;commonNames;</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         emptyString = parentRuntime-&gt;emptyString;</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :         permanentAtoms = parentRuntime-&gt;permanentAtoms;</span>
+<span class="lineNum">     166 </span><span class="lineNoCov">          0 :         wellKnownSymbols = parentRuntime-&gt;wellKnownSymbols;</span>
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :         return true;</span>
+<span class="lineNum">     168 </span>            :     }
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span><span class="lineNoCov">          0 :     staticStrings = js_new&lt;StaticStrings&gt;();</span>
+<span class="lineNum">     171 </span><span class="lineNoCov">          0 :     if (!staticStrings || !staticStrings-&gt;init(cx))</span>
+<span class="lineNum">     172 </span>            :         return false;
+<span class="lineNum">     173 </span>            : 
+<span class="lineNum">     174 </span>            :     static const CommonNameInfo cachedNames[] = {
+<span class="lineNum">     175 </span>            : #define COMMON_NAME_INFO(idpart, id, text) { js_##idpart##_str, sizeof(text) - 1 },
+<span class="lineNum">     176 </span>            :         FOR_EACH_COMMON_PROPERTYNAME(COMMON_NAME_INFO)
+<span class="lineNum">     177 </span>            : #undef COMMON_NAME_INFO
+<span class="lineNum">     178 </span>            : #define COMMON_NAME_INFO(name, init, clasp) { js_##name##_str, sizeof(#name) - 1 },
+<span class="lineNum">     179 </span>            :         JS_FOR_EACH_PROTOTYPE(COMMON_NAME_INFO)
+<span class="lineNum">     180 </span>            : #undef COMMON_NAME_INFO
+<span class="lineNum">     181 </span>            : #define COMMON_NAME_INFO(name) { #name, sizeof(#name) - 1 },
+<span class="lineNum">     182 </span>            :         JS_FOR_EACH_WELL_KNOWN_SYMBOL(COMMON_NAME_INFO)
+<span class="lineNum">     183 </span>            : #undef COMMON_NAME_INFO
+<span class="lineNum">     184 </span>            : #define COMMON_NAME_INFO(name) { &quot;Symbol.&quot; #name, sizeof(&quot;Symbol.&quot; #name) - 1 },
+<span class="lineNum">     185 </span>            :         JS_FOR_EACH_WELL_KNOWN_SYMBOL(COMMON_NAME_INFO)
+<span class="lineNum">     186 </span>            : #undef COMMON_NAME_INFO
+<span class="lineNum">     187 </span>            :     };
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :     commonNames = js_new&lt;JSAtomState&gt;();</span>
+<span class="lineNum">     190 </span><span class="lineNoCov">          0 :     if (!commonNames)</span>
+<span class="lineNum">     191 </span>            :         return false;
+<span class="lineNum">     192 </span>            : 
+<span class="lineNum">     193 </span>            :     ImmutablePropertyNamePtr* names = reinterpret_cast&lt;ImmutablePropertyNamePtr*&gt;(commonNames.ref());
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :     for (size_t i = 0; i &lt; ArrayLength(cachedNames); i++, names++) {</span>
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :         JSAtom* atom = Atomize(cx, cachedNames[i].str, cachedNames[i].length, PinAtom);</span>
+<span class="lineNum">     196 </span><span class="lineNoCov">          0 :         if (!atom)</span>
+<span class="lineNum">     197 </span>            :             return false;
+<span class="lineNum">     198 </span><span class="lineNoCov">          0 :         names-&gt;init(atom-&gt;asPropertyName());</span>
+<span class="lineNum">     199 </span>            :     }
+<span class="lineNum">     200 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(uintptr_t(names) == uintptr_t(commonNames + 1));</span>
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :     emptyString = commonNames-&gt;empty;</span>
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span>            :     // Create the well-known symbols.
+<span class="lineNum">     205 </span><span class="lineNoCov">          0 :     wellKnownSymbols = js_new&lt;WellKnownSymbols&gt;();</span>
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 :     if (!wellKnownSymbols)</span>
+<span class="lineNum">     207 </span>            :         return false;
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineNoCov">          0 :     ImmutablePropertyNamePtr* descriptions = commonNames-&gt;wellKnownSymbolDescriptions();</span>
+<span class="lineNum">     210 </span><span class="lineNoCov">          0 :     ImmutableSymbolPtr* symbols = reinterpret_cast&lt;ImmutableSymbolPtr*&gt;(wellKnownSymbols.ref());</span>
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :     for (size_t i = 0; i &lt; JS::WellKnownSymbolLimit; i++) {</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :         JS::Symbol* symbol = JS::Symbol::new_(cx, JS::SymbolCode(i), descriptions[i]);</span>
+<span class="lineNum">     213 </span><span class="lineNoCov">          0 :         if (!symbol) {</span>
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :             ReportOutOfMemory(cx);</span>
+<span class="lineNum">     215 </span><span class="lineNoCov">          0 :             return false;</span>
+<span class="lineNum">     216 </span>            :         }
+<span class="lineNum">     217 </span><span class="lineNoCov">          0 :         symbols[i].init(symbol);</span>
+<span class="lineNum">     218 </span>            :     }
+<span class="lineNum">     219 </span>            : 
+<span class="lineNum">     220 </span>            :     return true;
+<span class="lineNum">     221 </span>            : }
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            : void
+<span class="lineNum">     224 </span><span class="lineNoCov">          0 : JSRuntime::finishAtoms()</span>
+<span class="lineNum">     225 </span>            : {
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :     js_delete(atoms_.ref());</span>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :     if (!parentRuntime) {</span>
+<span class="lineNum">     229 </span><span class="lineNoCov">          0 :         js_delete(staticStrings.ref());</span>
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 :         js_delete(commonNames.ref());</span>
+<span class="lineNum">     231 </span><span class="lineNoCov">          0 :         js_delete(permanentAtoms.ref());</span>
+<span class="lineNum">     232 </span><span class="lineNoCov">          0 :         js_delete(wellKnownSymbols.ref());</span>
+<span class="lineNum">     233 </span>            :     }
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :     atoms_ = nullptr;</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :     staticStrings = nullptr;</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :     commonNames = nullptr;</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :     permanentAtoms = nullptr;</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :     wellKnownSymbols = nullptr;</span>
+<span class="lineNum">     240 </span><span class="lineNoCov">          0 :     emptyString = nullptr;</span>
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     242 </span>            : 
+<span class="lineNum">     243 </span>            : static inline void
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 : TracePinnedAtoms(JSTracer* trc, const AtomSet&amp; atoms)</span>
+<span class="lineNum">     245 </span>            : {
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :     for (auto r = atoms.all(); !r.empty(); r.popFront()) {</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         const AtomStateEntry&amp; entry = r.front();</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(entry.isPinned() == entry.asPtrUnbarriered()-&gt;isPinned());</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :         if (entry.isPinned()) {</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :             JSAtom* atom = entry.asPtrUnbarriered();</span>
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :             TraceRoot(trc, &amp;atom, &quot;interned_atom&quot;);</span>
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(entry.asPtrUnbarriered() == atom);</span>
+<span class="lineNum">     253 </span>            :         }
+<span class="lineNum">     254 </span>            :     }
+<span class="lineNum">     255 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span>            : void
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 : js::TraceAtoms(JSTracer* trc, AutoLockForExclusiveAccess&amp; lock)</span>
+<span class="lineNum">     259 </span>            : {
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :     JSRuntime* rt = trc-&gt;runtime();</span>
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :     if (rt-&gt;atomsAreFinished())</span>
+<span class="lineNum">     263 </span>            :         return;
+<span class="lineNum">     264 </span>            : 
+<span class="lineNum">     265 </span><span class="lineNoCov">          0 :     TracePinnedAtoms(trc, rt-&gt;atoms(lock));</span>
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :     if (rt-&gt;atomsAddedWhileSweeping())</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         TracePinnedAtoms(trc, *rt-&gt;atomsAddedWhileSweeping());</span>
+<span class="lineNum">     268 </span>            : }
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span>            : void
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 : js::TracePermanentAtoms(JSTracer* trc)</span>
+<span class="lineNum">     272 </span>            : {
+<span class="lineNum">     273 </span><span class="lineNoCov">          0 :     JSRuntime* rt = trc-&gt;runtime();</span>
+<span class="lineNum">     274 </span>            : 
+<span class="lineNum">     275 </span>            :     // Permanent atoms only need to be traced in the runtime which owns them.
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :     if (rt-&gt;parentRuntime)</span>
+<span class="lineNum">     277 </span>            :         return;
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            :     // Static strings are not included in the permanent atoms table.
+<span class="lineNum">     280 </span><span class="lineNoCov">          0 :     if (rt-&gt;staticStrings)</span>
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :         rt-&gt;staticStrings-&gt;trace(trc);</span>
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :     if (rt-&gt;permanentAtoms) {</span>
+<span class="lineNum">     284 </span><span class="lineNoCov">          0 :         for (FrozenAtomSet::Range r(rt-&gt;permanentAtoms-&gt;all()); !r.empty(); r.popFront()) {</span>
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 :             const AtomStateEntry&amp; entry = r.front();</span>
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :             JSAtom* atom = entry.asPtrUnbarriered();</span>
+<span class="lineNum">     288 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(atom-&gt;isPinned());</span>
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :             TraceProcessGlobalRoot(trc, atom, &quot;permanent atom&quot;);</span>
+<span class="lineNum">     290 </span>            :         }
+<span class="lineNum">     291 </span>            :     }
+<span class="lineNum">     292 </span>            : }
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span>            : void
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 : js::TraceWellKnownSymbols(JSTracer* trc)</span>
+<span class="lineNum">     296 </span>            : {
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :     JSRuntime* rt = trc-&gt;runtime();</span>
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :     if (rt-&gt;parentRuntime)</span>
+<span class="lineNum">     300 </span>            :         return;
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :     if (WellKnownSymbols* wks = rt-&gt;wellKnownSymbols) {</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :         for (size_t i = 0; i &lt; JS::WellKnownSymbolLimit; i++)</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :             TraceProcessGlobalRoot(trc, wks-&gt;get(i).get(), &quot;well_known_symbol&quot;);</span>
+<span class="lineNum">     305 </span>            :     }
+<span class="lineNum">     306 </span>            : }
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span>            : bool
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 : JSRuntime::transformToPermanentAtoms(JSContext* cx)</span>
+<span class="lineNum">     310 </span>            : {
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!parentRuntime);</span>
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span>            :     // All static strings were created as permanent atoms, now move the contents
+<span class="lineNum">     314 </span>            :     // of the atoms table into permanentAtoms and mark each as permanent.
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!permanentAtoms);</span>
+<span class="lineNum">     317 </span><span class="lineNoCov">          0 :     permanentAtoms = js_new&lt;FrozenAtomSet&gt;(atoms_);   // takes ownership of atoms_</span>
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span><span class="lineNoCov">          0 :     atoms_ = js_new&lt;AtomSet&gt;();</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :     if (!atoms_ || !atoms_-&gt;init(JS_STRING_HASH_COUNT))</span>
+<span class="lineNum">     321 </span>            :         return false;
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :     for (FrozenAtomSet::Range r(permanentAtoms-&gt;all()); !r.empty(); r.popFront()) {</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :         AtomStateEntry entry = r.front();</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :         JSAtom* atom = entry.asPtr(cx);</span>
+<span class="lineNum">     326 </span><span class="lineNoCov">          0 :         atom-&gt;morphIntoPermanentAtom();</span>
+<span class="lineNum">     327 </span>            :     }
+<span class="lineNum">     328 </span>            : 
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :     return true;</span>
+<span class="lineNum">     330 </span>            : }
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span>            : static inline AtomSet::Ptr
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 : LookupAtomState(JSRuntime* rt, const AtomHasher::Lookup&amp; lookup)</span>
+<span class="lineNum">     334 </span>            : {
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(rt-&gt;currentThreadHasExclusiveAccess());</span>
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :     AtomSet::Ptr p = rt-&gt;unsafeAtoms().lookup(lookup); // Safe because we hold the lock.</span>
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :     if (!p &amp;&amp; rt-&gt;atomsAddedWhileSweeping())</span>
+<span class="lineNum">     339 </span><span class="lineNoCov">          0 :         p = rt-&gt;atomsAddedWhileSweeping()-&gt;lookup(lookup);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :     return p;</span>
+<span class="lineNum">     341 </span>            : }
+<span class="lineNum">     342 </span>            : 
+<span class="lineNum">     343 </span>            : template &lt;typename CharT&gt;
+<span class="lineNum">     344 </span>            : MOZ_ALWAYS_INLINE
+<span class="lineNum">     345 </span>            : static JSAtom*
+<span class="lineNum">     346 </span>            : AtomizeAndCopyCharsInner(JSContext* cx, const CharT* tbchars, size_t length, PinningBehavior pin,
+<span class="lineNum">     347 </span>            :                          const Maybe&lt;uint32_t&gt;&amp; indexValue, const AtomHasher::Lookup&amp; lookup);
+<span class="lineNum">     348 </span>            : 
+<span class="lineNum">     349 </span>            : /* |tbchars| must not point into an inline or short string. */
+<span class="lineNum">     350 </span>            : template &lt;typename CharT&gt;
+<span class="lineNum">     351 </span>            : MOZ_ALWAYS_INLINE
+<span class="lineNum">     352 </span>            : static JSAtom*
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 : AtomizeAndCopyChars(JSContext* cx, const CharT* tbchars, size_t length, PinningBehavior pin,</span>
+<span class="lineNum">     354 </span>            :                     const Maybe&lt;uint32_t&gt;&amp; indexValue)
+<span class="lineNum">     355 </span>            : {
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :     if (JSAtom* s = cx-&gt;staticStrings().lookup(tbchars, length))</span>
+<span class="lineNum">     357 </span>            :         return s;
+<span class="lineNum">     358 </span>            : 
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :     AtomHasher::Lookup lookup(tbchars, length);</span>
+<span class="lineNum">     360 </span>            : 
+<span class="lineNum">     361 </span>            :     // Try the per-Zone cache first. If we find the atom there we can avoid the
+<span class="lineNum">     362 </span>            :     // atoms lock, the markAtom call, and the multiple HashSet lookups below.
+<span class="lineNum">     363 </span>            :     // We don't use the per-Zone cache if we want a pinned atom: handling that
+<span class="lineNum">     364 </span>            :     // is more complicated and pinning atoms is relatively uncommon.
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :     Zone* zone = cx-&gt;zone();</span>
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 :     Maybe&lt;AtomSet::AddPtr&gt; zonePtr;</span>
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :     if (MOZ_LIKELY(zone &amp;&amp; pin == DoNotPinAtom)) {</span>
+<span class="lineNum">     368 </span><span class="lineNoCov">          0 :         zonePtr.emplace(zone-&gt;atomCache().lookupForAdd(lookup));</span>
+<span class="lineNum">     369 </span><span class="lineNoCov">          0 :         if (zonePtr.ref()) {</span>
+<span class="lineNum">     370 </span>            :             // The cache is purged on GC so if we're in the middle of an
+<span class="lineNum">     371 </span>            :             // incremental GC we should have barriered the atom when we put
+<span class="lineNum">     372 </span>            :             // it in the cache.
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :             JSAtom* atom = zonePtr.ref()-&gt;asPtrUnbarriered();</span>
+<span class="lineNum">     374 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(AtomIsMarked(zone, atom));</span>
+<span class="lineNum">     375 </span>            :             return atom;
+<span class="lineNum">     376 </span>            :         }
+<span class="lineNum">     377 </span>            :     }
+<span class="lineNum">     378 </span>            : 
+<span class="lineNum">     379 </span>            :     // Note: when this function is called while the permanent atoms table is
+<span class="lineNum">     380 </span>            :     // being initialized (in initializeAtoms()), |permanentAtoms| is not yet
+<span class="lineNum">     381 </span>            :     // initialized so this lookup is always skipped. Only once
+<span class="lineNum">     382 </span>            :     // transformToPermanentAtoms() is called does |permanentAtoms| get
+<span class="lineNum">     383 </span>            :     // initialized and then this lookup will go ahead.
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :     if (cx-&gt;isPermanentAtomsInitialized()) {</span>
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :         AtomSet::Ptr pp = cx-&gt;permanentAtoms().readonlyThreadsafeLookup(lookup);</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :         if (pp) {</span>
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :             JSAtom* atom = pp-&gt;asPtr(cx);</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :             if (zonePtr &amp;&amp; !zone-&gt;atomCache().add(*zonePtr, AtomStateEntry(atom, false))) {</span>
+<span class="lineNum">     389 </span><span class="lineNoCov">          0 :                 ReportOutOfMemory(cx);</span>
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :                 return nullptr;</span>
+<span class="lineNum">     391 </span>            :             }
+<span class="lineNum">     392 </span>            : 
+<span class="lineNum">     393 </span>            :             return atom;
+<span class="lineNum">     394 </span>            :         }
+<span class="lineNum">     395 </span>            :     }
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span>            :     // Validate the length before taking the exclusive access lock, as throwing
+<span class="lineNum">     398 </span>            :     // an exception here may reenter this code.
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :     if (MOZ_UNLIKELY(!JSString::validateLength(cx, length)))</span>
+<span class="lineNum">     400 </span>            :         return nullptr;
+<span class="lineNum">     401 </span>            : 
+<span class="lineNum">     402 </span><span class="lineCov">      66631 :     JSAtom* atom = AtomizeAndCopyCharsInner(cx, tbchars, length, pin, indexValue, lookup);</span>
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 :     if (!atom)</span>
+<span class="lineNum">     404 </span>            :         return nullptr;
+<span class="lineNum">     405 </span>            : 
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :     cx-&gt;atomMarking().inlinedMarkAtom(cx, atom);</span>
+<span class="lineNum">     407 </span>            : 
+<span class="lineNum">     408 </span><span class="lineCov">     250206 :     if (zonePtr &amp;&amp; !zone-&gt;atomCache().add(*zonePtr, AtomStateEntry(atom, false))) {</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :         ReportOutOfMemory(cx);</span>
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :         return nullptr;</span>
+<span class="lineNum">     411 </span>            :     }
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span>            :     return atom;
+<span class="lineNum">     414 </span>            : }
+<span class="lineNum">     415 </span>            : 
+<span class="lineNum">     416 </span>            : template &lt;typename CharT&gt;
+<span class="lineNum">     417 </span>            : MOZ_ALWAYS_INLINE
+<span class="lineNum">     418 </span>            : static JSAtom*
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 : AtomizeAndCopyCharsInner(JSContext* cx, const CharT* tbchars, size_t length, PinningBehavior pin,</span>
+<span class="lineNum">     420 </span>            :                          const Maybe&lt;uint32_t&gt;&amp; indexValue, const AtomHasher::Lookup&amp; lookup)
+<span class="lineNum">     421 </span>            : {
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :     AutoLockForExclusiveAccess lock(cx);</span>
+<span class="lineNum">     423 </span>            : 
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :     JSRuntime* rt = cx-&gt;runtime();</span>
+<span class="lineNum">     425 </span><span class="lineNoCov">          0 :     AtomSet&amp; atoms = rt-&gt;atoms(lock);</span>
+<span class="lineNum">     426 </span><span class="lineCov">      66631 :     AtomSet* atomsAddedWhileSweeping = rt-&gt;atomsAddedWhileSweeping();</span>
+<span class="lineNum">     427 </span><span class="lineCov">      66631 :     AtomSet::AddPtr p;</span>
+<span class="lineNum">     428 </span>            : 
+<span class="lineNum">     429 </span><span class="lineNoCov">          0 :     if (!atomsAddedWhileSweeping) {</span>
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :         p = atoms.lookupForAdd(lookup);</span>
+<span class="lineNum">     431 </span>            :     } else {
+<span class="lineNum">     432 </span>            :         // We're currently sweeping the main atoms table and all new atoms will
+<span class="lineNum">     433 </span>            :         // be added to a secondary table. Check this first.
+<span class="lineNum">     434 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(rt-&gt;atomsZone(lock)-&gt;isGCSweeping());</span>
+<span class="lineNum">     435 </span><span class="lineNoCov">          0 :         p = atomsAddedWhileSweeping-&gt;lookupForAdd(lookup);</span>
+<span class="lineNum">     436 </span>            : 
+<span class="lineNum">     437 </span>            :         // If that fails check the main table but check if any atom found there
+<span class="lineNum">     438 </span>            :         // is dead.
+<span class="lineNum">     439 </span><span class="lineNoCov">          0 :         if (!p) {</span>
+<span class="lineNum">     440 </span><span class="lineNoCov">          0 :             if (AtomSet::AddPtr p2 = atoms.lookupForAdd(lookup)) {</span>
+<span class="lineNum">     441 </span><span class="lineNoCov">          0 :                 JSAtom* atom = p2-&gt;asPtrUnbarriered();</span>
+<span class="lineNum">     442 </span><span class="lineNoCov">          0 :                 if (!IsAboutToBeFinalizedUnbarriered(&amp;atom))</span>
+<span class="lineNum">     443 </span><span class="lineNoCov">          0 :                     p = p2;</span>
+<span class="lineNum">     444 </span>            :             }
+<span class="lineNum">     445 </span>            :         }
+<span class="lineNum">     446 </span>            :     }
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span><span class="lineCov">      66631 :     if (p) {</span>
+<span class="lineNum">     449 </span><span class="lineCov">      18134 :         JSAtom* atom = p-&gt;asPtr(cx);</span>
+<span class="lineNum">     450 </span><span class="lineCov">      21946 :         if (pin &amp;&amp; !atom-&gt;isPinned()) {</span>
+<span class="lineNum">     451 </span><span class="lineCov">       1146 :             atom-&gt;setPinned();</span>
+<span class="lineNum">     452 </span><span class="lineCov">       1146 :             p-&gt;setPinned(true);</span>
+<span class="lineNum">     453 </span>            :         }
+<span class="lineNum">     454 </span>            :         return atom;
+<span class="lineNum">     455 </span>            :     }
+<span class="lineNum">     456 </span>            : 
+<span class="lineNum">     457 </span>            :     JSAtom* atom;
+<span class="lineNum">     458 </span>            :     {
+<span class="lineNum">     459 </span><span class="lineCov">      96994 :         AutoAtomsZone az(cx, lock);</span>
+<span class="lineNum">     460 </span>            : 
+<span class="lineNum">     461 </span><span class="lineNoCov">          0 :         JSFlatString* flat = NewStringCopyN&lt;NoGC&gt;(cx, tbchars, length);</span>
+<span class="lineNum">     462 </span><span class="lineNoCov">          0 :         if (!flat) {</span>
+<span class="lineNum">     463 </span>            :             // Grudgingly forgo last-ditch GC. The alternative would be to release
+<span class="lineNum">     464 </span>            :             // the lock, manually GC here, and retry from the top. If you fix this,
+<span class="lineNum">     465 </span>            :             // please also fix or comment the similar case in Symbol::new_.
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :             ReportOutOfMemory(cx);</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :             return nullptr;</span>
+<span class="lineNum">     468 </span>            :         }
+<span class="lineNum">     469 </span>            : 
+<span class="lineNum">     470 </span><span class="lineCov">      48497 :         atom = flat-&gt;morphAtomizedStringIntoAtom(lookup.hash);</span>
+<span class="lineNum">     471 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(atom-&gt;hash() == lookup.hash);</span>
+<span class="lineNum">     472 </span>            : 
+<span class="lineNum">     473 </span><span class="lineCov">      48497 :         if (pin)</span>
+<span class="lineNum">     474 </span><span class="lineCov">       4347 :             atom-&gt;setPinned();</span>
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span><span class="lineCov">      48497 :         if (indexValue)</span>
+<span class="lineNum">     477 </span><span class="lineNoCov">          0 :             atom-&gt;maybeInitializeIndex(*indexValue, true);</span>
+<span class="lineNum">     478 </span>            : 
+<span class="lineNum">     479 </span>            :         // We have held the lock since looking up p, and the operations we've done
+<span class="lineNum">     480 </span>            :         // since then can't GC; therefore the atoms table has not been modified and
+<span class="lineNum">     481 </span>            :         // p is still valid.
+<span class="lineNum">     482 </span><span class="lineCov">      48497 :         AtomSet* addSet = atomsAddedWhileSweeping ? atomsAddedWhileSweeping : &amp;atoms;</span>
+<span class="lineNum">     483 </span><span class="lineCov">      96994 :         if (!addSet-&gt;add(p, AtomStateEntry(atom, bool(pin)))) {</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :             ReportOutOfMemory(cx); /* SystemAllocPolicy does not report OOM. */</span>
+<span class="lineNum">     485 </span><span class="lineNoCov">          0 :             return nullptr;</span>
+<span class="lineNum">     486 </span>            :         }
+<span class="lineNum">     487 </span>            :     }
+<span class="lineNum">     488 </span>            : 
+<span class="lineNum">     489 </span><span class="lineCov">      48497 :     return atom;</span>
+<span class="lineNum">     490 </span>            : }
+<span class="lineNum">     491 </span>            : 
+<span class="lineNum">     492 </span>            : template JSAtom*
+<span class="lineNum">     493 </span>            : AtomizeAndCopyChars(JSContext* cx, const char16_t* tbchars, size_t length, PinningBehavior pin,
+<span class="lineNum">     494 </span>            :                     const Maybe&lt;uint32_t&gt;&amp; indexValue);
+<span class="lineNum">     495 </span>            : 
+<span class="lineNum">     496 </span>            : template JSAtom*
+<span class="lineNum">     497 </span>            : AtomizeAndCopyChars(JSContext* cx, const Latin1Char* tbchars, size_t length, PinningBehavior pin,
+<span class="lineNum">     498 </span>            :                     const Maybe&lt;uint32_t&gt;&amp; indexValue);
+<span class="lineNum">     499 </span>            : 
+<span class="lineNum">     500 </span>            : JSAtom*
+<span class="lineNum">     501 </span><span class="lineCov">      34685 : js::AtomizeString(JSContext* cx, JSString* str,</span>
+<span class="lineNum">     502 </span>            :                   js::PinningBehavior pin /* = js::DoNotPinAtom */)
+<span class="lineNum">     503 </span>            : {
+<span class="lineNum">     504 </span><span class="lineCov">      69370 :     if (str-&gt;isAtom()) {</span>
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :         JSAtom&amp; atom = str-&gt;asAtom();</span>
+<span class="lineNum">     506 </span>            :         /* N.B. static atoms are effectively always interned. */
+<span class="lineNum">     507 </span><span class="lineNoCov">          0 :         if (pin != PinAtom || atom.isPinned())</span>
+<span class="lineNum">     508 </span>            :             return &amp;atom;
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span><span class="lineNoCov">          0 :         AtomHasher::Lookup lookup(&amp;atom);</span>
+<span class="lineNum">     511 </span>            : 
+<span class="lineNum">     512 </span><span class="lineNoCov">          0 :         AutoLockForExclusiveAccess lock(cx);</span>
+<span class="lineNum">     513 </span>            : 
+<span class="lineNum">     514 </span><span class="lineNoCov">          0 :         AtomSet::Ptr p = LookupAtomState(cx-&gt;runtime(), lookup);</span>
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(p); // Unpinned atoms must exist in atoms table.</span>
+<span class="lineNum">     516 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(p-&gt;asPtrUnbarriered() == &amp;atom);</span>
+<span class="lineNum">     517 </span>            : 
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(pin == PinAtom);</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :         atom.setPinned();</span>
+<span class="lineNum">     520 </span><span class="lineNoCov">          0 :         p-&gt;setPinned(true);</span>
+<span class="lineNum">     521 </span>            : 
+<span class="lineNum">     522 </span>            :         return &amp;atom;
+<span class="lineNum">     523 </span>            :     }
+<span class="lineNum">     524 </span>            : 
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :     JSLinearString* linear = str-&gt;ensureLinear(cx);</span>
+<span class="lineNum">     526 </span><span class="lineNoCov">          0 :     if (!linear)</span>
+<span class="lineNum">     527 </span>            :         return nullptr;
+<span class="lineNum">     528 </span>            : 
+<span class="lineNum">     529 </span><span class="lineNoCov">          0 :     Maybe&lt;uint32_t&gt; indexValue;</span>
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :     if (str-&gt;hasIndexValue())</span>
+<span class="lineNum">     531 </span><span class="lineNoCov">          0 :         indexValue.emplace(str-&gt;getIndexValue());</span>
+<span class="lineNum">     532 </span>            : 
+<span class="lineNum">     533 </span><span class="lineCov">      32614 :     JS::AutoCheckCannotGC nogc;</span>
+<span class="lineNum">     534 </span><span class="lineCov">      16307 :     return linear-&gt;hasLatin1Chars()</span>
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :            ? AtomizeAndCopyChars(cx, linear-&gt;latin1Chars(nogc), linear-&gt;length(), pin, indexValue)</span>
+<span class="lineNum">     536 </span><span class="lineCov">      18263 :            : AtomizeAndCopyChars(cx, linear-&gt;twoByteChars(nogc), linear-&gt;length(), pin, indexValue);</span>
+<span class="lineNum">     537 </span>            : }
+<span class="lineNum">     538 </span>            : 
+<span class="lineNum">     539 </span>            : JSAtom*
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 : js::Atomize(JSContext* cx, const char* bytes, size_t length, PinningBehavior pin,</span>
+<span class="lineNum">     541 </span>            :             const Maybe&lt;uint32_t&gt;&amp; indexValue)
+<span class="lineNum">     542 </span>            : {
+<span class="lineNum">     543 </span><span class="lineCov">      90233 :     CHECK_REQUEST(cx);</span>
+<span class="lineNum">     544 </span>            : 
+<span class="lineNum">     545 </span><span class="lineCov">      45119 :     const Latin1Char* chars = reinterpret_cast&lt;const Latin1Char*&gt;(bytes);</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :     return AtomizeAndCopyChars(cx, chars, length, pin, indexValue);</span>
+<span class="lineNum">     547 </span>            : }
+<span class="lineNum">     548 </span>            : 
+<span class="lineNum">     549 </span>            : template &lt;typename CharT&gt;
+<span class="lineNum">     550 </span>            : JSAtom*
+<span class="lineNum">     551 </span><span class="lineCov">     309416 : js::AtomizeChars(JSContext* cx, const CharT* chars, size_t length, PinningBehavior pin)</span>
+<span class="lineNum">     552 </span>            : {
+<span class="lineNum">     553 </span><span class="lineCov">     618850 :     CHECK_REQUEST(cx);</span>
+<span class="lineNum">     554 </span><span class="lineCov">     928284 :     return AtomizeAndCopyChars(cx, chars, length, pin, Nothing());</span>
+<span class="lineNum">     555 </span>            : }
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span>            : template JSAtom*
+<span class="lineNum">     558 </span>            : js::AtomizeChars(JSContext* cx, const Latin1Char* chars, size_t length, PinningBehavior pin);
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span>            : template JSAtom*
+<span class="lineNum">     561 </span>            : js::AtomizeChars(JSContext* cx, const char16_t* chars, size_t length, PinningBehavior pin);
+<span class="lineNum">     562 </span>            : 
+<span class="lineNum">     563 </span>            : JSAtom*
+<span class="lineNum">     564 </span><span class="lineCov">       1351 : js::AtomizeUTF8Chars(JSContext* cx, const char* utf8Chars, size_t utf8ByteLength)</span>
+<span class="lineNum">     565 </span>            : {
+<span class="lineNum">     566 </span>            :     // This could be optimized to hand the char16_t's directly to the JSAtom
+<span class="lineNum">     567 </span>            :     // instead of making a copy. UTF8CharsToNewTwoByteCharsZ should be
+<span class="lineNum">     568 </span>            :     // refactored to take an JSContext so that this function could also.
+<span class="lineNum">     569 </span>            : 
+<span class="lineNum">     570 </span><span class="lineCov">       1351 :     UTF8Chars utf8(utf8Chars, utf8ByteLength);</span>
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span>            :     size_t length;
+<span class="lineNum">     573 </span><span class="lineCov">       4053 :     UniqueTwoByteChars chars(JS::UTF8CharsToNewTwoByteCharsZ(cx, utf8, &amp;length).get());</span>
+<span class="lineNum">     574 </span><span class="lineCov">       1351 :     if (!chars)</span>
+<span class="lineNum">     575 </span>            :         return nullptr;
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span><span class="lineCov">       2702 :     return AtomizeChars(cx, chars.get(), length);</span>
+<span class="lineNum">     578 </span>            : }
+<span class="lineNum">     579 </span>            : 
+<span class="lineNum">     580 </span>            : bool
+<span class="lineNum">     581 </span><span class="lineNoCov">          0 : js::IndexToIdSlow(JSContext* cx, uint32_t index, MutableHandleId idp)</span>
+<span class="lineNum">     582 </span>            : {
+<span class="lineNum">     583 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(index &gt; JSID_INT_MAX);</span>
+<span class="lineNum">     584 </span>            : 
+<span class="lineNum">     585 </span>            :     char16_t buf[UINT32_CHAR_BUFFER_LENGTH];
+<span class="lineNum">     586 </span><span class="lineNoCov">          0 :     RangedPtr&lt;char16_t&gt; end(ArrayEnd(buf), buf, ArrayEnd(buf));</span>
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :     RangedPtr&lt;char16_t&gt; start = BackfillIndexInCharBuffer(index, end);</span>
+<span class="lineNum">     588 </span>            : 
+<span class="lineNum">     589 </span><span class="lineNoCov">          0 :     JSAtom* atom = AtomizeChars(cx, start.get(), end - start);</span>
+<span class="lineNum">     590 </span><span class="lineNoCov">          0 :     if (!atom)</span>
+<span class="lineNum">     591 </span>            :         return false;
+<span class="lineNum">     592 </span>            : 
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :     idp.set(JSID_FROM_BITS((size_t)atom | JSID_TYPE_STRING));</span>
+<span class="lineNum">     594 </span><span class="lineNoCov">          0 :     return true;</span>
+<span class="lineNum">     595 </span>            : }
+<span class="lineNum">     596 </span>            : 
+<span class="lineNum">     597 </span>            : template &lt;AllowGC allowGC&gt;
+<span class="lineNum">     598 </span>            : static JSAtom*
+<span class="lineNum">     599 </span><span class="lineNoCov">          0 : ToAtomSlow(JSContext* cx, typename MaybeRooted&lt;Value, allowGC&gt;::HandleType arg)</span>
+<span class="lineNum">     600 </span>            : {
+<span class="lineNum">     601 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!arg.isString());</span>
+<span class="lineNum">     602 </span>            : 
+<span class="lineNum">     603 </span><span class="lineNoCov">          0 :     Value v = arg;</span>
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :     if (!v.isPrimitive()) {</span>
+<span class="lineNum">     605 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(!cx-&gt;helperThread());</span>
+<span class="lineNum">     606 </span>            :         if (!allowGC)
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :             return nullptr;</span>
+<span class="lineNum">     608 </span><span class="lineNoCov">          0 :         RootedValue v2(cx, v);</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :         if (!ToPrimitive(cx, JSTYPE_STRING, &amp;v2))</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :             return nullptr;</span>
+<span class="lineNum">     611 </span><span class="lineNoCov">          0 :         v = v2;</span>
+<span class="lineNum">     612 </span>            :     }
+<span class="lineNum">     613 </span>            : 
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :     if (v.isString()) {</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :         JSAtom* atom = AtomizeString(cx, v.toString());</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :         if (!allowGC &amp;&amp; !atom)</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :             cx-&gt;recoverFromOutOfMemory();</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :         return atom;</span>
+<span class="lineNum">     619 </span>            :     }
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :     if (v.isInt32()) {</span>
+<span class="lineNum">     621 </span><span class="lineNoCov">          0 :         JSAtom* atom = Int32ToAtom(cx, v.toInt32());</span>
+<span class="lineNum">     622 </span><span class="lineNoCov">          0 :         if (!allowGC &amp;&amp; !atom)</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :             cx-&gt;recoverFromOutOfMemory();</span>
+<span class="lineNum">     624 </span><span class="lineNoCov">          0 :         return atom;</span>
+<span class="lineNum">     625 </span>            :     }
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :     if (v.isDouble()) {</span>
+<span class="lineNum">     627 </span><span class="lineNoCov">          0 :         JSAtom* atom = NumberToAtom(cx, v.toDouble());</span>
+<span class="lineNum">     628 </span><span class="lineNoCov">          0 :         if (!allowGC &amp;&amp; !atom)</span>
+<span class="lineNum">     629 </span><span class="lineNoCov">          0 :             cx-&gt;recoverFromOutOfMemory();</span>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :         return atom;</span>
+<span class="lineNum">     631 </span>            :     }
+<span class="lineNum">     632 </span><span class="lineNoCov">          0 :     if (v.isBoolean())</span>
+<span class="lineNum">     633 </span><span class="lineNoCov">          0 :         return v.toBoolean() ? cx-&gt;names().true_ : cx-&gt;names().false_;</span>
+<span class="lineNum">     634 </span><span class="lineNoCov">          0 :     if (v.isNull())</span>
+<span class="lineNum">     635 </span><span class="lineNoCov">          0 :         return cx-&gt;names().null;</span>
+<span class="lineNum">     636 </span><span class="lineNoCov">          0 :     if (v.isSymbol()) {</span>
+<span class="lineNum">     637 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(!cx-&gt;helperThread());</span>
+<span class="lineNum">     638 </span>            :         if (allowGC) {
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :             JS_ReportErrorNumberASCII(cx, GetErrorMessage, nullptr,</span>
+<span class="lineNum">     640 </span>            :                                       JSMSG_SYMBOL_TO_STRING);
+<span class="lineNum">     641 </span>            :         }
+<span class="lineNum">     642 </span><span class="lineNoCov">          0 :         return nullptr;</span>
+<span class="lineNum">     643 </span>            :     }
+<span class="lineNum">     644 </span>            : #ifdef ENABLE_BIGINT
+<span class="lineNum">     645 </span>            :     if (v.isBigInt()) {
+<span class="lineNum">     646 </span>            :         JSAtom* atom = BigIntToAtom(cx, v.toBigInt());
+<span class="lineNum">     647 </span>            :         if (!allowGC &amp;&amp; !atom)
+<span class="lineNum">     648 </span>            :             cx-&gt;recoverFromOutOfMemory();
+<span class="lineNum">     649 </span>            :         return atom;
+<span class="lineNum">     650 </span>            :     }
+<span class="lineNum">     651 </span>            : #endif
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(v.isUndefined());</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :     return cx-&gt;names().undefined;</span>
+<span class="lineNum">     654 </span>            : }
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span>            : template &lt;AllowGC allowGC&gt;
+<span class="lineNum">     657 </span>            : JSAtom*
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 : js::ToAtom(JSContext* cx, typename MaybeRooted&lt;Value, allowGC&gt;::HandleType v)</span>
+<span class="lineNum">     659 </span>            : {
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :     if (!v.isString())</span>
+<span class="lineNum">     661 </span><span class="lineNoCov">          0 :         return ToAtomSlow&lt;allowGC&gt;(cx, v);</span>
+<span class="lineNum">     662 </span>            : 
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :     JSString* str = v.toString();</span>
+<span class="lineNum">     664 </span><span class="lineCov">          1 :     if (str-&gt;isAtom())</span>
+<span class="lineNum">     665 </span><span class="lineCov">          1 :         return &amp;str-&gt;asAtom();</span>
+<span class="lineNum">     666 </span>            : 
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :     JSAtom* atom = AtomizeString(cx, str);</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :     if (!atom &amp;&amp; !allowGC) {</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 :         MOZ_ASSERT_IF(!cx-&gt;helperThread(), cx-&gt;isThrowingOutOfMemory());</span>
+<span class="lineNum">     670 </span><span class="lineNoCov">          0 :         cx-&gt;recoverFromOutOfMemory();</span>
+<span class="lineNum">     671 </span>            :     }
+<span class="lineNum">     672 </span><span class="lineCov">      11793 :     return atom;</span>
+<span class="lineNum">     673 </span>            : }
+<span class="lineNum">     674 </span>            : 
+<span class="lineNum">     675 </span>            : template JSAtom*
+<span class="lineNum">     676 </span>            : js::ToAtom&lt;CanGC&gt;(JSContext* cx, HandleValue v);
+<span class="lineNum">     677 </span>            : 
+<span class="lineNum">     678 </span>            : template JSAtom*
+<span class="lineNum">     679 </span>            : js::ToAtom&lt;NoGC&gt;(JSContext* cx, const Value&amp; v);
+<span class="lineNum">     680 </span>            : 
+<span class="lineNum">     681 </span>            : template&lt;XDRMode mode&gt;
+<span class="lineNum">     682 </span>            : XDRResult
+<span class="lineNum">     683 </span><span class="lineCov">     306116 : js::XDRAtom(XDRState&lt;mode&gt;* xdr, MutableHandleAtom atomp)</span>
+<span class="lineNum">     684 </span>            : {
+<span class="lineNum">     685 </span><span class="lineNoCov">          0 :     bool latin1 = false;</span>
+<span class="lineNum">     686 </span><span class="lineNoCov">          0 :     uint32_t length = 0;</span>
+<span class="lineNum">     687 </span><span class="lineNoCov">          0 :     uint32_t lengthAndEncoding = 0;</span>
+<span class="lineNum">     688 </span>            :     if (mode == XDR_ENCODE) {
+<span class="lineNum">     689 </span>            :         static_assert(JSString::MAX_LENGTH &lt;= INT32_MAX, &quot;String length must fit in 31 bits&quot;);
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :         latin1 = atomp-&gt;hasLatin1Chars();</span>
+<span class="lineNum">     691 </span><span class="lineCov">     612232 :         length = atomp-&gt;length();</span>
+<span class="lineNum">     692 </span><span class="lineCov">     306116 :         lengthAndEncoding = (length &lt;&lt; 1) | uint32_t(latin1);</span>
+<span class="lineNum">     693 </span>            :     }
+<span class="lineNum">     694 </span>            : 
+<span class="lineNum">     695 </span><span class="lineCov">     918348 :     MOZ_TRY(xdr-&gt;codeUint32(&amp;lengthAndEncoding));</span>
+<span class="lineNum">     696 </span>            : 
+<span class="lineNum">     697 </span>            :     if (mode == XDR_DECODE) {
+<span class="lineNum">     698 </span><span class="lineNoCov">          0 :         length = lengthAndEncoding &gt;&gt; 1;</span>
+<span class="lineNum">     699 </span><span class="lineNoCov">          0 :         latin1 = lengthAndEncoding &amp; 0x1;</span>
+<span class="lineNum">     700 </span>            :     }
+<span class="lineNum">     701 </span>            : 
+<span class="lineNum">     702 </span>            :     // We need to align the string in the XDR buffer such that we can avoid
+<span class="lineNum">     703 </span>            :     // non-align loads of 16bits characters.
+<span class="lineNum">     704 </span><span class="lineNoCov">          0 :     if (!latin1)</span>
+<span class="lineNum">     705 </span><span class="lineNoCov">          0 :         MOZ_TRY(xdr-&gt;codeAlign(sizeof(char16_t)));</span>
+<span class="lineNum">     706 </span>            : 
+<span class="lineNum">     707 </span>            :     if (mode == XDR_ENCODE) {
+<span class="lineNum">     708 </span><span class="lineCov">     612232 :         JS::AutoCheckCannotGC nogc;</span>
+<span class="lineNum">     709 </span><span class="lineCov">     306116 :         if (latin1)</span>
+<span class="lineNum">     710 </span><span class="lineCov">     918294 :             return xdr-&gt;codeChars(atomp-&gt;latin1Chars(nogc), length);</span>
+<span class="lineNum">     711 </span><span class="lineNoCov">          0 :         return xdr-&gt;codeChars(const_cast&lt;char16_t*&gt;(atomp-&gt;twoByteChars(nogc)), length);</span>
+<span class="lineNum">     712 </span>            :     }
+<span class="lineNum">     713 </span>            : 
+<span class="lineNum">     714 </span>            :     MOZ_ASSERT(mode == XDR_DECODE);
+<span class="lineNum">     715 </span>            :     /* Avoid JSString allocation for already existing atoms. See bug 321985. */
+<span class="lineNum">     716 </span><span class="lineNoCov">          0 :     JSContext* cx = xdr-&gt;cx();</span>
+<span class="lineNum">     717 </span>            :     JSAtom* atom;
+<span class="lineNum">     718 </span><span class="lineNoCov">          0 :     if (latin1) {</span>
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :         const Latin1Char* chars = nullptr;</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :         if (length) {</span>
+<span class="lineNum">     721 </span>            :             const uint8_t *ptr;
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :             size_t nbyte = length * sizeof(Latin1Char);</span>
+<span class="lineNum">     723 </span><span class="lineNoCov">          0 :             MOZ_TRY(xdr-&gt;peekData(&amp;ptr, nbyte));</span>
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :             chars = reinterpret_cast&lt;const Latin1Char*&gt;(ptr);</span>
+<span class="lineNum">     725 </span>            :         }
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 :         atom = AtomizeChars(cx, chars, length);</span>
+<span class="lineNum">     727 </span>            :     } else {
+<span class="lineNum">     728 </span>            : #if MOZ_LITTLE_ENDIAN
+<span class="lineNum">     729 </span>            :         /* Directly access the little endian chars in the XDR buffer. */
+<span class="lineNum">     730 </span><span class="lineNoCov">          0 :         const char16_t* chars = nullptr;</span>
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :         if (length) {</span>
+<span class="lineNum">     732 </span>            :             const uint8_t *ptr;
+<span class="lineNum">     733 </span><span class="lineNoCov">          0 :             size_t nbyte = length * sizeof(char16_t);</span>
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :             MOZ_TRY(xdr-&gt;peekData(&amp;ptr, nbyte));</span>
+<span class="lineNum">     735 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(reinterpret_cast&lt;uintptr_t&gt;(ptr) % sizeof(char16_t) == 0,</span>
+<span class="lineNum">     736 </span>            :                        &quot;non-aligned buffer during JSAtom decoding&quot;);
+<span class="lineNum">     737 </span><span class="lineNoCov">          0 :             chars = reinterpret_cast&lt;const char16_t*&gt;(ptr);</span>
+<span class="lineNum">     738 </span>            :         }
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :         atom = AtomizeChars(cx, chars, length);</span>
+<span class="lineNum">     740 </span>            : #else
+<span class="lineNum">     741 </span>            :         /*
+<span class="lineNum">     742 </span>            :          * We must copy chars to a temporary buffer to convert between little and
+<span class="lineNum">     743 </span>            :          * big endian data.
+<span class="lineNum">     744 </span>            :          */
+<span class="lineNum">     745 </span>            :         char16_t* chars;
+<span class="lineNum">     746 </span>            :         char16_t stackChars[256];
+<span class="lineNum">     747 </span>            :         if (length &lt;= ArrayLength(stackChars)) {
+<span class="lineNum">     748 </span>            :             chars = stackChars;
+<span class="lineNum">     749 </span>            :         } else {
+<span class="lineNum">     750 </span>            :             /*
+<span class="lineNum">     751 </span>            :              * This is very uncommon. Don't use the tempLifoAlloc arena for this as
+<span class="lineNum">     752 </span>            :              * most allocations here will be bigger than tempLifoAlloc's default
+<span class="lineNum">     753 </span>            :              * chunk size.
+<span class="lineNum">     754 </span>            :              */
+<span class="lineNum">     755 </span>            :             chars = cx-&gt;pod_malloc&lt;char16_t&gt;(length);
+<span class="lineNum">     756 </span>            :             if (!chars)
+<span class="lineNum">     757 </span>            :                 return xdr-&gt;fail(JS::TranscodeResult_Throw);
+<span class="lineNum">     758 </span>            :         }
+<span class="lineNum">     759 </span>            : 
+<span class="lineNum">     760 </span>            :         MOZ_TRY(xdr-&gt;codeChars(chars, length));
+<span class="lineNum">     761 </span>            :         atom = AtomizeChars(cx, chars, length);
+<span class="lineNum">     762 </span>            :         if (chars != stackChars)
+<span class="lineNum">     763 </span>            :             js_free(chars);
+<span class="lineNum">     764 </span>            : #endif /* !MOZ_LITTLE_ENDIAN */
+<span class="lineNum">     765 </span>            :     }
+<span class="lineNum">     766 </span>            : 
+<span class="lineNum">     767 </span><span class="lineNoCov">          0 :     if (!atom)</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">          0 :         return xdr-&gt;fail(JS::TranscodeResult_Throw);</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 :     atomp.set(atom);</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :     return Ok();</span>
+<span class="lineNum">     771 </span>            : }
+<span class="lineNum">     772 </span>            : 
+<span class="lineNum">     773 </span>            : template XDRResult
+<span class="lineNum">     774 </span>            : js::XDRAtom(XDRState&lt;XDR_ENCODE&gt;* xdr, MutableHandleAtom atomp);
+<span class="lineNum">     775 </span>            : 
+<span class="lineNum">     776 </span>            : template XDRResult
+<span class="lineNum">     777 </span>            : js::XDRAtom(XDRState&lt;XDR_DECODE&gt;* xdr, MutableHandleAtom atomp);
+<span class="lineNum">     778 </span>            : 
+<span class="lineNum">     779 </span>            : Handle&lt;PropertyName*&gt;
+<span class="lineNum">     780 </span><span class="lineCov">        603 : js::ClassName(JSProtoKey key, JSContext* cx)</span>
+<span class="lineNum">     781 </span>            : {
+<span class="lineNum">     782 </span><span class="lineCov">        603 :     return ClassName(key, cx-&gt;names());</span>
+<span class="lineNum">     783 </span>            : }
+<span class="lineNum">     784 </span>            : 
+<span class="lineNum">     785 </span>            : void
+<span class="lineNum">     786 </span><span class="lineNoCov">          0 : js::gc::MergeAtomsAddedWhileSweeping(JSRuntime* rt)</span>
+<span class="lineNum">     787 </span>            : {
+<span class="lineNum">     788 </span>            :     // Add atoms that were added to the secondary table while we were sweeping
+<span class="lineNum">     789 </span>            :     // the main table.
+<span class="lineNum">     790 </span>            : 
+<span class="lineNum">     791 </span><span class="lineNoCov">          0 :     AutoEnterOOMUnsafeRegion oomUnsafe;</span>
+<span class="lineNum">     792 </span><span class="lineNoCov">          0 :     AtomSet* atomsTable = rt-&gt;atomsForSweeping();</span>
+<span class="lineNum">     793 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(atomsTable);</span>
+<span class="lineNum">     794 </span>            :     for (auto r = rt-&gt;atomsAddedWhileSweeping()-&gt;all(); !r.empty(); r.popFront()) {
+<span class="lineNum">     795 </span>            :         if (!atomsTable-&gt;putNew(AtomHasher::Lookup(r.front().asPtrUnbarriered()), r.front()))
+<span class="lineNum">     796 </span>            :             oomUnsafe.crash(&quot;Adding atom from secondary table after sweep&quot;);
+<span class="lineNum">     797 </span>            :     }
+<span class="lineNum">     798 </span>            : }
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

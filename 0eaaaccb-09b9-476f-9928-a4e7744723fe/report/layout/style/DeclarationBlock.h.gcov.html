@@ -1,0 +1,350 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - layout/style/DeclarationBlock.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">layout/style</a> - DeclarationBlock.h<span style="font-size: 80%;"> (source / <a href="DeclarationBlock.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntry">56</td>
+            <td class="headerCovTableEntryLo">32.1 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : /*
+<span class="lineNum">       8 </span>            :  * representation of a declaration block in a CSS stylesheet, or of
+<span class="lineNum">       9 </span>            :  * a style attribute
+<span class="lineNum">      10 </span>            :  */
+<span class="lineNum">      11 </span>            : 
+<span class="lineNum">      12 </span>            : #ifndef mozilla_DeclarationBlock_h
+<span class="lineNum">      13 </span>            : #define mozilla_DeclarationBlock_h
+<span class="lineNum">      14 </span>            : 
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/Atomics.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/ServoBindings.h&quot;
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : #include &quot;nsCSSPropertyID.h&quot;
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : class nsHTMLCSSStyleSheet;
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span>            : namespace mozilla {
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : namespace css {
+<span class="lineNum">      25 </span>            : class Declaration;
+<span class="lineNum">      26 </span>            : class Rule;
+<span class="lineNum">      27 </span>            : } // namespace css
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : class DeclarationBlock final
+<span class="lineNum">      30 </span>            : {
+<span class="lineNum">      31 </span><span class="lineCov">         11 :   DeclarationBlock(const DeclarationBlock&amp; aCopy)</span>
+<span class="lineNum">      32 </span><span class="lineNoCov">          0 :     : mRaw(Servo_DeclarationBlock_Clone(aCopy.mRaw).Consume())</span>
+<span class="lineNum">      33 </span>            :     , mImmutable(false)
+<span class="lineNum">      34 </span><span class="lineNoCov">          0 :     , mIsDirty(false)</span>
+<span class="lineNum">      35 </span>            :   {
+<span class="lineNum">      36 </span><span class="lineNoCov">          0 :     mContainer.mRaw = 0;</span>
+<span class="lineNum">      37 </span><span class="lineCov">         11 :   }</span>
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : public:
+<span class="lineNum">      40 </span><span class="lineCov">         32 :   explicit DeclarationBlock(already_AddRefed&lt;RawServoDeclarationBlock&gt; aRaw)</span>
+<span class="lineNum">      41 </span><span class="lineNoCov">          0 :     : mRaw(aRaw)</span>
+<span class="lineNum">      42 </span>            :     , mImmutable(false)
+<span class="lineNum">      43 </span><span class="lineCov">        128 :     , mIsDirty(false)</span>
+<span class="lineNum">      44 </span>            :   {
+<span class="lineNum">      45 </span><span class="lineNoCov">          0 :     mContainer.mRaw = 0;</span>
+<span class="lineNum">      46 </span><span class="lineCov">         32 :   }</span>
+<span class="lineNum">      47 </span>            : 
+<span class="lineNum">      48 </span><span class="lineCov">         26 :   DeclarationBlock()</span>
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 :     : DeclarationBlock(Servo_DeclarationBlock_CreateEmpty().Consume())</span>
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :   { }</span>
+<span class="lineNum">      51 </span>            : 
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :   NS_INLINE_DECL_THREADSAFE_REFCOUNTING(DeclarationBlock)</span>
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :   already_AddRefed&lt;DeclarationBlock&gt; Clone() const</span>
+<span class="lineNum">      55 </span>            :   {
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :     return do_AddRef(new DeclarationBlock(*this));</span>
+<span class="lineNum">      57 </span>            :   }
+<span class="lineNum">      58 </span>            : 
+<span class="lineNum">      59 </span>            :   /**
+<span class="lineNum">      60 </span>            :    * Return whether |this| may be modified.
+<span class="lineNum">      61 </span>            :    */
+<span class="lineNum">      62 </span>            :   bool IsMutable() const { return !mImmutable; }
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span>            :   /**
+<span class="lineNum">      65 </span>            :    * Crash in debug builds if |this| cannot be modified.
+<span class="lineNum">      66 </span>            :    */
+<span class="lineNum">      67 </span><span class="lineCov">          3 :   void AssertMutable() const</span>
+<span class="lineNum">      68 </span>            :   {
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(IsMutable(), &quot;someone forgot to call EnsureMutable&quot;);</span>
+<span class="lineNum">      70 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">      71 </span>            : 
+<span class="lineNum">      72 </span>            :   /**
+<span class="lineNum">      73 </span>            :    * Mark this declaration as unmodifiable.
+<span class="lineNum">      74 </span>            :    */
+<span class="lineNum">      75 </span><span class="lineNoCov">          0 :   void SetImmutable() { mImmutable = true; }</span>
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            :   /**
+<span class="lineNum">      78 </span>            :    * Return whether |this| has been restyled after modified.
+<span class="lineNum">      79 </span>            :    */
+<span class="lineNum">      80 </span><span class="lineCov">          4 :   bool IsDirty() const { return mIsDirty; }</span>
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            :   /**
+<span class="lineNum">      83 </span>            :    * Mark this declaration as dirty.
+<span class="lineNum">      84 </span>            :    */
+<span class="lineNum">      85 </span><span class="lineCov">          2 :   void SetDirty() { mIsDirty = true; }</span>
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            :   /**
+<span class="lineNum">      88 </span>            :    * Mark this declaration as not dirty.
+<span class="lineNum">      89 </span>            :    */
+<span class="lineNum">      90 </span><span class="lineCov">         16 :   void UnsetDirty() { mIsDirty = false; }</span>
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            :   /**
+<span class="lineNum">      93 </span>            :    * Copy |this|, if necessary to ensure that it can be modified.
+<span class="lineNum">      94 </span>            :    */
+<span class="lineNum">      95 </span><span class="lineCov">          4 :   already_AddRefed&lt;DeclarationBlock&gt; EnsureMutable()</span>
+<span class="lineNum">      96 </span>            :   {
+<span class="lineNum">      97 </span><span class="lineCov">          4 :     if (!IsDirty()) {</span>
+<span class="lineNum">      98 </span>            :       // In stylo, the old DeclarationBlock is stored in element's rule node tree
+<span class="lineNum">      99 </span>            :       // directly, to avoid new values replacing the DeclarationBlock in the tree
+<span class="lineNum">     100 </span>            :       // directly, we need to copy the old one here if we haven't yet copied.
+<span class="lineNum">     101 </span>            :       // As a result the new value does not replace rule node tree until traversal
+<span class="lineNum">     102 </span>            :       // happens.
+<span class="lineNum">     103 </span>            :       //
+<span class="lineNum">     104 </span>            :       // FIXME(emilio): This is a hack for ::first-line and transitions starting
+<span class="lineNum">     105 </span>            :       // due to CSSOM changes when other transitions are already running. Try
+<span class="lineNum">     106 </span>            :       // to simplify this setup.
+<span class="lineNum">     107 </span><span class="lineCov">          2 :       return Clone();</span>
+<span class="lineNum">     108 </span>            :     }
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span><span class="lineNoCov">          0 :     if (!IsMutable()) {</span>
+<span class="lineNum">     111 </span><span class="lineNoCov">          0 :       return Clone();</span>
+<span class="lineNum">     112 </span>            :     }
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span><span class="lineCov">          2 :     return do_AddRef(this);</span>
+<span class="lineNum">     115 </span>            :   }
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span><span class="lineNoCov">          0 :   void SetOwningRule(css::Rule* aRule)</span>
+<span class="lineNum">     118 </span>            :   {
+<span class="lineNum">     119 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!mContainer.mOwningRule || !aRule,</span>
+<span class="lineNum">     120 </span>            :                &quot;should never overwrite one rule with another&quot;);
+<span class="lineNum">     121 </span><span class="lineNoCov">          0 :     mContainer.mOwningRule = aRule;</span>
+<span class="lineNum">     122 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     123 </span>            : 
+<span class="lineNum">     124 </span>            :   css::Rule* GetOwningRule() const
+<span class="lineNum">     125 </span>            :   {
+<span class="lineNum">     126 </span>            :     if (mContainer.mRaw &amp; 0x1) {
+<span class="lineNum">     127 </span>            :       return nullptr;
+<span class="lineNum">     128 </span>            :     }
+<span class="lineNum">     129 </span>            :     return mContainer.mOwningRule;
+<span class="lineNum">     130 </span>            :   }
+<span class="lineNum">     131 </span>            : 
+<span class="lineNum">     132 </span><span class="lineNoCov">          0 :   void SetHTMLCSSStyleSheet(nsHTMLCSSStyleSheet* aHTMLCSSStyleSheet)</span>
+<span class="lineNum">     133 </span>            :   {
+<span class="lineNum">     134 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(!mContainer.mHTMLCSSStyleSheet || !aHTMLCSSStyleSheet,</span>
+<span class="lineNum">     135 </span>            :                &quot;should never overwrite one sheet with another&quot;);
+<span class="lineNum">     136 </span><span class="lineNoCov">          0 :     mContainer.mHTMLCSSStyleSheet = aHTMLCSSStyleSheet;</span>
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :     if (aHTMLCSSStyleSheet) {</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :       mContainer.mRaw |= uintptr_t(1);</span>
+<span class="lineNum">     139 </span>            :     }
+<span class="lineNum">     140 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span><span class="lineNoCov">          0 :   nsHTMLCSSStyleSheet* GetHTMLCSSStyleSheet() const</span>
+<span class="lineNum">     143 </span>            :   {
+<span class="lineNum">     144 </span><span class="lineNoCov">          0 :     if (!(mContainer.mRaw &amp; 0x1)) {</span>
+<span class="lineNum">     145 </span>            :       return nullptr;
+<span class="lineNum">     146 </span>            :     }
+<span class="lineNum">     147 </span><span class="lineNoCov">          0 :     auto c = mContainer;</span>
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :     c.mRaw &amp;= ~uintptr_t(1);</span>
+<span class="lineNum">     149 </span><span class="lineNoCov">          0 :     return c.mHTMLCSSStyleSheet;</span>
+<span class="lineNum">     150 </span>            :   }
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            :   static already_AddRefed&lt;DeclarationBlock&gt;
+<span class="lineNum">     153 </span>            :   FromCssText(const nsAString&amp; aCssText, URLExtraData* aExtraData,
+<span class="lineNum">     154 </span>            :               nsCompatibility aMode, css::Loader* aLoader);
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span><span class="lineCov">        110 :   RawServoDeclarationBlock* Raw() const { return mRaw; }</span>
+<span class="lineNum">     157 </span>            :   RawServoDeclarationBlock* const* RefRaw() const
+<span class="lineNum">     158 </span>            :   {
+<span class="lineNum">     159 </span>            :     static_assert(sizeof(RefPtr&lt;RawServoDeclarationBlock&gt;) ==
+<span class="lineNum">     160 </span>            :                   sizeof(RawServoDeclarationBlock*),
+<span class="lineNum">     161 </span>            :                   &quot;RefPtr should just be a pointer&quot;);
+<span class="lineNum">     162 </span>            :     return reinterpret_cast&lt;RawServoDeclarationBlock* const*&gt;(&amp;mRaw);
+<span class="lineNum">     163 </span>            :   }
+<span class="lineNum">     164 </span>            : 
+<span class="lineNum">     165 </span>            :   const RawServoDeclarationBlockStrong* RefRawStrong() const
+<span class="lineNum">     166 </span>            :   {
+<span class="lineNum">     167 </span>            :     static_assert(sizeof(RefPtr&lt;RawServoDeclarationBlock&gt;) ==
+<span class="lineNum">     168 </span>            :                   sizeof(RawServoDeclarationBlock*),
+<span class="lineNum">     169 </span>            :                   &quot;RefPtr should just be a pointer&quot;);
+<span class="lineNum">     170 </span>            :     static_assert(sizeof(RefPtr&lt;RawServoDeclarationBlock&gt;) ==
+<span class="lineNum">     171 </span>            :                   sizeof(RawServoDeclarationBlockStrong),
+<span class="lineNum">     172 </span>            :                   &quot;RawServoDeclarationBlockStrong should be the same as RefPtr&quot;);
+<span class="lineNum">     173 </span><span class="lineCov">         46 :     return reinterpret_cast&lt;const RawServoDeclarationBlockStrong*&gt;(&amp;mRaw);</span>
+<span class="lineNum">     174 </span>            :   }
+<span class="lineNum">     175 </span>            : 
+<span class="lineNum">     176 </span><span class="lineCov">          1 :   void ToString(nsAString&amp; aResult) const</span>
+<span class="lineNum">     177 </span>            :   {
+<span class="lineNum">     178 </span><span class="lineNoCov">          0 :     Servo_DeclarationBlock_GetCssText(mRaw, &amp;aResult);</span>
+<span class="lineNum">     179 </span><span class="lineNoCov">          0 :   }</span>
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span><span class="lineNoCov">          0 :   uint32_t Count() const</span>
+<span class="lineNum">     182 </span>            :   {
+<span class="lineNum">     183 </span><span class="lineNoCov">          0 :     return Servo_DeclarationBlock_Count(mRaw);</span>
+<span class="lineNum">     184 </span>            :   }
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span><span class="lineNoCov">          0 :   bool GetNthProperty(uint32_t aIndex, nsAString&amp; aReturn) const</span>
+<span class="lineNum">     187 </span>            :   {
+<span class="lineNum">     188 </span><span class="lineNoCov">          0 :     aReturn.Truncate();</span>
+<span class="lineNum">     189 </span><span class="lineNoCov">          0 :     return Servo_DeclarationBlock_GetNthProperty(mRaw, aIndex, &amp;aReturn);</span>
+<span class="lineNum">     190 </span>            :   }
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span><span class="lineCov">          2 :   void GetPropertyValue(const nsAString&amp; aProperty, nsAString&amp; aValue) const</span>
+<span class="lineNum">     193 </span>            :   {
+<span class="lineNum">     194 </span><span class="lineNoCov">          0 :     NS_ConvertUTF16toUTF8 property(aProperty);</span>
+<span class="lineNum">     195 </span>            :     Servo_DeclarationBlock_GetPropertyValue(mRaw, &amp;property, &amp;aValue);
+<span class="lineNum">     196 </span>            :   }
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            :   void GetPropertyValueByID(nsCSSPropertyID aPropID, nsAString&amp; aValue) const
+<span class="lineNum">     199 </span>            :   {
+<span class="lineNum">     200 </span>            :     Servo_DeclarationBlock_GetPropertyValueById(mRaw, aPropID, &amp;aValue);
+<span class="lineNum">     201 </span>            :   }
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            :   bool GetPropertyIsImportant(const nsAString&amp; aProperty) const
+<span class="lineNum">     204 </span>            :   {
+<span class="lineNum">     205 </span>            :     NS_ConvertUTF16toUTF8 property(aProperty);
+<span class="lineNum">     206 </span>            :     return Servo_DeclarationBlock_GetPropertyIsImportant(mRaw, &amp;property);
+<span class="lineNum">     207 </span>            :   }
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span>            :   // Returns whether the property was removed.
+<span class="lineNum">     210 </span>            :   bool RemoveProperty(const nsAString&amp; aProperty,
+<span class="lineNum">     211 </span>            :                       DeclarationBlockMutationClosure aClosure = { })
+<span class="lineNum">     212 </span>            :   {
+<span class="lineNum">     213 </span>            :     AssertMutable();
+<span class="lineNum">     214 </span>            :     NS_ConvertUTF16toUTF8 property(aProperty);
+<span class="lineNum">     215 </span>            :     return Servo_DeclarationBlock_RemoveProperty(mRaw, &amp;property, aClosure);
+<span class="lineNum">     216 </span>            :   }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            :   // Returns whether the property was removed.
+<span class="lineNum">     219 </span>            :   bool RemovePropertyByID(nsCSSPropertyID aProperty,
+<span class="lineNum">     220 </span>            :                           DeclarationBlockMutationClosure aClosure = { })
+<span class="lineNum">     221 </span>            :   {
+<span class="lineNum">     222 </span>            :     AssertMutable();
+<span class="lineNum">     223 </span>            :     return Servo_DeclarationBlock_RemovePropertyById(mRaw, aProperty, aClosure);
+<span class="lineNum">     224 </span>            :   }
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span>            : private:
+<span class="lineNum">     227 </span>            :   ~DeclarationBlock() = default;
+<span class="lineNum">     228 </span>            :   union {
+<span class="lineNum">     229 </span>            :     // We only ever have one of these since we have an
+<span class="lineNum">     230 </span>            :     // nsHTMLCSSStyleSheet only for style attributes, and style
+<span class="lineNum">     231 </span>            :     // attributes never have an owning rule.
+<span class="lineNum">     232 </span>            : 
+<span class="lineNum">     233 </span>            :     // It's an nsHTMLCSSStyleSheet if the low bit is set.
+<span class="lineNum">     234 </span>            : 
+<span class="lineNum">     235 </span>            :     uintptr_t mRaw;
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span>            :     // The style rule that owns this declaration.  May be null.
+<span class="lineNum">     238 </span>            :     css::Rule* mOwningRule;
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span>            :     // The nsHTMLCSSStyleSheet that is responsible for this declaration.
+<span class="lineNum">     241 </span>            :     // Only non-null for style attributes.
+<span class="lineNum">     242 </span>            :     nsHTMLCSSStyleSheet* mHTMLCSSStyleSheet;
+<span class="lineNum">     243 </span>            :   } mContainer;
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span>            :   RefPtr&lt;RawServoDeclarationBlock&gt; mRaw;
+<span class="lineNum">     246 </span>            : 
+<span class="lineNum">     247 </span>            :   // set when declaration put in the rule tree;
+<span class="lineNum">     248 </span>            :   bool mImmutable;
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span>            :   // True if this declaration has not been restyled after modified.
+<span class="lineNum">     251 </span>            :   //
+<span class="lineNum">     252 </span>            :   // Since we can clear this flag from style worker threads, we use an Atomic.
+<span class="lineNum">     253 </span>            :   //
+<span class="lineNum">     254 </span>            :   // Note that although a single DeclarationBlock can be shared between
+<span class="lineNum">     255 </span>            :   // different rule nodes (due to the style=&quot;&quot; attribute cache), whenever a
+<span class="lineNum">     256 </span>            :   // DeclarationBlock has its mIsDirty flag set to true, we always clone it to
+<span class="lineNum">     257 </span>            :   // a unique object first. So when we clear this flag during Servo traversal,
+<span class="lineNum">     258 </span>            :   // we know that we are clearing it on a DeclarationBlock that has a single
+<span class="lineNum">     259 </span>            :   // reference, and there is no problem with another user of the same
+<span class="lineNum">     260 </span>            :   // DeclarationBlock thinking that it is not dirty.
+<span class="lineNum">     261 </span>            :   Atomic&lt;bool, MemoryOrdering::Relaxed&gt; mIsDirty;
+<span class="lineNum">     262 </span>            : };
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            : } // namespace mozilla
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span>            : #endif // mozilla_DeclarationBlock_h
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

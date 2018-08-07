@@ -1,0 +1,947 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - gfx/thebes/gfxPrefs.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">gfx/thebes</a> - gfxPrefs.h<span style="font-size: 80%;"> (source / <a href="gfxPrefs.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">61</td>
+            <td class="headerCovTableEntry">284</td>
+            <td class="headerCovTableEntryLo">21.5 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 20; indent-tabs-mode: nil; c-basic-offset: 2 -*-</a>
+<span class="lineNum">       2 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       3 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       4 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       5 </span>            : 
+<span class="lineNum">       6 </span>            : #ifndef GFX_PREFS_H
+<span class="lineNum">       7 </span>            : #define GFX_PREFS_H
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #include &lt;cmath&gt;                 // for M_PI
+<span class="lineNum">      10 </span>            : #include &lt;stdint.h&gt;
+<span class="lineNum">      11 </span>            : #include &lt;string&gt;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/Assertions.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/Atomics.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/gfx/LoggingConstants.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;nsTArray.h&quot;
+<span class="lineNum">      16 </span>            : 
+<span class="lineNum">      17 </span>            : // First time gfxPrefs::GetSingleton() needs to be called on the main thread,
+<span class="lineNum">      18 </span>            : // before any of the methods accessing the values are used, but after
+<span class="lineNum">      19 </span>            : // the Preferences system has been initialized.
+<span class="lineNum">      20 </span>            : 
+<span class="lineNum">      21 </span>            : // The static methods to access the preference value are safe to call
+<span class="lineNum">      22 </span>            : // from any thread after that first call.
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : // To register a preference, you need to add a line in this file using
+<span class="lineNum">      25 </span>            : // the DECL_GFX_PREF macro.
+<span class="lineNum">      26 </span>            : //
+<span class="lineNum">      27 </span>            : // Update argument controls whether we read the preference value and save it
+<span class="lineNum">      28 </span>            : // or connect with a callback.  See UpdatePolicy enum below.
+<span class="lineNum">      29 </span>            : // Pref is the string with the preference name.
+<span class="lineNum">      30 </span>            : // Name argument is the name of the static function to create.
+<span class="lineNum">      31 </span>            : // Type is the type of the preference - bool, int32_t, uint32_t.
+<span class="lineNum">      32 </span>            : // Default is the default value for the preference.
+<span class="lineNum">      33 </span>            : //
+<span class="lineNum">      34 </span>            : // For example this line in the .h:
+<span class="lineNum">      35 </span>            : //   DECL_GFX_PREF(Once,&quot;layers.dump&quot;,LayersDump,bool,false);
+<span class="lineNum">      36 </span>            : // means that you can call
+<span class="lineNum">      37 </span>            : //   bool var = gfxPrefs::LayersDump();
+<span class="lineNum">      38 </span>            : // from any thread, but that you will only get the preference value of
+<span class="lineNum">      39 </span>            : // &quot;layers.dump&quot; as it was set at the start of the session (subject to
+<span class="lineNum">      40 </span>            : // note 2 below). If the value was not set, the default would be false.
+<span class="lineNum">      41 </span>            : //
+<span class="lineNum">      42 </span>            : // In another example, this line in the .h:
+<span class="lineNum">      43 </span>            : //   DECL_GFX_PREF(Live,&quot;gl.msaa-level&quot;,MSAALevel,uint32_t,2);
+<span class="lineNum">      44 </span>            : // means that every time you call
+<span class="lineNum">      45 </span>            : //   uint32_t var = gfxPrefs::MSAALevel();
+<span class="lineNum">      46 </span>            : // from any thread, you will get the most up to date preference value of
+<span class="lineNum">      47 </span>            : // &quot;gl.msaa-level&quot;.  If the value is not set, the default would be 2.
+<span class="lineNum">      48 </span>            : 
+<span class="lineNum">      49 </span>            : // Note 1: Changing a preference from Live to Once is now as simple
+<span class="lineNum">      50 </span>            : // as changing the Update argument.  If your code worked before, it will
+<span class="lineNum">      51 </span>            : // keep working, and behave as if the user never changes the preference.
+<span class="lineNum">      52 </span>            : // Things are a bit more complicated and perhaps even dangerous when
+<span class="lineNum">      53 </span>            : // going from Once to Live, or indeed setting a preference to be Live
+<span class="lineNum">      54 </span>            : // in the first place, so be careful.  You need to be ready for the
+<span class="lineNum">      55 </span>            : // values changing mid execution, and if you're using those preferences
+<span class="lineNum">      56 </span>            : // in any setup and initialization, you may need to do extra work.
+<span class="lineNum">      57 </span>            : 
+<span class="lineNum">      58 </span>            : // Note 2: Prefs can be set by using the corresponding Set method. For
+<span class="lineNum">      59 </span>            : // example, if the accessor is Foo() then calling SetFoo(...) will update
+<span class="lineNum">      60 </span>            : // the preference and also change the return value of subsequent Foo() calls.
+<span class="lineNum">      61 </span>            : // This is true even for 'Once' prefs which otherwise do not change if the
+<span class="lineNum">      62 </span>            : // pref is updated after initialization. Changing gfxPrefs values in content
+<span class="lineNum">      63 </span>            : // processes will not affect the result in other processes. Changing gfxPrefs
+<span class="lineNum">      64 </span>            : // values in the GPU process is not supported at all.
+<span class="lineNum">      65 </span>            : 
+<span class="lineNum">      66 </span>            : #define DECL_GFX_PREF(Update, Prefname, Name, Type, Default)                  \
+<span class="lineNum">      67 </span>            : public:                                                                       \
+<span class="lineNum">      68 </span>            : static Type Name() { MOZ_ASSERT(SingletonExists()); return GetSingleton().mPref##Name.mValue; } \
+<span class="lineNum">      69 </span>            : static void Set##Name(Type aVal) { MOZ_ASSERT(SingletonExists());             \
+<span class="lineNum">      70 </span>            :     GetSingleton().mPref##Name.Set(UpdatePolicy::Update, Get##Name##PrefName(), aVal); } \
+<span class="lineNum">      71 </span>            : static const char* Get##Name##PrefName() { return Prefname; }                 \
+<span class="lineNum">      72 </span>            : static Type Get##Name##PrefDefault() { return Default; }                      \
+<span class="lineNum">      73 </span>            : static void Set##Name##ChangeCallback(Pref::ChangeCallback aCallback) {       \
+<span class="lineNum">      74 </span>            :     MOZ_ASSERT(SingletonExists());                                            \
+<span class="lineNum">      75 </span>            :     GetSingleton().mPref##Name.SetChangeCallback(aCallback); }                \
+<span class="lineNum">      76 </span>            : private:                                                                      \
+<span class="lineNum">      77 </span>            : PrefTemplate&lt;UpdatePolicy::Update, Type, Get##Name##PrefDefault, Get##Name##PrefName&gt; mPref##Name
+<span class="lineNum">      78 </span>            : 
+<span class="lineNum">      79 </span>            : // This declares an &quot;override&quot; pref, which is exposed as a &quot;bool&quot; pref by the API,
+<span class="lineNum">      80 </span>            : // but is internally stored as a tri-state int pref with three possible values:
+<span class="lineNum">      81 </span>            : // - A value of 0 means that it has been force-disabled, and is exposed as a
+<span class="lineNum">      82 </span>            : //   false-valued bool.
+<span class="lineNum">      83 </span>            : // - A value of 1 means that it has been force-enabled, and is exposed as a
+<span class="lineNum">      84 </span>            : //   true-valued bool.
+<span class="lineNum">      85 </span>            : // - A value of 2 (the default) means that it returns the provided BaseValue
+<span class="lineNum">      86 </span>            : //   as a boolean. The BaseValue may be a constant expression or a function.
+<span class="lineNum">      87 </span>            : // If the prefs defined with this macro are listed in prefs files (e.g. all.js),
+<span class="lineNum">      88 </span>            : // then they must be listed with an int value (default to 2, but you can use 0
+<span class="lineNum">      89 </span>            : // or 1 if you want to force it on or off).
+<span class="lineNum">      90 </span>            : #define DECL_OVERRIDE_PREF(Update, Prefname, Name, BaseValue)                 \
+<span class="lineNum">      91 </span>            : public:                                                                       \
+<span class="lineNum">      92 </span>            : static bool Name() { MOZ_ASSERT(SingletonExists());                           \
+<span class="lineNum">      93 </span>            :     int32_t val = GetSingleton().mPref##Name.mValue;                          \
+<span class="lineNum">      94 </span>            :     return val == 2 ? !!(BaseValue) : !!val; }                                  \
+<span class="lineNum">      95 </span>            : static void Set##Name(bool aVal) { MOZ_ASSERT(SingletonExists());             \
+<span class="lineNum">      96 </span>            :     GetSingleton().mPref##Name.Set(UpdatePolicy::Update, Get##Name##PrefName(), aVal ? 1 : 0); } \
+<span class="lineNum">      97 </span>            : static const char* Get##Name##PrefName() { return Prefname; }                 \
+<span class="lineNum">      98 </span>            : static int32_t Get##Name##PrefDefault() { return 2; }                         \
+<span class="lineNum">      99 </span>            : static void Set##Name##ChangeCallback(Pref::ChangeCallback aCallback) {       \
+<span class="lineNum">     100 </span>            :     MOZ_ASSERT(SingletonExists());                                            \
+<span class="lineNum">     101 </span>            :     GetSingleton().mPref##Name.SetChangeCallback(aCallback); }                \
+<span class="lineNum">     102 </span>            : private:                                                                      \
+<span class="lineNum">     103 </span>            : PrefTemplate&lt;UpdatePolicy::Update, int32_t, Get##Name##PrefDefault, Get##Name##PrefName&gt; mPref##Name
+<span class="lineNum">     104 </span>            : 
+<span class="lineNum">     105 </span>            : namespace mozilla {
+<span class="lineNum">     106 </span>            : namespace gfx {
+<span class="lineNum">     107 </span>            : class GfxPrefValue;   // defined in PGPU.ipdl
+<span class="lineNum">     108 </span>            : } // namespace gfx
+<span class="lineNum">     109 </span>            : } // namespace mozilla
+<span class="lineNum">     110 </span>            : 
+<span class="lineNum">     111 </span>            : class gfxPrefs;
+<span class="lineNum">     112 </span>            : class gfxPrefs final
+<span class="lineNum">     113 </span>            : {
+<span class="lineNum">     114 </span>            :   typedef mozilla::gfx::GfxPrefValue GfxPrefValue;
+<span class="lineNum">     115 </span>            : 
+<span class="lineNum">     116 </span>            :   typedef mozilla::Atomic&lt;bool, mozilla::Relaxed&gt; AtomicBool;
+<span class="lineNum">     117 </span>            :   typedef mozilla::Atomic&lt;int32_t, mozilla::Relaxed&gt; AtomicInt32;
+<span class="lineNum">     118 </span>            :   typedef mozilla::Atomic&lt;uint32_t, mozilla::Relaxed&gt; AtomicUint32;
+<span class="lineNum">     119 </span>            : 
+<span class="lineNum">     120 </span>            : private:
+<span class="lineNum">     121 </span>            :   // Enums for the update policy.
+<span class="lineNum">     122 </span>            :   enum class UpdatePolicy {
+<span class="lineNum">     123 </span>            :     Skip, // Set the value to default, skip any Preferences calls
+<span class="lineNum">     124 </span>            :     Once, // Evaluate the preference once, unchanged during the session
+<span class="lineNum">     125 </span>            :     Live  // Evaluate the preference and set callback so it stays current/live
+<span class="lineNum">     126 </span>            :   };
+<span class="lineNum">     127 </span>            : 
+<span class="lineNum">     128 </span>            : public:
+<span class="lineNum">     129 </span>            :   class Pref
+<span class="lineNum">     130 </span>            :   {
+<span class="lineNum">     131 </span>            :   public:
+<span class="lineNum">     132 </span>            :     Pref() : mChangeCallback(nullptr)
+<span class="lineNum">     133 </span>            :     {
+<span class="lineNum">     134 </span>            :       mIndex = sGfxPrefList-&gt;Length();
+<span class="lineNum">     135 </span>            :       sGfxPrefList-&gt;AppendElement(this);
+<span class="lineNum">     136 </span>            :     }
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            :     size_t Index() const { return mIndex; }
+<span class="lineNum">     139 </span>            :     void OnChange();
+<span class="lineNum">     140 </span>            : 
+<span class="lineNum">     141 </span>            :     typedef void (*ChangeCallback)(const GfxPrefValue&amp;);
+<span class="lineNum">     142 </span>            :     void SetChangeCallback(ChangeCallback aCallback);
+<span class="lineNum">     143 </span>            : 
+<span class="lineNum">     144 </span>            :     virtual const char* Name() const = 0;
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            :     // Returns true if the value is default, false if changed.
+<span class="lineNum">     147 </span>            :     virtual bool HasDefaultValue() const = 0;
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            :     // Returns the pref value as a discriminated union.
+<span class="lineNum">     150 </span>            :     virtual void GetLiveValue(GfxPrefValue* aOutValue) const = 0;
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span>            :     // Returns the pref value as a discriminated union.
+<span class="lineNum">     153 </span>            :     virtual void GetCachedValue(GfxPrefValue* aOutValue) const = 0;
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span>            :     // Change the cached value. GfxPrefValue must be a compatible type.
+<span class="lineNum">     156 </span>            :     virtual void SetCachedValue(const GfxPrefValue&amp; aOutValue) = 0;
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            :   protected:
+<span class="lineNum">     159 </span>            :     void FireChangeCallback();
+<span class="lineNum">     160 </span>            : 
+<span class="lineNum">     161 </span>            :   private:
+<span class="lineNum">     162 </span>            :     size_t mIndex;
+<span class="lineNum">     163 </span>            :     ChangeCallback mChangeCallback;
+<span class="lineNum">     164 </span>            :   };
+<span class="lineNum">     165 </span>            : 
+<span class="lineNum">     166 </span>            :   static const nsTArray&lt;Pref*&gt;&amp; all() {
+<span class="lineNum">     167 </span><span class="lineNoCov">          0 :     return *sGfxPrefList;</span>
+<span class="lineNum">     168 </span>            :   }
+<span class="lineNum">     169 </span>            : 
+<span class="lineNum">     170 </span>            : private:
+<span class="lineNum">     171 </span>            :   // We split out a base class to reduce the number of virtual function
+<span class="lineNum">     172 </span>            :   // instantiations that we do, which saves code size.
+<span class="lineNum">     173 </span>            :   template&lt;class T&gt;
+<span class="lineNum">     174 </span>            :   class TypedPref : public Pref
+<span class="lineNum">     175 </span>            :   {
+<span class="lineNum">     176 </span>            :   public:
+<span class="lineNum">     177 </span>            :     explicit TypedPref(T aValue)
+<span class="lineNum">     178 </span>            :       : mValue(aValue)
+<span class="lineNum">     179 </span>            :     {}
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span>            :     void GetCachedValue(GfxPrefValue* aOutValue) const override {
+<span class="lineNum">     182 </span>            :       CopyPrefValue(&amp;mValue, aOutValue);
+<span class="lineNum">     183 </span>            :     }
+<span class="lineNum">     184 </span>            :     void SetCachedValue(const GfxPrefValue&amp; aOutValue) override {
+<span class="lineNum">     185 </span>            :       // This is only used in non-XPCOM processes.
+<span class="lineNum">     186 </span>            :       MOZ_ASSERT(!IsPrefsServiceAvailable());
+<span class="lineNum">     187 </span>            : 
+<span class="lineNum">     188 </span>            :       T newValue;
+<span class="lineNum">     189 </span>            :       CopyPrefValue(&amp;aOutValue, &amp;newValue);
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            :       if (mValue != newValue) {
+<span class="lineNum">     192 </span>            :         mValue = newValue;
+<span class="lineNum">     193 </span>            :         FireChangeCallback();
+<span class="lineNum">     194 </span>            :       }
+<span class="lineNum">     195 </span>            :     }
+<span class="lineNum">     196 </span>            : 
+<span class="lineNum">     197 </span>            :   protected:
+<span class="lineNum">     198 </span>            :     T GetLiveValueByName(const char* aPrefName) const {
+<span class="lineNum">     199 </span>            :       if (IsPrefsServiceAvailable()) {
+<span class="lineNum">     200 </span>            :         return PrefGet(aPrefName, mValue);
+<span class="lineNum">     201 </span>            :       }
+<span class="lineNum">     202 </span>            :       return mValue;
+<span class="lineNum">     203 </span>            :     }
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span>            :   public:
+<span class="lineNum">     206 </span>            :     T mValue;
+<span class="lineNum">     207 </span>            :   };
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span>            :   // Since we cannot use const char*, use a function that returns it.
+<span class="lineNum">     210 </span>            :   template &lt;UpdatePolicy Update, class T, T Default(void), const char* Prefname(void)&gt;
+<span class="lineNum">     211 </span>            :   class PrefTemplate final : public TypedPref&lt;T&gt;
+<span class="lineNum">     212 </span>            :   {
+<span class="lineNum">     213 </span>            :     typedef TypedPref&lt;T&gt; BaseClass;
+<span class="lineNum">     214 </span>            :   public:
+<span class="lineNum">     215 </span>            :     PrefTemplate()
+<span class="lineNum">     216 </span>            :       : BaseClass(Default())
+<span class="lineNum">     217 </span>            :     {
+<span class="lineNum">     218 </span>            :       // If not using the Preferences service, values are synced over IPC, so
+<span class="lineNum">     219 </span>            :       // there's no need to register us as a Preferences observer.
+<span class="lineNum">     220 </span>            :       if (IsPrefsServiceAvailable()) {
+<span class="lineNum">     221 </span>            :         Register(Update, Prefname());
+<span class="lineNum">     222 </span>            :       }
+<span class="lineNum">     223 </span>            :       // By default we only watch changes in the parent process, to communicate
+<span class="lineNum">     224 </span>            :       // changes to the GPU process.
+<span class="lineNum">     225 </span>            :       if (IsParentProcess() &amp;&amp; Update == UpdatePolicy::Live) {
+<span class="lineNum">     226 </span>            :         WatchChanges(Prefname(), this);
+<span class="lineNum">     227 </span>            :       }
+<span class="lineNum">     228 </span>            :     }
+<span class="lineNum">     229 </span>            :     ~PrefTemplate() {
+<span class="lineNum">     230 </span>            :       if (IsParentProcess() &amp;&amp; Update == UpdatePolicy::Live) {
+<span class="lineNum">     231 </span>            :         UnwatchChanges(Prefname(), this);
+<span class="lineNum">     232 </span>            :       }
+<span class="lineNum">     233 </span>            :     }
+<span class="lineNum">     234 </span>            :     void Register(UpdatePolicy aUpdate, const char* aPreference)
+<span class="lineNum">     235 </span>            :     {
+<span class="lineNum">     236 </span>            :       AssertMainThread();
+<span class="lineNum">     237 </span>            :       switch (aUpdate) {
+<span class="lineNum">     238 </span>            :         case UpdatePolicy::Skip:
+<span class="lineNum">     239 </span>            :           break;
+<span class="lineNum">     240 </span>            :         case UpdatePolicy::Once:
+<span class="lineNum">     241 </span>            :           this-&gt;mValue = PrefGet(aPreference, this-&gt;mValue);
+<span class="lineNum">     242 </span>            :           break;
+<span class="lineNum">     243 </span>            :         case UpdatePolicy::Live:
+<span class="lineNum">     244 </span>            :           PrefAddVarCache(&amp;this-&gt;mValue, aPreference, this-&gt;mValue);
+<span class="lineNum">     245 </span>            :           break;
+<span class="lineNum">     246 </span>            :         default:
+<span class="lineNum">     247 </span>            :           MOZ_CRASH(&quot;Incomplete switch&quot;);
+<span class="lineNum">     248 </span>            :       }
+<span class="lineNum">     249 </span>            :     }
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :     void Set(UpdatePolicy aUpdate, const char* aPref, T aValue)</span>
+<span class="lineNum">     251 </span>            :     {
+<span class="lineNum">     252 </span><span class="lineNoCov">          0 :       AssertMainThread();</span>
+<span class="lineNum">     253 </span><span class="lineNoCov">          0 :       PrefSet(aPref, aValue);</span>
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :       switch (aUpdate) {</span>
+<span class="lineNum">     255 </span>            :         case UpdatePolicy::Skip:
+<span class="lineNum">     256 </span>            :         case UpdatePolicy::Live:
+<span class="lineNum">     257 </span>            :           break;
+<span class="lineNum">     258 </span>            :         case UpdatePolicy::Once:
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :           this-&gt;mValue = PrefGet(aPref, this-&gt;mValue);</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :           break;</span>
+<span class="lineNum">     261 </span>            :         default:
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :           MOZ_CRASH(&quot;Incomplete switch&quot;);</span>
+<span class="lineNum">     263 </span>            :       }
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     265 </span>            :     const char *Name() const override {
+<span class="lineNum">     266 </span>            :       return Prefname();
+<span class="lineNum">     267 </span>            :     }
+<span class="lineNum">     268 </span>            :     void GetLiveValue(GfxPrefValue* aOutValue) const override {
+<span class="lineNum">     269 </span>            :       T value = GetLiveValue();
+<span class="lineNum">     270 </span>            :       CopyPrefValue(&amp;value, aOutValue);
+<span class="lineNum">     271 </span>            :     }
+<span class="lineNum">     272 </span>            :     // When using the Preferences service, the change callback can be triggered
+<span class="lineNum">     273 </span>            :     // *before* our cached value is updated, so we expose a method to grab the
+<span class="lineNum">     274 </span>            :     // true live value.
+<span class="lineNum">     275 </span>            :     T GetLiveValue() const {
+<span class="lineNum">     276 </span>            :       return BaseClass::GetLiveValueByName(Prefname());
+<span class="lineNum">     277 </span>            :     }
+<span class="lineNum">     278 </span>            :     bool HasDefaultValue() const override {
+<span class="lineNum">     279 </span>            :       return this-&gt;mValue == Default();
+<span class="lineNum">     280 </span>            :     }
+<span class="lineNum">     281 </span>            :   };
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            :   // This is where DECL_GFX_PREF for each of the preferences should go.
+<span class="lineNum">     284 </span>            :   // We will keep these in an alphabetical order to make it easier to see if
+<span class="lineNum">     285 </span>            :   // a method accessing a pref already exists. Just add yours in the list.
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;accessibility.browsewithcaret&quot;, AccessibilityBrowseWithCaret, bool, false);</span>
+<span class="lineNum">     288 </span>            : 
+<span class="lineNum">     289 </span>            :   // The apz prefs are explained in AsyncPanZoomController.cpp
+<span class="lineNum">     290 </span><span class="lineCov">         14 :   DECL_GFX_PREF(Live, &quot;apz.allow_checkerboarding&quot;,             APZAllowCheckerboarding, bool, true);</span>
+<span class="lineNum">     291 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.allow_immediate_handoff&quot;,           APZAllowImmediateHandoff, bool, true);</span>
+<span class="lineNum">     292 </span><span class="lineCov">         10 :   DECL_GFX_PREF(Live, &quot;apz.allow_zooming&quot;,                     APZAllowZooming, bool, false);</span>
+<span class="lineNum">     293 </span>            :   DECL_GFX_PREF(Live, &quot;apz.android.chrome_fling_physics.enabled&quot;, APZUseChromeFlingPhysics, bool, false);
+<span class="lineNum">     294 </span>            :   DECL_GFX_PREF(Live, &quot;apz.android.chrome_fling_physics.friction&quot;, APZChromeFlingPhysicsFriction, float, 0.015f);
+<span class="lineNum">     295 </span>            :   DECL_GFX_PREF(Live, &quot;apz.android.chrome_fling_physics.inflexion&quot;, APZChromeFlingPhysicsInflexion, float, 0.35f);
+<span class="lineNum">     296 </span>            :   DECL_GFX_PREF(Live, &quot;apz.android.chrome_fling_physics.stop_threshold&quot;, APZChromeFlingPhysicsStopThreshold, float, 0.1f);
+<span class="lineNum">     297 </span>            :   DECL_GFX_PREF(Live, &quot;apz.autoscroll.enabled&quot;,                APZAutoscrollEnabled, bool, false);
+<span class="lineNum">     298 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.axis_lock.breakout_angle&quot;,          APZAxisBreakoutAngle, float, float(M_PI / 8.0) /* 22.5 degrees */);</span>
+<span class="lineNum">     299 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.axis_lock.breakout_threshold&quot;,      APZAxisBreakoutThreshold, float, 1.0f / 32.0f);</span>
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.axis_lock.direct_pan_angle&quot;,        APZAllowedDirectPanAngle, float, float(M_PI / 3.0) /* 60 degrees */);</span>
+<span class="lineNum">     301 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.axis_lock.lock_angle&quot;,              APZAxisLockAngle, float, float(M_PI / 6.0) /* 30 degrees */);</span>
+<span class="lineNum">     302 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.axis_lock.mode&quot;,                    APZAxisLockMode, int32_t, 0);</span>
+<span class="lineNum">     303 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.content_response_timeout&quot;,          APZContentResponseTimeout, int32_t, 400);</span>
+<span class="lineNum">     304 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.danger_zone_x&quot;,                     APZDangerZoneX, int32_t, 50);</span>
+<span class="lineNum">     305 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.danger_zone_y&quot;,                     APZDangerZoneY, int32_t, 100);</span>
+<span class="lineNum">     306 </span><span class="lineCov">         34 :   DECL_GFX_PREF(Live, &quot;apz.disable_for_scroll_linked_effects&quot;, APZDisableForScrollLinkedEffects, bool, false);</span>
+<span class="lineNum">     307 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.displayport_expiry_ms&quot;,             APZDisplayPortExpiryTime, uint32_t, 15000);</span>
+<span class="lineNum">     308 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.drag.enabled&quot;,                      APZDragEnabled, bool, false);</span>
+<span class="lineNum">     309 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.drag.initial.enabled&quot;,              APZDragInitiationEnabled, bool, false);</span>
+<span class="lineNum">     310 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.drag.touch.enabled&quot;,                APZTouchDragEnabled, bool, false);</span>
+<span class="lineNum">     311 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.enlarge_displayport_when_clipped&quot;,  APZEnlargeDisplayPortWhenClipped, bool, false);</span>
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_accel_base_mult&quot;,             APZFlingAccelBaseMultiplier, float, 1.0f);</span>
+<span class="lineNum">     313 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_accel_interval_ms&quot;,           APZFlingAccelInterval, int32_t, 500);</span>
+<span class="lineNum">     314 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_accel_supplemental_mult&quot;,     APZFlingAccelSupplementalMultiplier, float, 1.0f);</span>
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_accel_min_velocity&quot;,          APZFlingAccelMinVelocity, float, 1.5f);</span>
+<span class="lineNum">     316 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;apz.fling_curve_function_x1&quot;,           APZCurveFunctionX1, float, 0.0f);</span>
+<span class="lineNum">     317 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;apz.fling_curve_function_x2&quot;,           APZCurveFunctionX2, float, 1.0f);</span>
+<span class="lineNum">     318 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;apz.fling_curve_function_y1&quot;,           APZCurveFunctionY1, float, 0.0f);</span>
+<span class="lineNum">     319 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;apz.fling_curve_function_y2&quot;,           APZCurveFunctionY2, float, 1.0f);</span>
+<span class="lineNum">     320 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_curve_threshold_inches_per_ms&quot;, APZCurveThreshold, float, -1.0f);</span>
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_friction&quot;,                    APZFlingFriction, float, 0.002f);</span>
+<span class="lineNum">     322 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_min_velocity_threshold&quot;,      APZFlingMinVelocityThreshold, float, 0.5f);</span>
+<span class="lineNum">     323 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_stop_on_tap_threshold&quot;,       APZFlingStopOnTapThreshold, float, 0.05f);</span>
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.fling_stopped_threshold&quot;,           APZFlingStoppedThreshold, float, 0.01f);</span>
+<span class="lineNum">     325 </span><span class="lineCov">         32 :   DECL_GFX_PREF(Live, &quot;apz.frame_delay.enabled&quot;,               APZFrameDelayEnabled, bool, false);</span>
+<span class="lineNum">     326 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;apz.keyboard.enabled&quot;,                  APZKeyboardEnabled, bool, false);</span>
+<span class="lineNum">     327 </span><span class="lineCov">         16 :   DECL_GFX_PREF(Live, &quot;apz.keyboard.passive-listeners&quot;,        APZKeyboardPassiveListeners, bool, false);</span>
+<span class="lineNum">     328 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.max_tap_time&quot;,                      APZMaxTapTime, int32_t, 300);</span>
+<span class="lineNum">     329 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.max_velocity_inches_per_ms&quot;,        APZMaxVelocity, float, -1.0f);</span>
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;apz.max_velocity_queue_size&quot;,           APZMaxVelocityQueueSize, uint32_t, 5);</span>
+<span class="lineNum">     331 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.min_skate_speed&quot;,                   APZMinSkateSpeed, float, 1.0f);</span>
+<span class="lineNum">     332 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.minimap.enabled&quot;,                   APZMinimap, bool, false);</span>
+<span class="lineNum">     333 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.one_touch_pinch.enabled&quot;,           APZOneTouchPinchEnabled, bool, true);</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.overscroll.enabled&quot;,                APZOverscrollEnabled, bool, false);</span>
+<span class="lineNum">     335 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.overscroll.min_pan_distance_ratio&quot;, APZMinPanDistanceRatio, float, 1.0f);</span>
+<span class="lineNum">     336 </span>            :   DECL_GFX_PREF(Live, &quot;apz.overscroll.spring_stiffness&quot;,       APZOverscrollSpringStiffness, float, 0.001f);
+<span class="lineNum">     337 </span>            :   DECL_GFX_PREF(Live, &quot;apz.overscroll.stop_distance_threshold&quot;, APZOverscrollStopDistanceThreshold, float, 5.0f);
+<span class="lineNum">     338 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.paint_skipping.enabled&quot;,            APZPaintSkipping, bool, true);</span>
+<span class="lineNum">     339 </span><span class="lineCov">        108 :   DECL_GFX_PREF(Live, &quot;apz.peek_messages.enabled&quot;,             APZPeekMessages, bool, true);</span>
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.pinch_lock.mode&quot;,                   APZPinchLockMode, int32_t, 1);</span>
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.pinch_lock.scroll_lock_threshold&quot;,  APZPinchLockScrollLockThreshold, float, 1.0f / 32.0f);</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.pinch_lock.span_breakout_threshold&quot;, APZPinchLockSpanBreakoutThreshold, float, 1.0f / 32.0f);</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.pinch_lock.span_lock_threshold&quot;,    APZPinchLockSpanLockThreshold, float, 1.0f / 32.0f);</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.popups.enabled&quot;,                    APZPopupsEnabled, bool, false);</span>
+<span class="lineNum">     345 </span><span class="lineCov">         52 :   DECL_GFX_PREF(Live, &quot;apz.printtree&quot;,                         APZPrintTree, bool, false);</span>
+<span class="lineNum">     346 </span><span class="lineCov">         14 :   DECL_GFX_PREF(Live, &quot;apz.record_checkerboarding&quot;,            APZRecordCheckerboarding, bool, false);</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.second_tap_tolerance&quot;,              APZSecondTapTolerance, float, 0.5f);</span>
+<span class="lineNum">     348 </span>            :   DECL_GFX_PREF(Live, &quot;apz.test.fails_with_native_injection&quot;,  APZTestFailsWithNativeInjection, bool, false);
+<span class="lineNum">     349 </span><span class="lineCov">         50 :   DECL_GFX_PREF(Live, &quot;apz.test.logging_enabled&quot;,              APZTestLoggingEnabled, bool, false);</span>
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.touch_move_tolerance&quot;,              APZTouchMoveTolerance, float, 0.1f);</span>
+<span class="lineNum">     351 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.touch_start_tolerance&quot;,             APZTouchStartTolerance, float, 1.0f/4.5f);</span>
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.velocity_bias&quot;,                     APZVelocityBias, float, 0.0f);</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.velocity_relevance_time_ms&quot;,        APZVelocityRelevanceTime, uint32_t, 150);</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.x_skate_highmem_adjust&quot;,            APZXSkateHighMemAdjust, float, 0.0f);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.x_skate_size_multiplier&quot;,           APZXSkateSizeMultiplier, float, 1.5f);</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.x_stationary_size_multiplier&quot;,      APZXStationarySizeMultiplier, float, 3.0f);</span>
+<span class="lineNum">     357 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.y_skate_highmem_adjust&quot;,            APZYSkateHighMemAdjust, float, 0.0f);</span>
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.y_skate_size_multiplier&quot;,           APZYSkateSizeMultiplier, float, 2.5f);</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.y_stationary_size_multiplier&quot;,      APZYStationarySizeMultiplier, float, 3.5f);</span>
+<span class="lineNum">     360 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.zoom_animation_duration_ms&quot;,        APZZoomAnimationDuration, int32_t, 250);</span>
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;apz.scale_repaint_delay_ms&quot;,            APZScaleRepaintDelay, int32_t, 500);</span>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            :   DECL_GFX_PREF(Live, &quot;browser.ui.scroll-toolbar-threshold&quot;,   ToolbarScrollThreshold, int32_t, 10);
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;browser.ui.zoom.force-user-scalable&quot;,   ForceUserScalable, bool, false);</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;browser.viewport.desktopWidth&quot;,         DesktopViewportWidth, int32_t, 980);</span>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;dom.ipc.plugins.asyncdrawing.enabled&quot;,  PluginAsyncDrawingEnabled, bool, false);</span>
+<span class="lineNum">     368 </span><span class="lineCov">         10 :   DECL_GFX_PREF(Live, &quot;dom.meta-viewport.enabled&quot;,             MetaViewportEnabled, bool, false);</span>
+<span class="lineNum">     369 </span>            :   DECL_GFX_PREF(Once, &quot;dom.vr.enabled&quot;,                        VREnabled, bool, false);
+<span class="lineNum">     370 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.autoactivate.enabled&quot;,           VRAutoActivateEnabled, bool, false);
+<span class="lineNum">     371 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.controller_trigger_threshold&quot;,   VRControllerTriggerThreshold, float, 0.1f);
+<span class="lineNum">     372 </span>            :   DECL_GFX_PREF(Once, &quot;dom.vr.external.enabled&quot;,               VRExternalEnabled, bool, true);
+<span class="lineNum">     373 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;dom.vr.navigation.timeout&quot;,             VRNavigationTimeout, int32_t, 1000);</span>
+<span class="lineNum">     374 </span>            :   DECL_GFX_PREF(Once, &quot;dom.vr.oculus.enabled&quot;,                 VROculusEnabled, bool, true);
+<span class="lineNum">     375 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.oculus.invisible.enabled&quot;,       VROculusInvisibleEnabled, bool, true);
+<span class="lineNum">     376 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.oculus.present.timeout&quot;,         VROculusPresentTimeout, int32_t, 500);
+<span class="lineNum">     377 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.oculus.quit.timeout&quot;,            VROculusQuitTimeout, int32_t, 10000);
+<span class="lineNum">     378 </span>            :   DECL_GFX_PREF(Once, &quot;dom.vr.openvr.enabled&quot;,                 VROpenVREnabled, bool, false);
+<span class="lineNum">     379 </span>            :   DECL_GFX_PREF(Once, &quot;dom.vr.osvr.enabled&quot;,                   VROSVREnabled, bool, false);
+<span class="lineNum">     380 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.controller.enumerate.interval&quot;,  VRControllerEnumerateInterval, int32_t, 1000);
+<span class="lineNum">     381 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.display.enumerate.interval&quot;,     VRDisplayEnumerateInterval, int32_t, 5000);
+<span class="lineNum">     382 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.inactive.timeout&quot;,               VRInactiveTimeout, int32_t, 5000);
+<span class="lineNum">     383 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.poseprediction.enabled&quot;,         VRPosePredictionEnabled, bool, true);
+<span class="lineNum">     384 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;dom.vr.require-gesture&quot;,                VRRequireGesture, bool, true);</span>
+<span class="lineNum">     385 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.puppet.enabled&quot;,                 VRPuppetEnabled, bool, false);
+<span class="lineNum">     386 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.puppet.submitframe&quot;,             VRPuppetSubmitFrame, uint32_t, 0);
+<span class="lineNum">     387 </span>            :   DECL_GFX_PREF(Live, &quot;dom.vr.display.rafMaxDuration&quot;,         VRDisplayRafMaxDuration, uint32_t, 50);
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;dom.w3c_pointer_events.enabled&quot;,        PointerEventsEnabled, bool, false);</span>
+<span class="lineNum">     389 </span>            : 
+<span class="lineNum">     390 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll&quot;,                  SmoothScrollEnabled, bool, true);</span>
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.currentVelocityWeighting&quot;,</span>
+<span class="lineNum">     392 </span>            :                 SmoothScrollCurrentVelocityWeighting, float, 0.25);
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.durationToIntervalRatio&quot;,</span>
+<span class="lineNum">     394 </span>            :                 SmoothScrollDurationToIntervalRatio, int32_t, 200);
+<span class="lineNum">     395 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.lines.durationMaxMS&quot;,</span>
+<span class="lineNum">     396 </span>            :                 LineSmoothScrollMaxDurationMs, int32_t, 150);
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.lines.durationMinMS&quot;,</span>
+<span class="lineNum">     398 </span>            :                 LineSmoothScrollMinDurationMs, int32_t, 150);
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.mouseWheel&quot;,       WheelSmoothScrollEnabled, bool, true);</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.mouseWheel.durationMaxMS&quot;,</span>
+<span class="lineNum">     401 </span>            :                 WheelSmoothScrollMaxDurationMs, int32_t, 400);
+<span class="lineNum">     402 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.mouseWheel.durationMinMS&quot;,</span>
+<span class="lineNum">     403 </span>            :                 WheelSmoothScrollMinDurationMs, int32_t, 200);
+<span class="lineNum">     404 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.other.durationMaxMS&quot;,</span>
+<span class="lineNum">     405 </span>            :                 OtherSmoothScrollMaxDurationMs, int32_t, 150);
+<span class="lineNum">     406 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.other.durationMinMS&quot;,</span>
+<span class="lineNum">     407 </span>            :                 OtherSmoothScrollMinDurationMs, int32_t, 150);
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.pages&quot;,            PageSmoothScrollEnabled, bool, true);</span>
+<span class="lineNum">     409 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.pages.durationMaxMS&quot;,</span>
+<span class="lineNum">     410 </span>            :                 PageSmoothScrollMaxDurationMs, int32_t, 150);
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.pages.durationMinMS&quot;,</span>
+<span class="lineNum">     412 </span>            :                 PageSmoothScrollMinDurationMs, int32_t, 150);
+<span class="lineNum">     413 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.pixels.durationMaxMS&quot;,</span>
+<span class="lineNum">     414 </span>            :                 PixelSmoothScrollMaxDurationMs, int32_t, 150);
+<span class="lineNum">     415 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.pixels.durationMinMS&quot;,</span>
+<span class="lineNum">     416 </span>            :                 PixelSmoothScrollMinDurationMs, int32_t, 150);
+<span class="lineNum">     417 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.stopDecelerationWeighting&quot;,</span>
+<span class="lineNum">     418 </span>            :                 SmoothScrollStopDecelerationWeighting, float, 0.4f);
+<span class="lineNum">     419 </span>            : 
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.msdPhysics.enabled&quot;,</span>
+<span class="lineNum">     421 </span>            :                 SmoothScrollMSDPhysicsEnabled, bool, false);
+<span class="lineNum">     422 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.msdPhysics.continuousMotionMaxDeltaMS&quot;,</span>
+<span class="lineNum">     423 </span>            :                 SmoothScrollMSDPhysicsContinuousMotionMaxDeltaMS, int32_t, 120);
+<span class="lineNum">     424 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.msdPhysics.motionBeginSpringConstant&quot;,</span>
+<span class="lineNum">     425 </span>            :                 SmoothScrollMSDPhysicsMotionBeginSpringConstant, int32_t, 1250);
+<span class="lineNum">     426 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.msdPhysics.slowdownMinDeltaMS&quot;,</span>
+<span class="lineNum">     427 </span>            :                 SmoothScrollMSDPhysicsSlowdownMinDeltaMS, int32_t, 12);
+<span class="lineNum">     428 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.msdPhysics.slowdownMinDeltaRatio&quot;,</span>
+<span class="lineNum">     429 </span>            :                 SmoothScrollMSDPhysicsSlowdownMinDeltaRatio, float, 1.3f);
+<span class="lineNum">     430 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.msdPhysics.slowdownSpringConstant&quot;,</span>
+<span class="lineNum">     431 </span>            :                 SmoothScrollMSDPhysicsSlowdownSpringConstant, int32_t, 2000);
+<span class="lineNum">     432 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;general.smoothScroll.msdPhysics.regularSpringConstant&quot;,</span>
+<span class="lineNum">     433 </span>            :                 SmoothScrollMSDPhysicsRegularSpringConstant, int32_t, 1000);
+<span class="lineNum">     434 </span>            : 
+<span class="lineNum">     435 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.android.rgb16.force&quot;,               AndroidRGB16Force, bool, false);
+<span class="lineNum">     436 </span>            : #if defined(ANDROID)
+<span class="lineNum">     437 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.apitrace.enabled&quot;,                  UseApitrace, bool, false);
+<span class="lineNum">     438 </span>            : #endif
+<span class="lineNum">     439 </span>            : #if defined(RELEASE_OR_BETA)
+<span class="lineNum">     440 </span>            :   // &quot;Skip&quot; means this is locked to the default value in beta and release.
+<span class="lineNum">     441 </span>            :   DECL_GFX_PREF(Skip, &quot;gfx.blocklist.all&quot;,                     BlocklistAll, int32_t, 0);
+<span class="lineNum">     442 </span>            : #else
+<span class="lineNum">     443 </span><span class="lineCov">         60 :   DECL_GFX_PREF(Once, &quot;gfx.blocklist.all&quot;,                     BlocklistAll, int32_t, 0);</span>
+<span class="lineNum">     444 </span>            : #endif
+<span class="lineNum">     445 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.compositor.clearstate&quot;,             CompositorClearState, bool, false);
+<span class="lineNum">     446 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.compositor.glcontext.opaque&quot;,       CompositorGLContextOpaque, bool, false);
+<span class="lineNum">     447 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.canvas.auto_accelerate.min_calls&quot;,  CanvasAutoAccelerateMinCalls, int32_t, 4);</span>
+<span class="lineNum">     448 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.canvas.auto_accelerate.min_frames&quot;, CanvasAutoAccelerateMinFrames, int32_t, 30);</span>
+<span class="lineNum">     449 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.canvas.auto_accelerate.min_seconds&quot;, CanvasAutoAccelerateMinSeconds, float, 5.0f);</span>
+<span class="lineNum">     450 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.canvas.azure.accelerated&quot;,          CanvasAzureAccelerated, bool, false);
+<span class="lineNum">     451 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.canvas.azure.accelerated.limit&quot;,    CanvasAzureAcceleratedLimit, int32_t, 0);</span>
+<span class="lineNum">     452 </span>            :   // 0x7fff is the maximum supported xlib surface size and is more than enough for canvases.
+<span class="lineNum">     453 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.canvas.max-size&quot;,                   MaxCanvasSize, int32_t, 0x7fff);</span>
+<span class="lineNum">     454 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.canvas.skiagl.cache-items&quot;,         CanvasSkiaGLCacheItems, int32_t, 256);
+<span class="lineNum">     455 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.canvas.skiagl.cache-size&quot;,          CanvasSkiaGLCacheSize, int32_t, 96);
+<span class="lineNum">     456 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.canvas.skiagl.dynamic-cache&quot;,       CanvasSkiaGLDynamicCache, bool, false);
+<span class="lineNum">     457 </span>            : 
+<span class="lineNum">     458 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.color_management.enablev4&quot;,         CMSEnableV4, bool, false);
+<span class="lineNum">     459 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.color_management.mode&quot;,             CMSMode, int32_t,-1);
+<span class="lineNum">     460 </span>            :   // The zero default here should match QCMS_INTENT_DEFAULT from qcms.h
+<span class="lineNum">     461 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.color_management.rendering_intent&quot;, CMSRenderingIntent, int32_t, 0);
+<span class="lineNum">     462 </span><span class="lineCov">         40 :   DECL_GFX_PREF(Live, &quot;gfx.content.always-paint&quot;,              AlwaysPaint, bool, false);</span>
+<span class="lineNum">     463 </span>            :   // Size in megabytes
+<span class="lineNum">     464 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.content.skia-font-cache-size&quot;,      SkiaContentFontCacheSize, int32_t, 10);
+<span class="lineNum">     465 </span>            : 
+<span class="lineNum">     466 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.device-reset.limit&quot;,                DeviceResetLimitCount, int32_t, 10);</span>
+<span class="lineNum">     467 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.device-reset.threshold-ms&quot;,         DeviceResetThresholdMilliseconds, int32_t, -1);</span>
+<span class="lineNum">     468 </span>            : 
+<span class="lineNum">     469 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.direct2d.disabled&quot;,                 Direct2DDisabled, bool, false);
+<span class="lineNum">     470 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.direct2d.force-enabled&quot;,            Direct2DForceEnabled, bool, false);
+<span class="lineNum">     471 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.direct2d.destroy-dt-on-paintthread&quot;,Direct2DDestroyDTOnPaintThread, bool, true);
+<span class="lineNum">     472 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.direct3d11.reuse-decoder-device&quot;,   Direct3D11ReuseDecoderDevice, int32_t, -1);
+<span class="lineNum">     473 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.direct3d11.allow-keyed-mutex&quot;,      Direct3D11AllowKeyedMutex, bool, true);
+<span class="lineNum">     474 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.direct3d11.use-double-buffering&quot;,   Direct3D11UseDoubleBuffering, bool, false);
+<span class="lineNum">     475 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.direct3d11.enable-debug-layer&quot;,     Direct3D11EnableDebugLayer, bool, false);
+<span class="lineNum">     476 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.direct3d11.break-on-error&quot;,         Direct3D11BreakOnError, bool, false);
+<span class="lineNum">     477 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.direct3d11.sleep-on-create-device&quot;, Direct3D11SleepOnCreateDevice, int32_t, 0);
+<span class="lineNum">     478 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.downloadable_fonts.keep_color_bitmaps&quot;, KeepColorBitmaps, bool, false);
+<span class="lineNum">     479 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.downloadable_fonts.validate_variation_tables&quot;, ValidateVariationTables, bool, true);
+<span class="lineNum">     480 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.downloadable_fonts.otl_validation&quot;, ValidateOTLTables, bool, true);
+<span class="lineNum">     481 </span><span class="lineCov">          8 :   DECL_GFX_PREF(Live, &quot;gfx.draw-color-bars&quot;,                   CompositorDrawColorBars, bool, false);</span>
+<span class="lineNum">     482 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.e10s.hide-plugins-for-scroll&quot;,      HidePluginsForScroll, bool, true);</span>
+<span class="lineNum">     483 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Live, &quot;gfx.layerscope.enabled&quot;,                LayerScopeEnabled, bool, false);</span>
+<span class="lineNum">     484 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.layerscope.port&quot;,                   LayerScopePort, int32_t, 23456);</span>
+<span class="lineNum">     485 </span>            :   // Note that        &quot;gfx.logging.level&quot; is defined in Logging.h.
+<span class="lineNum">     486 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.logging.level&quot;,                     GfxLoggingLevel, int32_t, mozilla::gfx::LOG_DEFAULT);
+<span class="lineNum">     487 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.logging.crash.length&quot;,              GfxLoggingCrashLength, uint32_t, 16);
+<span class="lineNum">     488 </span><span class="lineCov">         68 :   DECL_GFX_PREF(Live, &quot;gfx.logging.painted-pixel-count.enabled&quot;,GfxLoggingPaintedPixelCountEnabled, bool, false);</span>
+<span class="lineNum">     489 </span>            :   // The maximums here are quite conservative, we can tighten them if problems show up.
+<span class="lineNum">     490 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.logging.texture-usage.enabled&quot;,     GfxLoggingTextureUsageEnabled, bool, false);</span>
+<span class="lineNum">     491 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.logging.peak-texture-usage.enabled&quot;,GfxLoggingPeakTextureUsageEnabled, bool, false);</span>
+<span class="lineNum">     492 </span>            :   // Use gfxPlatform::MaxAllocSize instead of the pref directly
+<span class="lineNum">     493 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.max-alloc-size&quot;,                    MaxAllocSizeDoNotUseDirectly, int32_t, (int32_t)500000000);
+<span class="lineNum">     494 </span>            :   // Use gfxPlatform::MaxTextureSize instead of the pref directly
+<span class="lineNum">     495 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.max-texture-size&quot;,                  MaxTextureSizeDoNotUseDirectly, int32_t, (int32_t)32767);
+<span class="lineNum">     496 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.partialpresent.force&quot;,              PartialPresent, int32_t, 0);
+<span class="lineNum">     497 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.perf-warnings.enabled&quot;,             PerfWarnings, bool, false);
+<span class="lineNum">     498 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.testing.device-reset&quot;,              DeviceResetForTesting, int32_t, 0);
+<span class="lineNum">     499 </span>            :   DECL_GFX_PREF(Live, &quot;gfx.testing.device-fail&quot;,               DeviceFailForTesting, bool, false);
+<span class="lineNum">     500 </span><span class="lineCov">         10 :   DECL_GFX_PREF(Once, &quot;gfx.text.disable-aa&quot;,                   DisableAllTextAA, bool, false);</span>
+<span class="lineNum">     501 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.ycbcr.accurate-conversion&quot;,         YCbCrAccurateConversion, bool, false);</span>
+<span class="lineNum">     502 </span>            : 
+<span class="lineNum">     503 </span>            :   // Disable surface sharing due to issues with compatible FBConfigs on
+<span class="lineNum">     504 </span>            :   // NVIDIA drivers as described in bug 1193015.
+<span class="lineNum">     505 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.use-glx-texture-from-pixmap&quot;,       UseGLXTextureFromPixmap, bool, false);</span>
+<span class="lineNum">     506 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.use-iosurface-textures&quot;,            UseIOSurfaceTextures, bool, false);
+<span class="lineNum">     507 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.use-mutex-on-present&quot;,              UseMutexOnPresent, bool, false);
+<span class="lineNum">     508 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.use-surfacetexture-textures&quot;,       UseSurfaceTextureTextures, bool, false);
+<span class="lineNum">     509 </span>            : 
+<span class="lineNum">     510 </span><span class="lineCov">         14 :   DECL_GFX_PREF(Live, &quot;gfx.vsync.collect-scroll-transforms&quot;,   CollectScrollTransforms, bool, false);</span>
+<span class="lineNum">     511 </span><span class="lineCov">        156 :   DECL_GFX_PREF(Once, &quot;gfx.vsync.compositor.unobserve-count&quot;,  CompositorUnobserveCount, int32_t, 10);</span>
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.webrender.all&quot;,                     WebRenderAll, bool, false);
+<span class="lineNum">     514 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.webrender.all.qualified&quot;,           WebRenderAllQualified, bool, false);
+<span class="lineNum">     515 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.webrender.async-scene-build&quot;,       WebRenderAsyncSceneBuild, bool, true);</span>
+<span class="lineNum">     516 </span>            :   DECL_GFX_PREF(Once, &quot;gfx.webrender.enabled&quot;,                 WebRenderEnabledDoNotUseDirectly, bool, false);
+<span class="lineNum">     517 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.webrender.blob-images&quot;,             WebRenderBlobImages, bool, true);</span>
+<span class="lineNum">     518 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.webrender.blob.invalidation&quot;,       WebRenderBlobInvalidation, bool, false);</span>
+<span class="lineNum">     519 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gfx.webrender.highlight-painted-layers&quot;,WebRenderHighlightPaintedLayers, bool, false);</span>
+<span class="lineNum">     520 </span>            : 
+<span class="lineNum">     521 </span>            :   // Use vsync events generated by hardware
+<span class="lineNum">     522 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;gfx.work-around-driver-bugs&quot;,           WorkAroundDriverBugs, bool, true);</span>
+<span class="lineNum">     523 </span>            : 
+<span class="lineNum">     524 </span>            :   DECL_GFX_PREF(Live, &quot;gl.ignore-dx-interop2-blacklist&quot;,       IgnoreDXInterop2Blacklist, bool, false);
+<span class="lineNum">     525 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gl.msaa-level&quot;,                         MSAALevel, uint32_t, 2);</span>
+<span class="lineNum">     526 </span>            : #if defined(XP_MACOSX)
+<span class="lineNum">     527 </span>            :   DECL_GFX_PREF(Live, &quot;gl.multithreaded&quot;,                      GLMultithreaded, bool, false);
+<span class="lineNum">     528 </span>            : #endif
+<span class="lineNum">     529 </span>            :   DECL_GFX_PREF(Live, &quot;gl.require-hardware&quot;,                   RequireHardwareGL, bool, false);
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;gl.use-tls-is-current&quot;,                 UseTLSIsCurrent, int32_t, 0);</span>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;image.animated.decode-on-demand.threshold-kb&quot;, ImageAnimatedDecodeOnDemandThresholdKB, uint32_t, 20480);</span>
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;image.animated.decode-on-demand.batch-size&quot;, ImageAnimatedDecodeOnDemandBatchSize, uint32_t, 6);</span>
+<span class="lineNum">     534 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;image.animated.resume-from-last-displayed&quot;, ImageAnimatedResumeFromLastDisplayed, bool, false);</span>
+<span class="lineNum">     535 </span><span class="lineCov">         28 :   DECL_GFX_PREF(Live, &quot;image.cache.factor2.threshold-surfaces&quot;, ImageCacheFactor2ThresholdSurfaces, int32_t, -1);</span>
+<span class="lineNum">     536 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.cache.size&quot;,                      ImageCacheSize, int32_t, 5*1024*1024);</span>
+<span class="lineNum">     537 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.cache.timeweight&quot;,                ImageCacheTimeWeight, int32_t, 500);</span>
+<span class="lineNum">     538 </span><span class="lineCov">         32 :   DECL_GFX_PREF(Live, &quot;image.decode-immediately.enabled&quot;,      ImageDecodeImmediatelyEnabled, bool, false);</span>
+<span class="lineNum">     539 </span><span class="lineCov">          6 :   DECL_GFX_PREF(Live, &quot;image.downscale-during-decode.enabled&quot;, ImageDownscaleDuringDecodeEnabled, bool, true);</span>
+<span class="lineNum">     540 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;image.infer-src-animation.threshold-ms&quot;, ImageInferSrcAnimationThresholdMS, uint32_t, 2000);</span>
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;image.layout_network_priority&quot;,         ImageLayoutNetworkPriority, bool, true);</span>
+<span class="lineNum">     542 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;image.mem.decode_bytes_at_a_time&quot;,      ImageMemDecodeBytesAtATime, uint32_t, 200000);</span>
+<span class="lineNum">     543 </span><span class="lineCov">         32 :   DECL_GFX_PREF(Live, &quot;image.mem.discardable&quot;,                 ImageMemDiscardable, bool, false);</span>
+<span class="lineNum">     544 </span><span class="lineCov">         28 :   DECL_GFX_PREF(Once, &quot;image.mem.animated.discardable&quot;,        ImageMemAnimatedDiscardable, bool, false);</span>
+<span class="lineNum">     545 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;image.mem.animated.use_heap&quot;,           ImageMemAnimatedUseHeap, bool, false);</span>
+<span class="lineNum">     546 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;image.mem.shared&quot;,                      ImageMemShared, bool, true);</span>
+<span class="lineNum">     547 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.mem.surfacecache.discard_factor&quot;, ImageMemSurfaceCacheDiscardFactor, uint32_t, 1);</span>
+<span class="lineNum">     548 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.mem.surfacecache.max_size_kb&quot;,    ImageMemSurfaceCacheMaxSizeKB, uint32_t, 100 * 1024);</span>
+<span class="lineNum">     549 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.mem.surfacecache.min_expiration_ms&quot;, ImageMemSurfaceCacheMinExpirationMS, uint32_t, 60*1000);</span>
+<span class="lineNum">     550 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.mem.surfacecache.size_factor&quot;,    ImageMemSurfaceCacheSizeFactor, uint32_t, 64);</span>
+<span class="lineNum">     551 </span><span class="lineCov">         28 :   DECL_GFX_PREF(Live, &quot;image.mem.volatile.min_threshold_kb&quot;,   ImageMemVolatileMinThresholdKB, int32_t, -1);</span>
+<span class="lineNum">     552 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.multithreaded_decoding.limit&quot;,    ImageMTDecodingLimit, int32_t, -1);</span>
+<span class="lineNum">     553 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;image.multithreaded_decoding.idle_timeout&quot;, ImageMTDecodingIdleTimeout, int32_t, -1);</span>
+<span class="lineNum">     554 </span>            : 
+<span class="lineNum">     555 </span>            :   DECL_GFX_PREF(Once, &quot;layers.acceleration.disabled&quot;,          LayersAccelerationDisabledDoNotUseDirectly, bool, false);
+<span class="lineNum">     556 </span><span class="lineCov">        130 :   DECL_GFX_PREF(Live, &quot;layers.acceleration.draw-fps&quot;,          LayersDrawFPS, bool, false);</span>
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.acceleration.draw-fps.print-histogram&quot;,  FPSPrintHistogram, bool, false);</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.acceleration.draw-fps.write-to-file&quot;, WriteFPSToFile, bool, false);</span>
+<span class="lineNum">     559 </span>            :   DECL_GFX_PREF(Once, &quot;layers.acceleration.force-enabled&quot;,     LayersAccelerationForceEnabledDoNotUseDirectly, bool, false);
+<span class="lineNum">     560 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.advanced.border-layers&quot;,           LayersAllowBorderLayers, bool, false);</span>
+<span class="lineNum">     561 </span><span class="lineCov">        112 :   DECL_GFX_PREF(Live, &quot;layers.advanced.basic-layer.enabled&quot;,          LayersAdvancedBasicLayerEnabled, bool, false);</span>
+<span class="lineNum">     562 </span>            :   DECL_GFX_PREF(Once, &quot;layers.amd-switchable-gfx.enabled&quot;,     LayersAMDSwitchableGfxEnabled, bool, false);
+<span class="lineNum">     563 </span>            :   DECL_GFX_PREF(Once, &quot;layers.async-pan-zoom.enabled&quot;,         AsyncPanZoomEnabledDoNotUseDirectly, bool, true);
+<span class="lineNum">     564 </span>            :   DECL_GFX_PREF(Once, &quot;layers.async-pan-zoom.separate-event-thread&quot;, AsyncPanZoomSeparateEventThread, bool, false);
+<span class="lineNum">     565 </span>            :   DECL_GFX_PREF(Live, &quot;layers.bench.enabled&quot;,                  LayersBenchEnabled, bool, false);
+<span class="lineNum">     566 </span>            :   DECL_GFX_PREF(Once, &quot;layers.bufferrotation.enabled&quot;,         BufferRotationEnabled, bool, true);
+<span class="lineNum">     567 </span>            :   DECL_GFX_PREF(Live, &quot;layers.child-process-shutdown&quot;,         ChildProcessShutdown, bool, true);
+<span class="lineNum">     568 </span>            : #ifdef MOZ_GFX_OPTIMIZE_MOBILE
+<span class="lineNum">     569 </span>            :   // If MOZ_GFX_OPTIMIZE_MOBILE is defined, we force component alpha off
+<span class="lineNum">     570 </span>            :   // and ignore the preference.
+<span class="lineNum">     571 </span>            :   DECL_GFX_PREF(Skip, &quot;layers.componentalpha.enabled&quot;,         ComponentAlphaEnabled, bool, false);
+<span class="lineNum">     572 </span>            : #else
+<span class="lineNum">     573 </span>            :   // If MOZ_GFX_OPTIMIZE_MOBILE is not defined, we actually take the
+<span class="lineNum">     574 </span>            :   // preference value, defaulting to true.
+<span class="lineNum">     575 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.componentalpha.enabled&quot;,         ComponentAlphaEnabled, bool, true);</span>
+<span class="lineNum">     576 </span>            : #endif
+<span class="lineNum">     577 </span>            :   DECL_GFX_PREF(Once, &quot;layers.d3d11.force-warp&quot;,               LayersD3D11ForceWARP, bool, false);
+<span class="lineNum">     578 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.deaa.enabled&quot;,                   LayersDEAAEnabled, bool, false);</span>
+<span class="lineNum">     579 </span>            :   DECL_GFX_PREF(Live, &quot;layers.draw-bigimage-borders&quot;,          DrawBigImageBorders, bool, false);
+<span class="lineNum">     580 </span>            :   DECL_GFX_PREF(Live, &quot;layers.draw-borders&quot;,                   DrawLayerBorders, bool, false);
+<span class="lineNum">     581 </span>            :   DECL_GFX_PREF(Live, &quot;layers.draw-tile-borders&quot;,              DrawTileBorders, bool, false);
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.draw-layer-info&quot;,                DrawLayerInfo, bool, false);</span>
+<span class="lineNum">     583 </span><span class="lineCov">          8 :   DECL_GFX_PREF(Live, &quot;layers.dump&quot;,                           LayersDump, bool, false);</span>
+<span class="lineNum">     584 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.dump-texture&quot;,                   LayersDumpTexture, bool, false);</span>
+<span class="lineNum">     585 </span>            : #ifdef MOZ_DUMP_PAINTING
+<span class="lineNum">     586 </span><span class="lineCov">         38 :   DECL_GFX_PREF(Live, &quot;layers.dump-client-layers&quot;,             DumpClientLayers, bool, false);</span>
+<span class="lineNum">     587 </span><span class="lineCov">       1116 :   DECL_GFX_PREF(Live, &quot;layers.dump-decision&quot;,                  LayersDumpDecision, bool, false);</span>
+<span class="lineNum">     588 </span><span class="lineCov">         14 :   DECL_GFX_PREF(Live, &quot;layers.dump-host-layers&quot;,               DumpHostLayers, bool, false);</span>
+<span class="lineNum">     589 </span>            : #endif
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span>            :   // 0 is &quot;no change&quot; for contrast, positive values increase it, negative values
+<span class="lineNum">     592 </span>            :   // decrease it until we hit mid gray at -1 contrast, after that it gets weird.
+<span class="lineNum">     593 </span><span class="lineCov">          8 :   DECL_GFX_PREF(Live, &quot;layers.effect.contrast&quot;,                LayersEffectContrast, float, 0.0f);</span>
+<span class="lineNum">     594 </span><span class="lineCov">          8 :   DECL_GFX_PREF(Live, &quot;layers.effect.grayscale&quot;,               LayersEffectGrayscale, bool, false);</span>
+<span class="lineNum">     595 </span><span class="lineCov">          8 :   DECL_GFX_PREF(Live, &quot;layers.effect.invert&quot;,                  LayersEffectInvert, bool, false);</span>
+<span class="lineNum">     596 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.enable-tiles&quot;,                   LayersTilesEnabled, bool, false);</span>
+<span class="lineNum">     597 </span>            :   DECL_GFX_PREF(Once, &quot;layers.enable-tiles-if-skia-pomtp&quot;,     LayersTilesEnabledIfSkiaPOMTP, bool, false);
+<span class="lineNum">     598 </span>            :   DECL_GFX_PREF(Live, &quot;layers.flash-borders&quot;,                  FlashLayerBorders, bool, false);
+<span class="lineNum">     599 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;layers.force-shmem-tiles&quot;,              ForceShmemTiles, bool, false);</span>
+<span class="lineNum">     600 </span>            :   DECL_GFX_PREF(Once, &quot;layers.gpu-process.allow-software&quot;,     GPUProcessAllowSoftware, bool, false);
+<span class="lineNum">     601 </span>            :   DECL_GFX_PREF(Once, &quot;layers.gpu-process.enabled&quot;,            GPUProcessEnabled, bool, false);
+<span class="lineNum">     602 </span>            :   DECL_GFX_PREF(Once, &quot;layers.gpu-process.force-enabled&quot;,      GPUProcessForceEnabled, bool, false);
+<span class="lineNum">     603 </span>            :   DECL_GFX_PREF(Once, &quot;layers.gpu-process.ipc_reply_timeout_ms&quot;, GPUProcessIPCReplyTimeoutMs, int32_t, 10000);
+<span class="lineNum">     604 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.gpu-process.max_restarts&quot;,       GPUProcessMaxRestarts, int32_t, 1);</span>
+<span class="lineNum">     605 </span>            :   // Note: This pref will only be used if it is less than layers.gpu-process.max_restarts.
+<span class="lineNum">     606 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.gpu-process.max_restarts_with_decoder&quot;, GPUProcessMaxRestartsWithDecoder, int32_t, 0);</span>
+<span class="lineNum">     607 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.gpu-process.startup_timeout_ms&quot;, GPUProcessTimeoutMs, int32_t, 5000);</span>
+<span class="lineNum">     608 </span><span class="lineCov">        718 :   DECL_GFX_PREF(Live, &quot;layers.low-precision-buffer&quot;,           UseLowPrecisionBuffer, bool, false);</span>
+<span class="lineNum">     609 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.low-precision-opacity&quot;,          LowPrecisionOpacity, float, 1.0f);</span>
+<span class="lineNum">     610 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.low-precision-resolution&quot;,       LowPrecisionResolution, float, 0.25f);</span>
+<span class="lineNum">     611 </span><span class="lineCov">         60 :   DECL_GFX_PREF(Live, &quot;layers.max-active&quot;,                     MaxActiveLayers, int32_t, -1);</span>
+<span class="lineNum">     612 </span>            :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enabled&quot;,                  AdvancedLayersEnabledDoNotUseDirectly, bool, false);
+<span class="lineNum">     613 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enable-buffer-cache&quot;,      AdvancedLayersEnableBufferCache, bool, true);</span>
+<span class="lineNum">     614 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enable-buffer-sharing&quot;,    AdvancedLayersEnableBufferSharing, bool, true);</span>
+<span class="lineNum">     615 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enable-clear-view&quot;,        AdvancedLayersEnableClearView, bool, true);</span>
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enable-cpu-occlusion&quot;,     AdvancedLayersEnableCPUOcclusion, bool, true);</span>
+<span class="lineNum">     617 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enable-depth-buffer&quot;,      AdvancedLayersEnableDepthBuffer, bool, false);</span>
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.mlgpu.enable-invalidation&quot;,      AdvancedLayersUseInvalidation, bool, true);</span>
+<span class="lineNum">     619 </span>            :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enable-on-windows7&quot;,       AdvancedLayersEnableOnWindows7, bool, false);
+<span class="lineNum">     620 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.mlgpu.enable-container-resizing&quot;, AdvancedLayersEnableContainerResizing, bool, true);</span>
+<span class="lineNum">     621 </span>            :   DECL_GFX_PREF(Once, &quot;layers.offmainthreadcomposition.force-disabled&quot;, LayersOffMainThreadCompositionForceDisabled, bool, false);
+<span class="lineNum">     622 </span><span class="lineCov">         16 :   DECL_GFX_PREF(Live, &quot;layers.offmainthreadcomposition.frame-rate&quot;, LayersCompositionFrameRate, int32_t,-1);</span>
+<span class="lineNum">     623 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.omtp.dump-capture&quot;,              LayersOMTPDumpCapture, bool, false);</span>
+<span class="lineNum">     624 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;layers.omtp.paint-workers&quot;,             LayersOMTPPaintWorkers, int32_t, 1);</span>
+<span class="lineNum">     625 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.omtp.release-capture-on-main-thread&quot;, LayersOMTPReleaseCaptureOnMainThread, bool, false);</span>
+<span class="lineNum">     626 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.orientation.sync.timeout&quot;,       OrientationSyncMillis, uint32_t, (uint32_t)0);</span>
+<span class="lineNum">     627 </span>            :   DECL_GFX_PREF(Once, &quot;layers.prefer-opengl&quot;,                  LayersPreferOpenGL, bool, false);
+<span class="lineNum">     628 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Live, &quot;layers.progressive-paint&quot;,              ProgressivePaint, bool, false);</span>
+<span class="lineNum">     629 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.shared-buffer-provider.enabled&quot;, PersistentBufferProviderSharedEnabled, bool, false);</span>
+<span class="lineNum">     630 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.single-tile.enabled&quot;,            LayersSingleTileEnabled, bool, true);</span>
+<span class="lineNum">     631 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.force-synchronous-resize&quot;,       LayersForceSynchronousResize, bool, true);</span>
+<span class="lineNum">     632 </span>            : 
+<span class="lineNum">     633 </span>            :   // We allow for configurable and rectangular tile size to avoid wasting memory on devices whose
+<span class="lineNum">     634 </span>            :   // screen size does not align nicely to the default tile size. Although layers can be any size,
+<span class="lineNum">     635 </span>            :   // they are often the same size as the screen, especially for width.
+<span class="lineNum">     636 </span>            :   DECL_GFX_PREF(Once, &quot;layers.tile-width&quot;,                     LayersTileWidth, int32_t, 256);
+<span class="lineNum">     637 </span>            :   DECL_GFX_PREF(Once, &quot;layers.tile-height&quot;,                    LayersTileHeight, int32_t, 256);
+<span class="lineNum">     638 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.tile-initial-pool-size&quot;,         LayersTileInitialPoolSize, uint32_t, (uint32_t)50);</span>
+<span class="lineNum">     639 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.tile-pool-unused-size&quot;,          LayersTilePoolUnusedSize, uint32_t, (uint32_t)10);</span>
+<span class="lineNum">     640 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.tile-pool-shrink-timeout&quot;,       LayersTilePoolShrinkTimeout, uint32_t, (uint32_t)50);</span>
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.tile-pool-clear-timeout&quot;,        LayersTilePoolClearTimeout, uint32_t, (uint32_t)5000);</span>
+<span class="lineNum">     642 </span>            :   DECL_GFX_PREF(Once, &quot;layers.tiles.adjust&quot;,                   LayersTilesAdjust, bool, true);
+<span class="lineNum">     643 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.tiles.retain-back-buffer&quot;,       LayersTileRetainBackBuffer, bool, true);</span>
+<span class="lineNum">     644 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;layers.tiles.edge-padding&quot;,             TileEdgePaddingEnabled, bool, false);</span>
+<span class="lineNum">     645 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.tiles.fade-in.enabled&quot;,          LayerTileFadeInEnabled, bool, false);</span>
+<span class="lineNum">     646 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.tiles.fade-in.duration-ms&quot;,      LayerTileFadeInDuration, uint32_t, 250);</span>
+<span class="lineNum">     647 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.transaction.warning-ms&quot;,         LayerTransactionWarning, uint32_t, 200);</span>
+<span class="lineNum">     648 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;layers.uniformity-info&quot;,                UniformityInfo, bool, false);</span>
+<span class="lineNum">     649 </span>            :   DECL_GFX_PREF(Once, &quot;layers.use-image-offscreen-surfaces&quot;,   UseImageOffscreenSurfaces, bool, true);
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.draw-mask-debug&quot;,                DrawMaskLayer, bool, false);</span>
+<span class="lineNum">     651 </span>            : 
+<span class="lineNum">     652 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.geometry.opengl.enabled&quot;,        OGLLayerGeometry, bool, false);</span>
+<span class="lineNum">     653 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layers.geometry.basic.enabled&quot;,         BasicLayerGeometry, bool, false);</span>
+<span class="lineNum">     654 </span>            :   DECL_GFX_PREF(Live, &quot;layers.geometry.d3d11.enabled&quot;,         D3D11LayerGeometry, bool, false);
+<span class="lineNum">     655 </span>            : 
+<span class="lineNum">     656 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.animation.prerender.partial&quot;, PartiallyPrerenderAnimatedContent, bool, false);</span>
+<span class="lineNum">     657 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.animation.prerender.viewport-ratio-limit-x&quot;, AnimationPrerenderViewportRatioLimitX, float, 1.125f);</span>
+<span class="lineNum">     658 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.animation.prerender.viewport-ratio-limit-y&quot;, AnimationPrerenderViewportRatioLimitY, float, 1.125f);</span>
+<span class="lineNum">     659 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.animation.prerender.absolute-limit-x&quot;, AnimationPrerenderAbsoluteLimitX, uint32_t, 4096);</span>
+<span class="lineNum">     660 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.animation.prerender.absolute-limit-y&quot;, AnimationPrerenderAbsoluteLimitY, uint32_t, 4096);</span>
+<span class="lineNum">     661 </span>            : 
+<span class="lineNum">     662 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.paint-order.enabled&quot;,        PaintOrderEnabled, bool, false);</span>
+<span class="lineNum">     663 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.scroll-behavior.damping-ratio&quot;, ScrollBehaviorDampingRatio, float, 1.0f);</span>
+<span class="lineNum">     664 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.scroll-behavior.enabled&quot;,    ScrollBehaviorEnabled, bool, true);</span>
+<span class="lineNum">     665 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.scroll-behavior.spring-constant&quot;, ScrollBehaviorSpringConstant, float, 250.0f);</span>
+<span class="lineNum">     666 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.scroll-snap.prediction-max-velocity&quot;, ScrollSnapPredictionMaxVelocity, int32_t, 2000);</span>
+<span class="lineNum">     667 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.scroll-snap.prediction-sensitivity&quot;, ScrollSnapPredictionSensitivity, float, 0.750f);</span>
+<span class="lineNum">     668 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.scroll-snap.proximity-threshold&quot;, ScrollSnapProximityThreshold, int32_t, 200);</span>
+<span class="lineNum">     669 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.css.touch_action.enabled&quot;,       TouchActionEnabled, bool, false);</span>
+<span class="lineNum">     670 </span>            : 
+<span class="lineNum">     671 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.display-list.build-twice&quot;,       LayoutDisplayListBuildTwice, bool, false);</span>
+<span class="lineNum">     672 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.display-list.retain&quot;,            LayoutRetainDisplayList, bool, true);</span>
+<span class="lineNum">     673 </span><span class="lineCov">       1638 :   DECL_GFX_PREF(Live, &quot;layout.display-list.retain.chrome&quot;,     LayoutRetainDisplayListChrome, bool, false);</span>
+<span class="lineNum">     674 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.display-list.retain.verify&quot;,     LayoutVerifyRetainDisplayList, bool, false);</span>
+<span class="lineNum">     675 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.display-list.retain.verify.order&quot;, LayoutVerifyRetainDisplayListOrder, bool, false);</span>
+<span class="lineNum">     676 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.display-list.rebuild-frame-limit&quot;, LayoutRebuildFrameLimit, uint32_t, 500);</span>
+<span class="lineNum">     677 </span>            :   DECL_GFX_PREF(Live, &quot;layout.display-list.dump&quot;,              LayoutDumpDisplayList, bool, false);
+<span class="lineNum">     678 </span>            :   DECL_GFX_PREF(Live, &quot;layout.display-list.dump-content&quot;,      LayoutDumpDisplayListContent, bool, false);
+<span class="lineNum">     679 </span>            :   DECL_GFX_PREF(Live, &quot;layout.display-list.dump-parent&quot;,       LayoutDumpDisplayListParent, bool, false);
+<span class="lineNum">     680 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.display-list.show-rebuild-area&quot;, LayoutDisplayListShowArea, bool, false);</span>
+<span class="lineNum">     681 </span>            : 
+<span class="lineNum">     682 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;layout.frame_rate&quot;,                     LayoutFrameRate, int32_t, -1);</span>
+<span class="lineNum">     683 </span><span class="lineCov">         38 :   DECL_GFX_PREF(Once, &quot;layout.less-event-region-items&quot;,        LessEventRegionItems, bool, true);</span>
+<span class="lineNum">     684 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.min-active-layer-size&quot;,          LayoutMinActiveLayerSize, int, 64);</span>
+<span class="lineNum">     685 </span><span class="lineCov">         30 :   DECL_GFX_PREF(Once, &quot;layout.paint_rects_separately&quot;,         LayoutPaintRectsSeparately, bool, true);</span>
+<span class="lineNum">     686 </span>            : 
+<span class="lineNum">     687 </span>            :   // This and code dependent on it should be removed once containerless scrolling looks stable.
+<span class="lineNum">     688 </span><span class="lineCov">        314 :   DECL_GFX_PREF(Once, &quot;layout.scroll.root-frame-containers&quot;,   LayoutUseContainersForRootFrames, bool, true);</span>
+<span class="lineNum">     689 </span>            :   // This pref is to be set by test code only.
+<span class="lineNum">     690 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.scrollbars.always-layerize-track&quot;, AlwaysLayerizeScrollbarTrackTestOnly, bool, false);</span>
+<span class="lineNum">     691 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;layout.smaller-painted-layers&quot;,         LayoutSmallerPaintedLayers, bool, false);</span>
+<span class="lineNum">     692 </span>            : 
+<span class="lineNum">     693 </span>            :   DECL_GFX_PREF(Once, &quot;media.hardware-video-decoding.force-enabled&quot;,
+<span class="lineNum">     694 </span>            :                                                                HardwareVideoDecodingForceEnabled, bool, false);
+<span class="lineNum">     695 </span>            : #ifdef XP_WIN
+<span class="lineNum">     696 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.dxva.d3d11.enabled&quot;, PDMWMFAllowD3D11, bool, true);
+<span class="lineNum">     697 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.dxva.max-videos&quot;, PDMWMFMaxDXVAVideos, uint32_t, 8);
+<span class="lineNum">     698 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.use-nv12-format&quot;, PDMWMFUseNV12Format, bool, true);
+<span class="lineNum">     699 </span>            :   DECL_GFX_PREF(Once, &quot;media.wmf.use-sync-texture&quot;, PDMWMFUseSyncTexture, bool, true);
+<span class="lineNum">     700 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.low-latency.enabled&quot;, PDMWMFLowLatencyEnabled, bool, false);
+<span class="lineNum">     701 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.skip-blacklist&quot;, PDMWMFSkipBlacklist, bool, false);
+<span class="lineNum">     702 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.deblacklisting-for-telemetry-in-gpu-process&quot;, PDMWMFDeblacklistingForTelemetryInGPUProcess, bool, false);
+<span class="lineNum">     703 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.amd.vp9.enabled&quot;, PDMWMFAMDVP9DecoderEnabled, bool, false);
+<span class="lineNum">     704 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.amd.highres.enabled&quot;, PDMWMFAMDHighResEnabled, bool, true);
+<span class="lineNum">     705 </span>            :   DECL_GFX_PREF(Live, &quot;media.wmf.allow-unsupported-resolutions&quot;,  PDMWMFAllowUnsupportedResolutions, bool, false);
+<span class="lineNum">     706 </span>            : #endif
+<span class="lineNum">     707 </span>            : 
+<span class="lineNum">     708 </span>            :   // These affect how line scrolls from wheel events will be accelerated.
+<span class="lineNum">     709 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;mousewheel.acceleration.factor&quot;,        MouseWheelAccelerationFactor, int32_t, -1);</span>
+<span class="lineNum">     710 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;mousewheel.acceleration.start&quot;,         MouseWheelAccelerationStart, int32_t, -1);</span>
+<span class="lineNum">     711 </span>            : 
+<span class="lineNum">     712 </span>            :   // This affects whether events will be routed through APZ or not.
+<span class="lineNum">     713 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;mousewheel.system_scroll_override_on_root_content.enabled&quot;,</span>
+<span class="lineNum">     714 </span>            :                                                                MouseWheelHasRootScrollDeltaOverride, bool, false);
+<span class="lineNum">     715 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;mousewheel.system_scroll_override_on_root_content.horizontal.factor&quot;,</span>
+<span class="lineNum">     716 </span>            :                                                                MouseWheelRootScrollHorizontalFactor, int32_t, 0);
+<span class="lineNum">     717 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;mousewheel.system_scroll_override_on_root_content.vertical.factor&quot;,</span>
+<span class="lineNum">     718 </span>            :                                                                MouseWheelRootScrollVerticalFactor, int32_t, 0);
+<span class="lineNum">     719 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;mousewheel.transaction.ignoremovedelay&quot;,MouseWheelIgnoreMoveDelayMs, int32_t, (int32_t)100);</span>
+<span class="lineNum">     720 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;mousewheel.transaction.timeout&quot;,        MouseWheelTransactionTimeoutMs, int32_t, (int32_t)1500);</span>
+<span class="lineNum">     721 </span>            : 
+<span class="lineNum">     722 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;nglayout.debug.widget_update_flashing&quot;, WidgetUpdateFlashing, bool, false);</span>
+<span class="lineNum">     723 </span>            : 
+<span class="lineNum">     724 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;print.font-variations-as-paths&quot;,        PrintFontVariationsAsPaths, bool, true);</span>
+<span class="lineNum">     725 </span>            : 
+<span class="lineNum">     726 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Once, &quot;slider.snapMultiplier&quot;,                 SliderSnapMultiplier, int32_t, 0);</span>
+<span class="lineNum">     727 </span>            : 
+<span class="lineNum">     728 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;test.events.async.enabled&quot;,             TestEventsAsyncEnabled, bool, false);</span>
+<span class="lineNum">     729 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;test.mousescroll&quot;,                      MouseScrollTestingEnabled, bool, false);</span>
+<span class="lineNum">     730 </span>            : 
+<span class="lineNum">     731 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;toolkit.scrollbox.horizontalScrollDistance&quot;, ToolkitHorizontalScrollDistance, int32_t, 5);</span>
+<span class="lineNum">     732 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;toolkit.scrollbox.verticalScrollDistance&quot;,   ToolkitVerticalScrollDistance, int32_t, 3);</span>
+<span class="lineNum">     733 </span>            : 
+<span class="lineNum">     734 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;ui.click_hold_context_menus.delay&quot;,     UiClickHoldContextMenusDelay, int32_t, 500);</span>
+<span class="lineNum">     735 </span>            : 
+<span class="lineNum">     736 </span>            :   // WebGL (for pref access from Worker threads)
+<span class="lineNum">     737 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.1.allow-core-profiles&quot;,           WebGL1AllowCoreProfile, bool, false);</span>
+<span class="lineNum">     738 </span>            : 
+<span class="lineNum">     739 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.all-angle-options&quot;,               WebGLAllANGLEOptions, bool, false);</span>
+<span class="lineNum">     740 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Live, &quot;webgl.angle.force-d3d11&quot;,               WebGLANGLEForceD3D11, bool, false);</span>
+<span class="lineNum">     741 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.angle.try-d3d11&quot;,                 WebGLANGLETryD3D11, bool, false);</span>
+<span class="lineNum">     742 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Live, &quot;webgl.angle.force-warp&quot;,                WebGLANGLEForceWARP, bool, false);</span>
+<span class="lineNum">     743 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.bypass-shader-validation&quot;,        WebGLBypassShaderValidator, bool, true);</span>
+<span class="lineNum">     744 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.can-lose-context-in-foreground&quot;,  WebGLCanLoseContextInForeground, bool, true);</span>
+<span class="lineNum">     745 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.default-no-alpha&quot;,                WebGLDefaultNoAlpha, bool, false);</span>
+<span class="lineNum">     746 </span>            :   DECL_GFX_PREF(Live, &quot;webgl.disable-angle&quot;,                   WebGLDisableANGLE, bool, false);
+<span class="lineNum">     747 </span>            :   DECL_GFX_PREF(Live, &quot;webgl.disable-wgl&quot;,                     WebGLDisableWGL, bool, false);
+<span class="lineNum">     748 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.disable-extensions&quot;,              WebGLDisableExtensions, bool, false);</span>
+<span class="lineNum">     749 </span>            :   DECL_GFX_PREF(Live, &quot;webgl.dxgl.enabled&quot;,                    WebGLDXGLEnabled, bool, false);
+<span class="lineNum">     750 </span>            :   DECL_GFX_PREF(Live, &quot;webgl.dxgl.needs-finish&quot;,               WebGLDXGLNeedsFinish, bool, false);
+<span class="lineNum">     751 </span>            : 
+<span class="lineNum">     752 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.disable-fail-if-major-performance-caveat&quot;,</span>
+<span class="lineNum">     753 </span>            :                 WebGLDisableFailIfMajorPerformanceCaveat, bool, false);
+<span class="lineNum">     754 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.disable-DOM-blit-uploads&quot;,</span>
+<span class="lineNum">     755 </span>            :                 WebGLDisableDOMBlitUploads, bool, false);
+<span class="lineNum">     756 </span>            : 
+<span class="lineNum">     757 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.disabled&quot;,                        WebGLDisabled, bool, false);</span>
+<span class="lineNum">     758 </span>            : 
+<span class="lineNum">     759 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.enable-draft-extensions&quot;,         WebGLDraftExtensionsEnabled, bool, false);</span>
+<span class="lineNum">     760 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.enable-privileged-extensions&quot;,    WebGLPrivilegedExtensionsEnabled, bool, false);</span>
+<span class="lineNum">     761 </span>            :   DECL_GFX_PREF(Live, &quot;webgl.enable-surface-texture&quot;,          WebGLSurfaceTextureEnabled, bool, false);
+<span class="lineNum">     762 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.enable-webgl2&quot;,                   WebGL2Enabled, bool, true);</span>
+<span class="lineNum">     763 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.force-enabled&quot;,                   WebGLForceEnabled, bool, false);</span>
+<span class="lineNum">     764 </span><span class="lineCov">          2 :   DECL_GFX_PREF(Once, &quot;webgl.force-layers-readback&quot;,           WebGLForceLayersReadback, bool, false);</span>
+<span class="lineNum">     765 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.force-index-validation&quot;,          WebGLForceIndexValidation, int32_t, 0);</span>
+<span class="lineNum">     766 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.lose-context-on-memory-pressure&quot;, WebGLLoseContextOnMemoryPressure, bool, false);</span>
+<span class="lineNum">     767 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.max-contexts&quot;,                    WebGLMaxContexts, uint32_t, 32);</span>
+<span class="lineNum">     768 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.max-contexts-per-principal&quot;,      WebGLMaxContextsPerPrincipal, uint32_t, 16);</span>
+<span class="lineNum">     769 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.max-warnings-per-context&quot;,        WebGLMaxWarningsPerContext, uint32_t, 32);</span>
+<span class="lineNum">     770 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.min_capability_mode&quot;,             WebGLMinCapabilityMode, bool, false);</span>
+<span class="lineNum">     771 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.msaa-force&quot;,                      WebGLForceMSAA, bool, false);</span>
+<span class="lineNum">     772 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.msaa-samples&quot;,                    WebGLMsaaSamples, uint32_t, 4);</span>
+<span class="lineNum">     773 </span>            :   DECL_GFX_PREF(Live, &quot;webgl.prefer-16bpp&quot;,                    WebGLPrefer16bpp, bool, false);
+<span class="lineNum">     774 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.restore-context-when-visible&quot;,    WebGLRestoreWhenVisible, bool, true);</span>
+<span class="lineNum">     775 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.allow-immediate-queries&quot;,         WebGLImmediateQueries, bool, false);</span>
+<span class="lineNum">     776 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.allow-fb-invalidation&quot;,           WebGLFBInvalidation, bool, false);</span>
+<span class="lineNum">     777 </span>            : 
+<span class="lineNum">     778 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.perf.max-warnings&quot;,                    WebGLMaxPerfWarnings, int32_t, 0);</span>
+<span class="lineNum">     779 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.perf.max-acceptable-fb-status-invals&quot;, WebGLMaxAcceptableFBStatusInvals, int32_t, 0);</span>
+<span class="lineNum">     780 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.perf.spew-frame-allocs&quot;,          WebGLSpewFrameAllocs, bool, true);</span>
+<span class="lineNum">     781 </span>            : 
+<span class="lineNum">     782 </span>            : 
+<span class="lineNum">     783 </span><span class="lineNoCov">          0 :   DECL_GFX_PREF(Live, &quot;webgl.webgl2-compat-mode&quot;,              WebGL2CompatMode, bool, false);</span>
+<span class="lineNum">     784 </span>            : 
+<span class="lineNum">     785 </span>            :   DECL_GFX_PREF(Live, &quot;widget.window-transforms.disabled&quot;,     WindowTransformsDisabled, bool, false);
+<span class="lineNum">     786 </span>            : 
+<span class="lineNum">     787 </span>            :   // WARNING:
+<span class="lineNum">     788 </span>            :   // Please make sure that you've added your new preference to the list above in alphabetical order.
+<span class="lineNum">     789 </span>            :   // Please do not just append it to the end of the list.
+<span class="lineNum">     790 </span>            : 
+<span class="lineNum">     791 </span>            : public:
+<span class="lineNum">     792 </span>            :   // Manage the singleton:
+<span class="lineNum">     793 </span><span class="lineNoCov">          0 :   static gfxPrefs&amp; GetSingleton()</span>
+<span class="lineNum">     794 </span>            :   {
+<span class="lineNum">     795 </span><span class="lineNoCov">          0 :     return sInstance ? *sInstance : CreateAndInitializeSingleton();</span>
+<span class="lineNum">     796 </span>            :   }
+<span class="lineNum">     797 </span>            :   static void DestroySingleton();
+<span class="lineNum">     798 </span>            :   static bool SingletonExists();
+<span class="lineNum">     799 </span>            : 
+<span class="lineNum">     800 </span>            : private:
+<span class="lineNum">     801 </span>            :   static gfxPrefs&amp; CreateAndInitializeSingleton();
+<span class="lineNum">     802 </span>            : 
+<span class="lineNum">     803 </span>            :   static gfxPrefs* sInstance;
+<span class="lineNum">     804 </span>            :   static bool sInstanceHasBeenDestroyed;
+<span class="lineNum">     805 </span>            :   static nsTArray&lt;Pref*&gt;* sGfxPrefList;
+<span class="lineNum">     806 </span>            : 
+<span class="lineNum">     807 </span>            : private:
+<span class="lineNum">     808 </span>            :   // The constructor cannot access GetSingleton(), since sInstance (necessarily)
+<span class="lineNum">     809 </span>            :   // has not been assigned yet. Follow-up initialization that needs GetSingleton()
+<span class="lineNum">     810 </span>            :   // must be added to Init().
+<span class="lineNum">     811 </span>            :   void Init();
+<span class="lineNum">     812 </span>            : 
+<span class="lineNum">     813 </span>            :   static bool IsPrefsServiceAvailable();
+<span class="lineNum">     814 </span>            :   static bool IsParentProcess();
+<span class="lineNum">     815 </span>            :   // Creating these to avoid having to include Preferences.h in the .h
+<span class="lineNum">     816 </span>            :   static void PrefAddVarCache(bool*, const char*, bool);
+<span class="lineNum">     817 </span>            :   static void PrefAddVarCache(int32_t*, const char*, int32_t);
+<span class="lineNum">     818 </span>            :   static void PrefAddVarCache(uint32_t*, const char*, uint32_t);
+<span class="lineNum">     819 </span>            :   static void PrefAddVarCache(float*, const char*, float);
+<span class="lineNum">     820 </span>            :   static void PrefAddVarCache(std::string*, const char*, std::string);
+<span class="lineNum">     821 </span>            :   static void PrefAddVarCache(AtomicBool*, const char*, bool);
+<span class="lineNum">     822 </span>            :   static void PrefAddVarCache(AtomicInt32*, const char*, int32_t);
+<span class="lineNum">     823 </span>            :   static void PrefAddVarCache(AtomicUint32*, const char*, uint32_t);
+<span class="lineNum">     824 </span>            :   static bool PrefGet(const char*, bool);
+<span class="lineNum">     825 </span>            :   static int32_t PrefGet(const char*, int32_t);
+<span class="lineNum">     826 </span>            :   static uint32_t PrefGet(const char*, uint32_t);
+<span class="lineNum">     827 </span>            :   static float PrefGet(const char*, float);
+<span class="lineNum">     828 </span>            :   static std::string PrefGet(const char*, std::string);
+<span class="lineNum">     829 </span>            :   static void PrefSet(const char* aPref, bool aValue);
+<span class="lineNum">     830 </span>            :   static void PrefSet(const char* aPref, int32_t aValue);
+<span class="lineNum">     831 </span>            :   static void PrefSet(const char* aPref, uint32_t aValue);
+<span class="lineNum">     832 </span>            :   static void PrefSet(const char* aPref, float aValue);
+<span class="lineNum">     833 </span>            :   static void PrefSet(const char* aPref, std::string aValue);
+<span class="lineNum">     834 </span>            :   static void WatchChanges(const char* aPrefname, Pref* aPref);
+<span class="lineNum">     835 </span>            :   static void UnwatchChanges(const char* aPrefname, Pref* aPref);
+<span class="lineNum">     836 </span>            :   // Creating these to avoid having to include PGPU.h in the .h
+<span class="lineNum">     837 </span>            :   static void CopyPrefValue(const bool* aValue, GfxPrefValue* aOutValue);
+<span class="lineNum">     838 </span>            :   static void CopyPrefValue(const int32_t* aValue, GfxPrefValue* aOutValue);
+<span class="lineNum">     839 </span>            :   static void CopyPrefValue(const uint32_t* aValue, GfxPrefValue* aOutValue);
+<span class="lineNum">     840 </span>            :   static void CopyPrefValue(const float* aValue, GfxPrefValue* aOutValue);
+<span class="lineNum">     841 </span>            :   static void CopyPrefValue(const std::string* aValue, GfxPrefValue* aOutValue);
+<span class="lineNum">     842 </span>            :   static void CopyPrefValue(const GfxPrefValue* aValue, bool* aOutValue);
+<span class="lineNum">     843 </span>            :   static void CopyPrefValue(const GfxPrefValue* aValue, int32_t* aOutValue);
+<span class="lineNum">     844 </span>            :   static void CopyPrefValue(const GfxPrefValue* aValue, uint32_t* aOutValue);
+<span class="lineNum">     845 </span>            :   static void CopyPrefValue(const GfxPrefValue* aValue, float* aOutValue);
+<span class="lineNum">     846 </span>            :   static void CopyPrefValue(const GfxPrefValue* aValue, std::string* aOutValue);
+<span class="lineNum">     847 </span>            : 
+<span class="lineNum">     848 </span>            :   static void AssertMainThread();
+<span class="lineNum">     849 </span>            : 
+<span class="lineNum">     850 </span>            :   // Some wrapper functions for the DECL_OVERRIDE_PREF prefs' base values, so
+<span class="lineNum">     851 </span>            :   // that we don't to include all sorts of header files into this gfxPrefs.h
+<span class="lineNum">     852 </span>            :   // file.
+<span class="lineNum">     853 </span>            :   static bool OverrideBase_WebRender();
+<span class="lineNum">     854 </span>            : 
+<span class="lineNum">     855 </span>            :   gfxPrefs();
+<span class="lineNum">     856 </span>            :   ~gfxPrefs();
+<span class="lineNum">     857 </span>            :   gfxPrefs(const gfxPrefs&amp;) = delete;
+<span class="lineNum">     858 </span>            :   gfxPrefs&amp; operator=(const gfxPrefs&amp;) = delete;
+<span class="lineNum">     859 </span>            : };
+<span class="lineNum">     860 </span>            : 
+<span class="lineNum">     861 </span>            : #undef DECL_GFX_PREF /* Don't need it outside of this file */
+<span class="lineNum">     862 </span>            : 
+<span class="lineNum">     863 </span>            : #endif /* GFX_PREFS_H */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

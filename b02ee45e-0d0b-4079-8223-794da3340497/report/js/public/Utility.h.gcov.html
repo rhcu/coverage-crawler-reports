@@ -1,0 +1,826 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - js/public/Utility.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">js/public</a> - Utility.h<span style="font-size: 80%;"> (source / <a href="Utility.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">19</td>
+            <td class="headerCovTableEntry">97</td>
+            <td class="headerCovTableEntryLo">19.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:42:27</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-</a>
+<span class="lineNum">       2 </span>            :  * vim: set ts=8 sts=4 et sw=4 tw=99:
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef js_Utility_h
+<span class="lineNum">       8 </span>            : #define js_Utility_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &quot;mozilla/Assertions.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/Atomics.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/Attributes.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/Compiler.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/Move.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/Scoped.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/TemplateLib.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;mozilla/UniquePtr.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;mozilla/WrappingOperations.h&quot;
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : #include &lt;stdlib.h&gt;
+<span class="lineNum">      21 </span>            : #include &lt;string.h&gt;
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : #ifdef JS_OOM_DO_BACKTRACES
+<span class="lineNum">      24 </span>            : #include &lt;execinfo.h&gt;
+<span class="lineNum">      25 </span>            : #include &lt;stdio.h&gt;
+<span class="lineNum">      26 </span>            : #endif
+<span class="lineNum">      27 </span>            : 
+<span class="lineNum">      28 </span>            : #include &quot;jstypes.h&quot;
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #include &quot;mozmemory.h&quot;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : /* The public JS engine namespace. */
+<span class="lineNum">      33 </span>            : namespace JS {}
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : /* The mozilla-shared reusable template/utility namespace. */
+<span class="lineNum">      36 </span>            : namespace mozilla {}
+<span class="lineNum">      37 </span>            : 
+<span class="lineNum">      38 </span>            : /* The private JS engine namespace. */
+<span class="lineNum">      39 </span>            : namespace js {}
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : #define JS_STATIC_ASSERT(cond)           static_assert(cond, &quot;JS_STATIC_ASSERT&quot;)
+<span class="lineNum">      42 </span>            : #define JS_STATIC_ASSERT_IF(cond, expr)  MOZ_STATIC_ASSERT_IF(cond, expr, &quot;JS_STATIC_ASSERT_IF&quot;)
+<span class="lineNum">      43 </span>            : 
+<span class="lineNum">      44 </span>            : extern MOZ_NORETURN MOZ_COLD JS_PUBLIC_API(void)
+<span class="lineNum">      45 </span>            : JS_Assert(const char* s, const char* file, int ln);
+<span class="lineNum">      46 </span>            : 
+<span class="lineNum">      47 </span>            : /*
+<span class="lineNum">      48 </span>            :  * Custom allocator support for SpiderMonkey
+<span class="lineNum">      49 </span>            :  */
+<span class="lineNum">      50 </span>            : #if defined JS_USE_CUSTOM_ALLOCATOR
+<span class="lineNum">      51 </span>            : # include &quot;jscustomallocator.h&quot;
+<span class="lineNum">      52 </span>            : #else
+<span class="lineNum">      53 </span>            : 
+<span class="lineNum">      54 </span>            : namespace js {
+<span class="lineNum">      55 </span>            : 
+<span class="lineNum">      56 </span>            : /*
+<span class="lineNum">      57 </span>            :  * Thread types are used to tag threads for certain kinds of testing (see
+<span class="lineNum">      58 </span>            :  * below), and also used to characterize threads in the thread scheduler (see
+<span class="lineNum">      59 </span>            :  * js/src/vm/HelperThreads.cpp).
+<span class="lineNum">      60 </span>            :  *
+<span class="lineNum">      61 </span>            :  * Please update oom::FirstThreadTypeToTest and oom::LastThreadTypeToTest when
+<span class="lineNum">      62 </span>            :  * adding new thread types.
+<span class="lineNum">      63 </span>            :  */
+<span class="lineNum">      64 </span>            : enum ThreadType {
+<span class="lineNum">      65 </span>            :     THREAD_TYPE_NONE = 0,       // 0
+<span class="lineNum">      66 </span>            :     THREAD_TYPE_MAIN,           // 1
+<span class="lineNum">      67 </span>            :     THREAD_TYPE_WASM,           // 2
+<span class="lineNum">      68 </span>            :     THREAD_TYPE_ION,            // 3
+<span class="lineNum">      69 </span>            :     THREAD_TYPE_PARSE,          // 4
+<span class="lineNum">      70 </span>            :     THREAD_TYPE_COMPRESS,       // 5
+<span class="lineNum">      71 </span>            :     THREAD_TYPE_GCHELPER,       // 6
+<span class="lineNum">      72 </span>            :     THREAD_TYPE_GCPARALLEL,     // 7
+<span class="lineNum">      73 </span>            :     THREAD_TYPE_PROMISE_TASK,   // 8
+<span class="lineNum">      74 </span>            :     THREAD_TYPE_ION_FREE,       // 9
+<span class="lineNum">      75 </span>            :     THREAD_TYPE_WASM_TIER2,     // 10
+<span class="lineNum">      76 </span>            :     THREAD_TYPE_WORKER,         // 11
+<span class="lineNum">      77 </span>            :     THREAD_TYPE_MAX             // Used to check shell function arguments
+<span class="lineNum">      78 </span>            : };
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : namespace oom {
+<span class="lineNum">      81 </span>            : 
+<span class="lineNum">      82 </span>            : /*
+<span class="lineNum">      83 </span>            :  * Theads are tagged only in certain debug contexts.  Notably, to make testing
+<span class="lineNum">      84 </span>            :  * OOM in certain helper threads more effective, we allow restricting the OOM
+<span class="lineNum">      85 </span>            :  * testing to a certain helper thread type. This allows us to fail e.g. in
+<span class="lineNum">      86 </span>            :  * off-thread script parsing without causing an OOM in the active thread first.
+<span class="lineNum">      87 </span>            :  *
+<span class="lineNum">      88 </span>            :  * Getter/Setter functions to encapsulate mozilla::ThreadLocal, implementation
+<span class="lineNum">      89 </span>            :  * is in jsutil.cpp.
+<span class="lineNum">      90 </span>            :  */
+<span class="lineNum">      91 </span>            : # if defined(DEBUG) || defined(JS_OOM_BREAKPOINT)
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span>            : // Define the range of threads tested by simulated OOM testing and the
+<span class="lineNum">      94 </span>            : // like. Testing worker threads is not supported.
+<span class="lineNum">      95 </span>            : const ThreadType FirstThreadTypeToTest = THREAD_TYPE_MAIN;
+<span class="lineNum">      96 </span>            : const ThreadType LastThreadTypeToTest = THREAD_TYPE_WASM_TIER2;
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span>            : extern bool InitThreadType(void);
+<span class="lineNum">      99 </span>            : extern void SetThreadType(ThreadType);
+<span class="lineNum">     100 </span>            : extern JS_FRIEND_API(uint32_t) GetThreadType(void);
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            : # else
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            : inline bool InitThreadType(void) { return true; }
+<span class="lineNum">     105 </span>            : inline void SetThreadType(ThreadType t) {};
+<span class="lineNum">     106 </span>            : inline uint32_t GetThreadType(void) { return 0; }
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            : # endif
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            : } /* namespace oom */
+<span class="lineNum">     111 </span>            : } /* namespace js */
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span>            : # if defined(DEBUG) || defined(JS_OOM_BREAKPOINT)
+<span class="lineNum">     114 </span>            : 
+<span class="lineNum">     115 </span>            : #ifdef JS_OOM_BREAKPOINT
+<span class="lineNum">     116 </span>            : #  if defined(_MSC_VER)
+<span class="lineNum">     117 </span>            : static MOZ_NEVER_INLINE void js_failedAllocBreakpoint() { __asm { }; }
+<span class="lineNum">     118 </span>            : #  else
+<span class="lineNum">     119 </span>            : static MOZ_NEVER_INLINE void js_failedAllocBreakpoint() { asm(&quot;&quot;); }
+<span class="lineNum">     120 </span>            : #  endif
+<span class="lineNum">     121 </span>            : #define JS_OOM_CALL_BP_FUNC() js_failedAllocBreakpoint()
+<span class="lineNum">     122 </span>            : #else
+<span class="lineNum">     123 </span>            : #define JS_OOM_CALL_BP_FUNC() do {} while(0)
+<span class="lineNum">     124 </span>            : #endif
+<span class="lineNum">     125 </span>            : 
+<span class="lineNum">     126 </span>            : namespace js {
+<span class="lineNum">     127 </span>            : namespace oom {
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            : /*
+<span class="lineNum">     130 </span>            :  * Out of memory testing support.  We provide various testing functions to
+<span class="lineNum">     131 </span>            :  * simulate OOM conditions and so we can test that they are handled correctly.
+<span class="lineNum">     132 </span>            :  */
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span>            : extern JS_PUBLIC_DATA(uint32_t) targetThread;
+<span class="lineNum">     135 </span>            : extern JS_PUBLIC_DATA(uint64_t) maxAllocations;
+<span class="lineNum">     136 </span>            : extern JS_PUBLIC_DATA(uint64_t) counter;
+<span class="lineNum">     137 </span>            : extern JS_PUBLIC_DATA(bool) failAlways;
+<span class="lineNum">     138 </span>            : 
+<span class="lineNum">     139 </span>            : extern void
+<span class="lineNum">     140 </span>            : SimulateOOMAfter(uint64_t allocations, uint32_t thread, bool always);
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span>            : extern void
+<span class="lineNum">     143 </span>            : ResetSimulatedOOM();
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span>            : inline bool
+<span class="lineNum">     146 </span><span class="lineNoCov">          0 : IsThreadSimulatingOOM()</span>
+<span class="lineNum">     147 </span>            : {
+<span class="lineNum">     148 </span><span class="lineNoCov">          0 :     return js::oom::targetThread &amp;&amp; js::oom::targetThread == js::oom::GetThreadType();</span>
+<span class="lineNum">     149 </span>            : }
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            : inline bool
+<span class="lineNum">     152 </span><span class="lineNoCov">          0 : IsSimulatedOOMAllocation()</span>
+<span class="lineNum">     153 </span>            : {
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :     return IsThreadSimulatingOOM() &amp;&amp;</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :            (counter == maxAllocations || (counter &gt; maxAllocations &amp;&amp; failAlways));</span>
+<span class="lineNum">     156 </span>            : }
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            : inline bool
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 : ShouldFailWithOOM()</span>
+<span class="lineNum">     160 </span>            : {
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :     if (!IsThreadSimulatingOOM())</span>
+<span class="lineNum">     162 </span>            :         return false;
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :     counter++;</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :     if (IsSimulatedOOMAllocation()) {</span>
+<span class="lineNum">     166 </span>            :         JS_OOM_CALL_BP_FUNC();
+<span class="lineNum">     167 </span>            :         return true;
+<span class="lineNum">     168 </span>            :     }
+<span class="lineNum">     169 </span><span class="lineNoCov">          0 :     return false;</span>
+<span class="lineNum">     170 </span>            : }
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            : inline bool
+<span class="lineNum">     173 </span>            : HadSimulatedOOM() {
+<span class="lineNum">     174 </span><span class="lineNoCov">          0 :     return counter &gt;= maxAllocations;</span>
+<span class="lineNum">     175 </span>            : }
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            : /*
+<span class="lineNum">     178 </span>            :  * Out of stack space testing support, similar to OOM testing functions.
+<span class="lineNum">     179 </span>            :  */
+<span class="lineNum">     180 </span>            : 
+<span class="lineNum">     181 </span>            : extern JS_PUBLIC_DATA(uint32_t) stackTargetThread;
+<span class="lineNum">     182 </span>            : extern JS_PUBLIC_DATA(uint64_t) maxStackChecks;
+<span class="lineNum">     183 </span>            : extern JS_PUBLIC_DATA(uint64_t) stackCheckCounter;
+<span class="lineNum">     184 </span>            : extern JS_PUBLIC_DATA(bool) stackCheckFailAlways;
+<span class="lineNum">     185 </span>            : 
+<span class="lineNum">     186 </span>            : extern void
+<span class="lineNum">     187 </span>            : SimulateStackOOMAfter(uint64_t checks, uint32_t thread, bool always);
+<span class="lineNum">     188 </span>            : 
+<span class="lineNum">     189 </span>            : extern void
+<span class="lineNum">     190 </span>            : ResetSimulatedStackOOM();
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            : inline bool
+<span class="lineNum">     193 </span><span class="lineNoCov">          0 : IsThreadSimulatingStackOOM()</span>
+<span class="lineNum">     194 </span>            : {
+<span class="lineNum">     195 </span><span class="lineNoCov">          0 :     return js::oom::stackTargetThread &amp;&amp; js::oom::stackTargetThread == js::oom::GetThreadType();</span>
+<span class="lineNum">     196 </span>            : }
+<span class="lineNum">     197 </span>            : 
+<span class="lineNum">     198 </span>            : inline bool
+<span class="lineNum">     199 </span><span class="lineNoCov">          0 : IsSimulatedStackOOMCheck()</span>
+<span class="lineNum">     200 </span>            : {
+<span class="lineNum">     201 </span><span class="lineNoCov">          0 :     return IsThreadSimulatingStackOOM() &amp;&amp;</span>
+<span class="lineNum">     202 </span><span class="lineNoCov">          0 :            (stackCheckCounter == maxStackChecks || (stackCheckCounter &gt; maxStackChecks &amp;&amp; stackCheckFailAlways));</span>
+<span class="lineNum">     203 </span>            : }
+<span class="lineNum">     204 </span>            : 
+<span class="lineNum">     205 </span>            : inline bool
+<span class="lineNum">     206 </span><span class="lineNoCov">          0 : ShouldFailWithStackOOM()</span>
+<span class="lineNum">     207 </span>            : {
+<span class="lineNum">     208 </span><span class="lineNoCov">          0 :     if (!IsThreadSimulatingStackOOM())</span>
+<span class="lineNum">     209 </span>            :         return false;
+<span class="lineNum">     210 </span>            : 
+<span class="lineNum">     211 </span><span class="lineNoCov">          0 :     stackCheckCounter++;</span>
+<span class="lineNum">     212 </span><span class="lineNoCov">          0 :     if (IsSimulatedStackOOMCheck()) {</span>
+<span class="lineNum">     213 </span>            :         JS_OOM_CALL_BP_FUNC();
+<span class="lineNum">     214 </span>            :         return true;
+<span class="lineNum">     215 </span>            :     }
+<span class="lineNum">     216 </span><span class="lineNoCov">          0 :     return false;</span>
+<span class="lineNum">     217 </span>            : }
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span>            : inline bool
+<span class="lineNum">     220 </span>            : HadSimulatedStackOOM()
+<span class="lineNum">     221 </span>            : {
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :     return stackCheckCounter &gt;= maxStackChecks;</span>
+<span class="lineNum">     223 </span>            : }
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span>            : /*
+<span class="lineNum">     226 </span>            :  * Interrupt testing support, similar to OOM testing functions.
+<span class="lineNum">     227 </span>            :  */
+<span class="lineNum">     228 </span>            : 
+<span class="lineNum">     229 </span>            : extern JS_PUBLIC_DATA(uint32_t) interruptTargetThread;
+<span class="lineNum">     230 </span>            : extern JS_PUBLIC_DATA(uint64_t) maxInterruptChecks;
+<span class="lineNum">     231 </span>            : extern JS_PUBLIC_DATA(uint64_t) interruptCheckCounter;
+<span class="lineNum">     232 </span>            : extern JS_PUBLIC_DATA(bool) interruptCheckFailAlways;
+<span class="lineNum">     233 </span>            : 
+<span class="lineNum">     234 </span>            : extern void
+<span class="lineNum">     235 </span>            : SimulateInterruptAfter(uint64_t checks, uint32_t thread, bool always);
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span>            : extern void
+<span class="lineNum">     238 </span>            : ResetSimulatedInterrupt();
+<span class="lineNum">     239 </span>            : 
+<span class="lineNum">     240 </span>            : inline bool
+<span class="lineNum">     241 </span>            : IsThreadSimulatingInterrupt()
+<span class="lineNum">     242 </span>            : {
+<span class="lineNum">     243 </span><span class="lineNoCov">          0 :     return js::oom::interruptTargetThread &amp;&amp; js::oom::interruptTargetThread == js::oom::GetThreadType();</span>
+<span class="lineNum">     244 </span>            : }
+<span class="lineNum">     245 </span>            : 
+<span class="lineNum">     246 </span>            : inline bool
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 : IsSimulatedInterruptCheck()</span>
+<span class="lineNum">     248 </span>            : {
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :     return IsThreadSimulatingInterrupt() &amp;&amp;</span>
+<span class="lineNum">     250 </span><span class="lineNoCov">          0 :            (interruptCheckCounter == maxInterruptChecks || (interruptCheckCounter &gt; maxInterruptChecks &amp;&amp; interruptCheckFailAlways));</span>
+<span class="lineNum">     251 </span>            : }
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            : inline bool
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 : ShouldFailWithInterrupt()</span>
+<span class="lineNum">     255 </span>            : {
+<span class="lineNum">     256 </span><span class="lineNoCov">          0 :     if (!IsThreadSimulatingInterrupt())</span>
+<span class="lineNum">     257 </span>            :         return false;
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :     interruptCheckCounter++;</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :     if (IsSimulatedInterruptCheck()) {</span>
+<span class="lineNum">     261 </span>            :         JS_OOM_CALL_BP_FUNC();
+<span class="lineNum">     262 </span>            :         return true;
+<span class="lineNum">     263 </span>            :     }
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :     return false;</span>
+<span class="lineNum">     265 </span>            : }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            : inline bool
+<span class="lineNum">     268 </span>            : HadSimulatedInterrupt()
+<span class="lineNum">     269 </span>            : {
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :     return interruptCheckCounter &gt;= maxInterruptChecks;</span>
+<span class="lineNum">     271 </span>            : }
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span>            : } /* namespace oom */
+<span class="lineNum">     274 </span>            : } /* namespace js */
+<span class="lineNum">     275 </span>            : 
+<span class="lineNum">     276 </span>            : #  define JS_OOM_POSSIBLY_FAIL()                                              \
+<span class="lineNum">     277 </span>            :     do {                                                                      \
+<span class="lineNum">     278 </span>            :         if (js::oom::ShouldFailWithOOM())                                     \
+<span class="lineNum">     279 </span>            :             return nullptr;                                                   \
+<span class="lineNum">     280 </span>            :     } while (0)
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span>            : #  define JS_OOM_POSSIBLY_FAIL_BOOL()                                         \
+<span class="lineNum">     283 </span>            :     do {                                                                      \
+<span class="lineNum">     284 </span>            :         if (js::oom::ShouldFailWithOOM())                                     \
+<span class="lineNum">     285 </span>            :             return false;                                                     \
+<span class="lineNum">     286 </span>            :     } while (0)
+<span class="lineNum">     287 </span>            : 
+<span class="lineNum">     288 </span>            : #  define JS_STACK_OOM_POSSIBLY_FAIL()                                        \
+<span class="lineNum">     289 </span>            :     do {                                                                      \
+<span class="lineNum">     290 </span>            :         if (js::oom::ShouldFailWithStackOOM())                                \
+<span class="lineNum">     291 </span>            :             return false;                                                     \
+<span class="lineNum">     292 </span>            :     } while (0)
+<span class="lineNum">     293 </span>            : 
+<span class="lineNum">     294 </span>            : #  define JS_STACK_OOM_POSSIBLY_FAIL_REPORT()                                 \
+<span class="lineNum">     295 </span>            :     do {                                                                      \
+<span class="lineNum">     296 </span>            :         if (js::oom::ShouldFailWithStackOOM()) {                              \
+<span class="lineNum">     297 </span>            :             ReportOverRecursed(cx);                                           \
+<span class="lineNum">     298 </span>            :             return false;                                                     \
+<span class="lineNum">     299 </span>            :         }                                                                     \
+<span class="lineNum">     300 </span>            :     } while (0)
+<span class="lineNum">     301 </span>            : 
+<span class="lineNum">     302 </span>            : #  define JS_INTERRUPT_POSSIBLY_FAIL()                                        \
+<span class="lineNum">     303 </span>            :     do {                                                                      \
+<span class="lineNum">     304 </span>            :         if (MOZ_UNLIKELY(js::oom::ShouldFailWithInterrupt())) {               \
+<span class="lineNum">     305 </span>            :             cx-&gt;requestInterrupt(js::InterruptReason::CallbackUrgent);        \
+<span class="lineNum">     306 </span>            :             return cx-&gt;handleInterrupt();                                     \
+<span class="lineNum">     307 </span>            :         }                                                                     \
+<span class="lineNum">     308 </span>            :     } while (0)
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span>            : # else
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span>            : #  define JS_OOM_POSSIBLY_FAIL() do {} while(0)
+<span class="lineNum">     313 </span>            : #  define JS_OOM_POSSIBLY_FAIL_BOOL() do {} while(0)
+<span class="lineNum">     314 </span>            : #  define JS_STACK_OOM_POSSIBLY_FAIL() do {} while(0)
+<span class="lineNum">     315 </span>            : #  define JS_STACK_OOM_POSSIBLY_FAIL_REPORT() do {} while(0)
+<span class="lineNum">     316 </span>            : #  define JS_INTERRUPT_POSSIBLY_FAIL() do {} while(0)
+<span class="lineNum">     317 </span>            : namespace js {
+<span class="lineNum">     318 </span>            : namespace oom {
+<span class="lineNum">     319 </span>            : static inline bool IsSimulatedOOMAllocation() { return false; }
+<span class="lineNum">     320 </span>            : static inline bool ShouldFailWithOOM() { return false; }
+<span class="lineNum">     321 </span>            : } /* namespace oom */
+<span class="lineNum">     322 </span>            : } /* namespace js */
+<span class="lineNum">     323 </span>            : 
+<span class="lineNum">     324 </span>            : # endif /* DEBUG || JS_OOM_BREAKPOINT */
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span>            : namespace js {
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span>            : /* Disable OOM testing in sections which are not OOM safe. */
+<span class="lineNum">     329 </span>            : struct MOZ_RAII JS_PUBLIC_DATA(AutoEnterOOMUnsafeRegion)
+<span class="lineNum">     330 </span>            : {
+<span class="lineNum">     331 </span>            :     MOZ_NORETURN MOZ_COLD void crash(const char* reason);
+<span class="lineNum">     332 </span>            :     MOZ_NORETURN MOZ_COLD void crash(size_t size, const char* reason);
+<span class="lineNum">     333 </span>            : 
+<span class="lineNum">     334 </span>            :     using AnnotateOOMAllocationSizeCallback = void(*)(size_t);
+<span class="lineNum">     335 </span>            :     static AnnotateOOMAllocationSizeCallback annotateOOMSizeCallback;
+<span class="lineNum">     336 </span>            :     static void setAnnotateOOMAllocationSizeCallback(AnnotateOOMAllocationSizeCallback callback) {
+<span class="lineNum">     337 </span><span class="lineNoCov">          0 :         annotateOOMSizeCallback = callback;</span>
+<span class="lineNum">     338 </span>            :     }
+<span class="lineNum">     339 </span>            : 
+<span class="lineNum">     340 </span>            : #if defined(DEBUG) || defined(JS_OOM_BREAKPOINT)
+<span class="lineNum">     341 </span><span class="lineNoCov">          0 :     AutoEnterOOMUnsafeRegion()</span>
+<span class="lineNum">     342 </span><span class="lineNoCov">          0 :       : oomEnabled_(oom::IsThreadSimulatingOOM() &amp;&amp; oom::maxAllocations != UINT64_MAX),</span>
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :         oomAfter_(0)</span>
+<span class="lineNum">     344 </span>            :     {
+<span class="lineNum">     345 </span><span class="lineNoCov">          0 :         if (oomEnabled_) {</span>
+<span class="lineNum">     346 </span><span class="lineNoCov">          0 :             MOZ_ALWAYS_TRUE(owner_.compareExchange(nullptr, this));</span>
+<span class="lineNum">     347 </span><span class="lineNoCov">          0 :             oomAfter_ = int64_t(oom::maxAllocations) - int64_t(oom::counter);</span>
+<span class="lineNum">     348 </span><span class="lineNoCov">          0 :             oom::maxAllocations = UINT64_MAX;</span>
+<span class="lineNum">     349 </span>            :         }
+<span class="lineNum">     350 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     351 </span>            : 
+<span class="lineNum">     352 </span><span class="lineNoCov">          0 :     ~AutoEnterOOMUnsafeRegion() {</span>
+<span class="lineNum">     353 </span><span class="lineNoCov">          0 :         if (oomEnabled_) {</span>
+<span class="lineNum">     354 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(oom::maxAllocations == UINT64_MAX);</span>
+<span class="lineNum">     355 </span><span class="lineNoCov">          0 :             int64_t maxAllocations = int64_t(oom::counter) + oomAfter_;</span>
+<span class="lineNum">     356 </span><span class="lineNoCov">          0 :             MOZ_ASSERT(maxAllocations &gt;= 0,</span>
+<span class="lineNum">     357 </span>            :                        &quot;alloc count + oom limit exceeds range, your oom limit is probably too large&quot;);
+<span class="lineNum">     358 </span><span class="lineNoCov">          0 :             oom::maxAllocations = uint64_t(maxAllocations);</span>
+<span class="lineNum">     359 </span><span class="lineNoCov">          0 :             MOZ_ALWAYS_TRUE(owner_.compareExchange(this, nullptr));</span>
+<span class="lineNum">     360 </span>            :         }
+<span class="lineNum">     361 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     362 </span>            : 
+<span class="lineNum">     363 </span>            :   private:
+<span class="lineNum">     364 </span>            :     // Used to catch concurrent use from other threads.
+<span class="lineNum">     365 </span>            :     static mozilla::Atomic&lt;AutoEnterOOMUnsafeRegion*&gt; owner_;
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span>            :     bool oomEnabled_;
+<span class="lineNum">     368 </span>            :     int64_t oomAfter_;
+<span class="lineNum">     369 </span>            : #endif
+<span class="lineNum">     370 </span>            : };
+<span class="lineNum">     371 </span>            : 
+<span class="lineNum">     372 </span>            : } /* namespace js */
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span>            : // Malloc allocation.
+<span class="lineNum">     375 </span>            : 
+<span class="lineNum">     376 </span>            : namespace js {
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span>            : extern JS_PUBLIC_DATA(arena_id_t) MallocArena;
+<span class="lineNum">     379 </span>            : 
+<span class="lineNum">     380 </span>            : extern void InitMallocAllocator();
+<span class="lineNum">     381 </span>            : extern void ShutDownMallocAllocator();
+<span class="lineNum">     382 </span>            : 
+<span class="lineNum">     383 </span>            : } /* namespace js */
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 : static inline void* js_malloc(size_t bytes)</span>
+<span class="lineNum">     386 </span>            : {
+<span class="lineNum">     387 </span><span class="lineNoCov">          0 :     JS_OOM_POSSIBLY_FAIL();</span>
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :     return moz_arena_malloc(js::MallocArena, bytes);</span>
+<span class="lineNum">     389 </span>            : }
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span><span class="lineNoCov">          0 : static inline void* js_calloc(size_t bytes)</span>
+<span class="lineNum">     392 </span>            : {
+<span class="lineNum">     393 </span><span class="lineNoCov">          0 :     JS_OOM_POSSIBLY_FAIL();</span>
+<span class="lineNum">     394 </span><span class="lineNoCov">          0 :     return moz_arena_calloc(js::MallocArena, bytes, 1);</span>
+<span class="lineNum">     395 </span>            : }
+<span class="lineNum">     396 </span>            : 
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 : static inline void* js_calloc(size_t nmemb, size_t size)</span>
+<span class="lineNum">     398 </span>            : {
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :     JS_OOM_POSSIBLY_FAIL();</span>
+<span class="lineNum">     400 </span><span class="lineNoCov">          0 :     return moz_arena_calloc(js::MallocArena, nmemb, size);</span>
+<span class="lineNum">     401 </span>            : }
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span><span class="lineNoCov">          0 : static inline void* js_realloc(void* p, size_t bytes)</span>
+<span class="lineNum">     404 </span>            : {
+<span class="lineNum">     405 </span>            :     // realloc() with zero size is not portable, as some implementations may
+<span class="lineNum">     406 </span>            :     // return nullptr on success and free |p| for this.  We assume nullptr
+<span class="lineNum">     407 </span>            :     // indicates failure and that |p| is still valid.
+<span class="lineNum">     408 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(bytes != 0);</span>
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span><span class="lineNoCov">          0 :     JS_OOM_POSSIBLY_FAIL();</span>
+<span class="lineNum">     411 </span><span class="lineNoCov">          0 :     return moz_arena_realloc(js::MallocArena, p, bytes);</span>
+<span class="lineNum">     412 </span>            : }
+<span class="lineNum">     413 </span>            : 
+<span class="lineNum">     414 </span><span class="lineNoCov">          0 : static inline void js_free(void* p)</span>
+<span class="lineNum">     415 </span>            : {
+<span class="lineNum">     416 </span>            :     // TODO: This should call |moz_arena_free(js::MallocArena, p)| but we
+<span class="lineNum">     417 </span>            :     // currently can't enforce that all memory freed here was allocated by
+<span class="lineNum">     418 </span>            :     // js_malloc().
+<span class="lineNum">     419 </span><span class="lineNoCov">          0 :     free(p);</span>
+<span class="lineNum">     420 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     421 </span>            : #endif/* JS_USE_CUSTOM_ALLOCATOR */
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span>            : #include &lt;new&gt;
+<span class="lineNum">     424 </span>            : 
+<span class="lineNum">     425 </span>            : /*
+<span class="lineNum">     426 </span>            :  * Low-level memory management in SpiderMonkey:
+<span class="lineNum">     427 </span>            :  *
+<span class="lineNum">     428 </span>            :  *  ** Do not use the standard malloc/free/realloc: SpiderMonkey allows these
+<span class="lineNum">     429 </span>            :  *     to be redefined (via JS_USE_CUSTOM_ALLOCATOR) and Gecko even #define's
+<span class="lineNum">     430 </span>            :  *     these symbols.
+<span class="lineNum">     431 </span>            :  *
+<span class="lineNum">     432 </span>            :  *  ** Do not use the builtin C++ operator new and delete: these throw on
+<span class="lineNum">     433 </span>            :  *     error and we cannot override them not to.
+<span class="lineNum">     434 </span>            :  *
+<span class="lineNum">     435 </span>            :  * Allocation:
+<span class="lineNum">     436 </span>            :  *
+<span class="lineNum">     437 </span>            :  * - If the lifetime of the allocation is tied to the lifetime of a GC-thing
+<span class="lineNum">     438 </span>            :  *   (that is, finalizing the GC-thing will free the allocation), call one of
+<span class="lineNum">     439 </span>            :  *   the following functions:
+<span class="lineNum">     440 </span>            :  *
+<span class="lineNum">     441 </span>            :  *     JSContext::{pod_malloc,pod_calloc,pod_realloc}
+<span class="lineNum">     442 </span>            :  *     Zone::{pod_malloc,pod_calloc,pod_realloc}
+<span class="lineNum">     443 </span>            :  *
+<span class="lineNum">     444 </span>            :  *   These functions accumulate the number of bytes allocated which is used as
+<span class="lineNum">     445 </span>            :  *   part of the GC-triggering heuristics.
+<span class="lineNum">     446 </span>            :  *
+<span class="lineNum">     447 </span>            :  *   The difference between the JSContext and Zone versions is that the
+<span class="lineNum">     448 </span>            :  *   cx version report an out-of-memory error on OOM. (This follows from the
+<span class="lineNum">     449 </span>            :  *   general SpiderMonkey idiom that a JSContext-taking function reports its
+<span class="lineNum">     450 </span>            :  *   own errors.)
+<span class="lineNum">     451 </span>            :  *
+<span class="lineNum">     452 </span>            :  *   If you don't want to report an error on failure, there are maybe_ versions
+<span class="lineNum">     453 </span>            :  *   of these methods available too, e.g. maybe_pod_malloc.
+<span class="lineNum">     454 </span>            :  *
+<span class="lineNum">     455 </span>            :  *   The methods above use templates to allow allocating memory suitable for an
+<span class="lineNum">     456 </span>            :  *   array of a given type and number of elements. There are _with_extra
+<span class="lineNum">     457 </span>            :  *   versions to allow allocating an area of memory which is larger by a
+<span class="lineNum">     458 </span>            :  *   specified number of bytes, e.g. pod_malloc_with_extra.
+<span class="lineNum">     459 </span>            :  *
+<span class="lineNum">     460 </span>            :  *   These methods are available on a JSRuntime, but calling them is
+<span class="lineNum">     461 </span>            :  *   discouraged. Memory attributed to a runtime can only be reclaimed by full
+<span class="lineNum">     462 </span>            :  *   GCs, and we try to avoid those where possible.
+<span class="lineNum">     463 </span>            :  *
+<span class="lineNum">     464 </span>            :  * - Otherwise, use js_malloc/js_realloc/js_calloc/js_new
+<span class="lineNum">     465 </span>            :  *
+<span class="lineNum">     466 </span>            :  * Deallocation:
+<span class="lineNum">     467 </span>            :  *
+<span class="lineNum">     468 </span>            :  * - Ordinarily, use js_free/js_delete.
+<span class="lineNum">     469 </span>            :  *
+<span class="lineNum">     470 </span>            :  * - For deallocations during GC finalization, use one of the following
+<span class="lineNum">     471 </span>            :  *   operations on the FreeOp provided to the finalizer:
+<span class="lineNum">     472 </span>            :  *
+<span class="lineNum">     473 </span>            :  *     FreeOp::{free_,delete_}
+<span class="lineNum">     474 </span>            :  */
+<span class="lineNum">     475 </span>            : 
+<span class="lineNum">     476 </span>            : /*
+<span class="lineNum">     477 </span>            :  * Given a class which should provide a 'new' method, add
+<span class="lineNum">     478 </span>            :  * JS_DECLARE_NEW_METHODS (see js::MallocProvider for an example).
+<span class="lineNum">     479 </span>            :  *
+<span class="lineNum">     480 </span>            :  * Note: Do not add a ; at the end of a use of JS_DECLARE_NEW_METHODS,
+<span class="lineNum">     481 </span>            :  * or the build will break.
+<span class="lineNum">     482 </span>            :  */
+<span class="lineNum">     483 </span>            : #define JS_DECLARE_NEW_METHODS(NEWNAME, ALLOCATOR, QUALIFIERS) \
+<span class="lineNum">     484 </span>            :     template &lt;class T, typename... Args&gt; \
+<span class="lineNum">     485 </span>            :     QUALIFIERS T * \
+<span class="lineNum">     486 </span>            :     NEWNAME(Args&amp;&amp;... args) MOZ_HEAP_ALLOCATOR { \
+<span class="lineNum">     487 </span>            :         void* memory = ALLOCATOR(sizeof(T)); \
+<span class="lineNum">     488 </span>            :         return MOZ_LIKELY(memory) \
+<span class="lineNum">     489 </span>            :             ? new(memory) T(std::forward&lt;Args&gt;(args)...) \
+<span class="lineNum">     490 </span>            :             : nullptr; \
+<span class="lineNum">     491 </span>            :     }
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span>            : /*
+<span class="lineNum">     494 </span>            :  * Given a class which should provide 'make' methods, add
+<span class="lineNum">     495 </span>            :  * JS_DECLARE_MAKE_METHODS (see js::MallocProvider for an example).  This
+<span class="lineNum">     496 </span>            :  * method is functionally the same as JS_DECLARE_NEW_METHODS: it just declares
+<span class="lineNum">     497 </span>            :  * methods that return mozilla::UniquePtr instances that will singly-manage
+<span class="lineNum">     498 </span>            :  * ownership of the created object.
+<span class="lineNum">     499 </span>            :  *
+<span class="lineNum">     500 </span>            :  * Note: Do not add a ; at the end of a use of JS_DECLARE_MAKE_METHODS,
+<span class="lineNum">     501 </span>            :  * or the build will break.
+<span class="lineNum">     502 </span>            :  */
+<span class="lineNum">     503 </span>            : #define JS_DECLARE_MAKE_METHODS(MAKENAME, NEWNAME, QUALIFIERS)\
+<span class="lineNum">     504 </span>            :     template &lt;class T, typename... Args&gt; \
+<span class="lineNum">     505 </span>            :     QUALIFIERS mozilla::UniquePtr&lt;T, JS::DeletePolicy&lt;T&gt;&gt; \
+<span class="lineNum">     506 </span>            :     MAKENAME(Args&amp;&amp;... args) MOZ_HEAP_ALLOCATOR { \
+<span class="lineNum">     507 </span>            :         T* ptr = NEWNAME&lt;T&gt;(std::forward&lt;Args&gt;(args)...); \
+<span class="lineNum">     508 </span>            :         return mozilla::UniquePtr&lt;T, JS::DeletePolicy&lt;T&gt;&gt;(ptr); \
+<span class="lineNum">     509 </span>            :     }
+<span class="lineNum">     510 </span>            : 
+<span class="lineNum">     511 </span><span class="lineCov">      12822 : JS_DECLARE_NEW_METHODS(js_new, js_malloc, static MOZ_ALWAYS_INLINE)</span>
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span>            : namespace js {
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span>            : /*
+<span class="lineNum">     516 </span>            :  * Calculate the number of bytes needed to allocate |numElems| contiguous
+<span class="lineNum">     517 </span>            :  * instances of type |T|.  Return false if the calculation overflowed.
+<span class="lineNum">     518 </span>            :  */
+<span class="lineNum">     519 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     520 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     521 </span>            : CalculateAllocSize(size_t numElems, size_t* bytesOut)
+<span class="lineNum">     522 </span>            : {
+<span class="lineNum">     523 </span><span class="lineCov">     411547 :     *bytesOut = numElems * sizeof(T);</span>
+<span class="lineNum">     524 </span><span class="lineCov">     205882 :     return (numElems &amp; mozilla::tl::MulOverflowMask&lt;sizeof(T)&gt;::value) == 0;</span>
+<span class="lineNum">     525 </span>            : }
+<span class="lineNum">     526 </span>            : 
+<span class="lineNum">     527 </span>            : /*
+<span class="lineNum">     528 </span>            :  * Calculate the number of bytes needed to allocate a single instance of type
+<span class="lineNum">     529 </span>            :  * |T| followed by |numExtra| contiguous instances of type |Extra|.  Return
+<span class="lineNum">     530 </span>            :  * false if the calculation overflowed.
+<span class="lineNum">     531 </span>            :  */
+<span class="lineNum">     532 </span>            : template &lt;typename T, typename Extra&gt;
+<span class="lineNum">     533 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     534 </span>            : CalculateAllocSizeWithExtra(size_t numExtra, size_t* bytesOut)
+<span class="lineNum">     535 </span>            : {
+<span class="lineNum">     536 </span><span class="lineCov">        977 :     *bytesOut = sizeof(T) + numExtra * sizeof(Extra);</span>
+<span class="lineNum">     537 </span><span class="lineCov">        124 :     return (numExtra &amp; mozilla::tl::MulOverflowMask&lt;sizeof(Extra)&gt;::value) == 0 &amp;&amp;</span>
+<span class="lineNum">     538 </span>            :            *bytesOut &gt;= sizeof(T);
+<span class="lineNum">     539 </span>            : }
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span>            : } /* namespace js */
+<span class="lineNum">     542 </span>            : 
+<span class="lineNum">     543 </span>            : template &lt;class T&gt;
+<span class="lineNum">     544 </span>            : static MOZ_ALWAYS_INLINE void
+<span class="lineNum">     545 </span><span class="lineCov">       1519 : js_delete(const T* p)</span>
+<span class="lineNum">     546 </span>            : {
+<span class="lineNum">     547 </span><span class="lineCov">      18468 :     if (p) {</span>
+<span class="lineNum">     548 </span><span class="lineNoCov">          0 :         p-&gt;~T();</span>
+<span class="lineNum">     549 </span>            :         js_free(const_cast&lt;T*&gt;(p));
+<span class="lineNum">     550 </span>            :     }
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span>            : template&lt;class T&gt;
+<span class="lineNum">     554 </span>            : static MOZ_ALWAYS_INLINE void
+<span class="lineNum">     555 </span><span class="lineNoCov">          0 : js_delete_poison(const T* p)</span>
+<span class="lineNum">     556 </span>            : {
+<span class="lineNum">     557 </span><span class="lineNoCov">          0 :     if (p) {</span>
+<span class="lineNum">     558 </span><span class="lineNoCov">          0 :         p-&gt;~T();</span>
+<span class="lineNum">     559 </span><span class="lineNoCov">          0 :         memset(static_cast&lt;void*&gt;(const_cast&lt;T*&gt;(p)), 0x3B, sizeof(T));</span>
+<span class="lineNum">     560 </span>            :         js_free(const_cast&lt;T*&gt;(p));
+<span class="lineNum">     561 </span>            :     }
+<span class="lineNum">     562 </span><span class="lineNoCov">          0 : }</span>
+<span class="lineNum">     563 </span>            : 
+<span class="lineNum">     564 </span>            : template &lt;class T&gt;
+<span class="lineNum">     565 </span>            : static MOZ_ALWAYS_INLINE T*
+<span class="lineNum">     566 </span>            : js_pod_malloc()
+<span class="lineNum">     567 </span>            : {
+<span class="lineNum">     568 </span>            :     return static_cast&lt;T*&gt;(js_malloc(sizeof(T)));
+<span class="lineNum">     569 </span>            : }
+<span class="lineNum">     570 </span>            : 
+<span class="lineNum">     571 </span>            : template &lt;class T&gt;
+<span class="lineNum">     572 </span>            : static MOZ_ALWAYS_INLINE T*
+<span class="lineNum">     573 </span>            : js_pod_calloc()
+<span class="lineNum">     574 </span>            : {
+<span class="lineNum">     575 </span>            :     return static_cast&lt;T*&gt;(js_calloc(sizeof(T)));
+<span class="lineNum">     576 </span>            : }
+<span class="lineNum">     577 </span>            : 
+<span class="lineNum">     578 </span>            : template &lt;class T&gt;
+<span class="lineNum">     579 </span>            : static MOZ_ALWAYS_INLINE T*
+<span class="lineNum">     580 </span><span class="lineCov">       2047 : js_pod_malloc(size_t numElems)</span>
+<span class="lineNum">     581 </span>            : {
+<span class="lineNum">     582 </span>            :     size_t bytes;
+<span class="lineNum">     583 </span><span class="lineCov">     262542 :     if (MOZ_UNLIKELY(!js::CalculateAllocSize&lt;T&gt;(numElems, &amp;bytes)))</span>
+<span class="lineNum">     584 </span>            :         return nullptr;
+<span class="lineNum">     585 </span><span class="lineCov">     262542 :     return static_cast&lt;T*&gt;(js_malloc(bytes));</span>
+<span class="lineNum">     586 </span>            : }
+<span class="lineNum">     587 </span>            : 
+<span class="lineNum">     588 </span>            : template &lt;class T&gt;
+<span class="lineNum">     589 </span>            : static MOZ_ALWAYS_INLINE T*
+<span class="lineNum">     590 </span>            : js_pod_calloc(size_t numElems)
+<span class="lineNum">     591 </span>            : {
+<span class="lineNum">     592 </span>            :     size_t bytes;
+<span class="lineNum">     593 </span><span class="lineNoCov">          0 :     if (MOZ_UNLIKELY(!js::CalculateAllocSize&lt;T&gt;(numElems, &amp;bytes)))</span>
+<span class="lineNum">     594 </span>            :         return nullptr;
+<span class="lineNum">     595 </span><span class="lineNoCov">          0 :     return static_cast&lt;T*&gt;(js_calloc(bytes));</span>
+<span class="lineNum">     596 </span>            : }
+<span class="lineNum">     597 </span>            : 
+<span class="lineNum">     598 </span>            : template &lt;class T&gt;
+<span class="lineNum">     599 </span>            : static MOZ_ALWAYS_INLINE T*
+<span class="lineNum">     600 </span><span class="lineCov">      13474 : js_pod_realloc(T* prior, size_t oldSize, size_t newSize)</span>
+<span class="lineNum">     601 </span>            : {
+<span class="lineNum">     602 </span><span class="lineCov">      13474 :     MOZ_ASSERT(!(oldSize &amp; mozilla::tl::MulOverflowMask&lt;sizeof(T)&gt;::value));</span>
+<span class="lineNum">     603 </span>            :     size_t bytes;
+<span class="lineNum">     604 </span><span class="lineCov">      57834 :     if (MOZ_UNLIKELY(!js::CalculateAllocSize&lt;T&gt;(newSize, &amp;bytes)))</span>
+<span class="lineNum">     605 </span>            :         return nullptr;
+<span class="lineNum">     606 </span><span class="lineCov">      57834 :     return static_cast&lt;T*&gt;(js_realloc(prior, bytes));</span>
+<span class="lineNum">     607 </span>            : }
+<span class="lineNum">     608 </span>            : 
+<span class="lineNum">     609 </span>            : namespace js {
+<span class="lineNum">     610 </span>            : 
+<span class="lineNum">     611 </span>            : template&lt;typename T&gt;
+<span class="lineNum">     612 </span>            : struct ScopedFreePtrTraits
+<span class="lineNum">     613 </span>            : {
+<span class="lineNum">     614 </span>            :     typedef T* type;
+<span class="lineNum">     615 </span>            :     static T* empty() { return nullptr; }
+<span class="lineNum">     616 </span><span class="lineNoCov">          0 :     static void release(T* ptr) { js_free(ptr); }</span>
+<span class="lineNum">     617 </span>            : };
+<span class="lineNum">     618 </span><span class="lineNoCov">          0 : SCOPED_TEMPLATE(ScopedJSFreePtr, ScopedFreePtrTraits)</span>
+<span class="lineNum">     619 </span>            : 
+<span class="lineNum">     620 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     621 </span>            : struct ScopedDeletePtrTraits : public ScopedFreePtrTraits&lt;T&gt;
+<span class="lineNum">     622 </span>            : {
+<span class="lineNum">     623 </span><span class="lineCov">        378 :     static void release(T* ptr) { js_delete(ptr); }</span>
+<span class="lineNum">     624 </span>            : };
+<span class="lineNum">     625 </span><span class="lineCov">       1230 : SCOPED_TEMPLATE(ScopedJSDeletePtr, ScopedDeletePtrTraits)</span>
+<span class="lineNum">     626 </span>            : 
+<span class="lineNum">     627 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     628 </span>            : struct ScopedReleasePtrTraits : public ScopedFreePtrTraits&lt;T&gt;
+<span class="lineNum">     629 </span>            : {
+<span class="lineNum">     630 </span>            :     static void release(T* ptr) { if (ptr) ptr-&gt;release(); }
+<span class="lineNum">     631 </span>            : };
+<span class="lineNum">     632 </span>            : SCOPED_TEMPLATE(ScopedReleasePtr, ScopedReleasePtrTraits)
+<span class="lineNum">     633 </span>            : 
+<span class="lineNum">     634 </span>            : } /* namespace js */
+<span class="lineNum">     635 </span>            : 
+<span class="lineNum">     636 </span>            : namespace JS {
+<span class="lineNum">     637 </span>            : 
+<span class="lineNum">     638 </span>            : template&lt;typename T&gt;
+<span class="lineNum">     639 </span>            : struct DeletePolicy
+<span class="lineNum">     640 </span>            : {
+<span class="lineNum">     641 </span><span class="lineNoCov">          0 :     constexpr DeletePolicy() {}</span>
+<span class="lineNum">     642 </span>            : 
+<span class="lineNum">     643 </span>            :     template&lt;typename U&gt;
+<span class="lineNum">     644 </span>            :     MOZ_IMPLICIT DeletePolicy(DeletePolicy&lt;U&gt; other,
+<span class="lineNum">     645 </span>            :                               typename mozilla::EnableIf&lt;mozilla::IsConvertible&lt;U*, T*&gt;::value,
+<span class="lineNum">     646 </span>            :                                                          int&gt;::Type dummy = 0)
+<span class="lineNum">     647 </span>            :     {}
+<span class="lineNum">     648 </span>            : 
+<span class="lineNum">     649 </span><span class="lineCov">       1195 :     void operator()(const T* ptr) {</span>
+<span class="lineNum">     650 </span><span class="lineNoCov">          0 :         js_delete(const_cast&lt;T*&gt;(ptr));</span>
+<span class="lineNum">     651 </span><span class="lineCov">       1195 :     }</span>
+<span class="lineNum">     652 </span>            : };
+<span class="lineNum">     653 </span>            : 
+<span class="lineNum">     654 </span>            : struct FreePolicy
+<span class="lineNum">     655 </span>            : {
+<span class="lineNum">     656 </span>            :     void operator()(const void* ptr) {
+<span class="lineNum">     657 </span><span class="lineCov">      27187 :         js_free(const_cast&lt;void*&gt;(ptr));</span>
+<span class="lineNum">     658 </span>            :     }
+<span class="lineNum">     659 </span>            : };
+<span class="lineNum">     660 </span>            : 
+<span class="lineNum">     661 </span>            : typedef mozilla::UniquePtr&lt;char[], JS::FreePolicy&gt; UniqueChars;
+<span class="lineNum">     662 </span>            : typedef mozilla::UniquePtr&lt;char16_t[], JS::FreePolicy&gt; UniqueTwoByteChars;
+<span class="lineNum">     663 </span>            : 
+<span class="lineNum">     664 </span>            : } // namespace JS
+<span class="lineNum">     665 </span>            : 
+<span class="lineNum">     666 </span>            : namespace js {
+<span class="lineNum">     667 </span>            : 
+<span class="lineNum">     668 </span>            : /* Integral types for all hash functions. */
+<span class="lineNum">     669 </span>            : typedef uint32_t HashNumber;
+<span class="lineNum">     670 </span>            : const unsigned HashNumberSizeBits = 32;
+<span class="lineNum">     671 </span>            : 
+<span class="lineNum">     672 </span>            : namespace detail {
+<span class="lineNum">     673 </span>            : 
+<span class="lineNum">     674 </span>            : /*
+<span class="lineNum">     675 </span>            :  * Given a raw hash code, h, return a number that can be used to select a hash
+<span class="lineNum">     676 </span>            :  * bucket.
+<span class="lineNum">     677 </span>            :  *
+<span class="lineNum">     678 </span>            :  * This function aims to produce as uniform an output distribution as possible,
+<span class="lineNum">     679 </span>            :  * especially in the most significant (leftmost) bits, even though the input
+<span class="lineNum">     680 </span>            :  * distribution may be highly nonrandom, given the constraints that this must
+<span class="lineNum">     681 </span>            :  * be deterministic and quick to compute.
+<span class="lineNum">     682 </span>            :  *
+<span class="lineNum">     683 </span>            :  * Since the leftmost bits of the result are best, the hash bucket index is
+<span class="lineNum">     684 </span>            :  * computed by doing ScrambleHashCode(h) / (2^32/N) or the equivalent
+<span class="lineNum">     685 </span>            :  * right-shift, not ScrambleHashCode(h) % N or the equivalent bit-mask.
+<span class="lineNum">     686 </span>            :  *
+<span class="lineNum">     687 </span>            :  * FIXME: OrderedHashTable uses a bit-mask; see bug 775896.
+<span class="lineNum">     688 </span>            :  */
+<span class="lineNum">     689 </span>            : inline HashNumber
+<span class="lineNum">     690 </span>            : ScrambleHashCode(HashNumber h)
+<span class="lineNum">     691 </span>            : {
+<span class="lineNum">     692 </span>            :     /*
+<span class="lineNum">     693 </span>            :      * Simply returning h would not cause any hash tables to produce wrong
+<span class="lineNum">     694 </span>            :      * answers. But it can produce pathologically bad performance: The caller
+<span class="lineNum">     695 </span>            :      * right-shifts the result, keeping only the highest bits. The high bits of
+<span class="lineNum">     696 </span>            :      * hash codes are very often completely entropy-free. (So are the lowest
+<span class="lineNum">     697 </span>            :      * bits.)
+<span class="lineNum">     698 </span>            :      *
+<span class="lineNum">     699 </span>            :      * So we use Fibonacci hashing, as described in Knuth, The Art of Computer
+<span class="lineNum">     700 </span>            :      * Programming, 6.4. This mixes all the bits of the input hash code h.
+<span class="lineNum">     701 </span>            :      *
+<span class="lineNum">     702 </span>            :      * The value of goldenRatio is taken from the hex
+<span class="lineNum">     703 </span>            :      * expansion of the golden ratio, which starts 1.9E3779B9....
+<span class="lineNum">     704 </span>            :      * This value is especially good if values with consecutive hash codes
+<span class="lineNum">     705 </span>            :      * are stored in a hash table; see Knuth for details.
+<span class="lineNum">     706 </span>            :      */
+<span class="lineNum">     707 </span>            :     static const HashNumber goldenRatio = 0x9E3779B9U;
+<span class="lineNum">     708 </span>            :     return mozilla::WrappingMultiply(h, goldenRatio);
+<span class="lineNum">     709 </span>            : }
+<span class="lineNum">     710 </span>            : 
+<span class="lineNum">     711 </span>            : } /* namespace detail */
+<span class="lineNum">     712 </span>            : 
+<span class="lineNum">     713 </span>            : } /* namespace js */
+<span class="lineNum">     714 </span>            : 
+<span class="lineNum">     715 </span>            : /* sixgill annotation defines */
+<span class="lineNum">     716 </span>            : #ifndef HAVE_STATIC_ANNOTATIONS
+<span class="lineNum">     717 </span>            : # define HAVE_STATIC_ANNOTATIONS
+<span class="lineNum">     718 </span>            : # ifdef XGILL_PLUGIN
+<span class="lineNum">     719 </span>            : #  define STATIC_PRECONDITION(COND)         __attribute__((precondition(#COND)))
+<span class="lineNum">     720 </span>            : #  define STATIC_PRECONDITION_ASSUME(COND)  __attribute__((precondition_assume(#COND)))
+<span class="lineNum">     721 </span>            : #  define STATIC_POSTCONDITION(COND)        __attribute__((postcondition(#COND)))
+<span class="lineNum">     722 </span>            : #  define STATIC_POSTCONDITION_ASSUME(COND) __attribute__((postcondition_assume(#COND)))
+<span class="lineNum">     723 </span>            : #  define STATIC_INVARIANT(COND)            __attribute__((invariant(#COND)))
+<span class="lineNum">     724 </span>            : #  define STATIC_INVARIANT_ASSUME(COND)     __attribute__((invariant_assume(#COND)))
+<span class="lineNum">     725 </span>            : #  define STATIC_ASSUME(COND)                        \
+<span class="lineNum">     726 </span>            :   JS_BEGIN_MACRO                                     \
+<span class="lineNum">     727 </span>            :     __attribute__((assume_static(#COND), unused))    \
+<span class="lineNum">     728 </span>            :     int STATIC_PASTE1(assume_static_, __COUNTER__);  \
+<span class="lineNum">     729 </span>            :   JS_END_MACRO
+<span class="lineNum">     730 </span>            : # else /* XGILL_PLUGIN */
+<span class="lineNum">     731 </span>            : #  define STATIC_PRECONDITION(COND)          /* nothing */
+<span class="lineNum">     732 </span>            : #  define STATIC_PRECONDITION_ASSUME(COND)   /* nothing */
+<span class="lineNum">     733 </span>            : #  define STATIC_POSTCONDITION(COND)         /* nothing */
+<span class="lineNum">     734 </span>            : #  define STATIC_POSTCONDITION_ASSUME(COND)  /* nothing */
+<span class="lineNum">     735 </span>            : #  define STATIC_INVARIANT(COND)             /* nothing */
+<span class="lineNum">     736 </span>            : #  define STATIC_INVARIANT_ASSUME(COND)      /* nothing */
+<span class="lineNum">     737 </span>            : #  define STATIC_ASSUME(COND)          JS_BEGIN_MACRO /* nothing */ JS_END_MACRO
+<span class="lineNum">     738 </span>            : # endif /* XGILL_PLUGIN */
+<span class="lineNum">     739 </span>            : # define STATIC_SKIP_INFERENCE STATIC_INVARIANT(skip_inference())
+<span class="lineNum">     740 </span>            : #endif /* HAVE_STATIC_ANNOTATIONS */
+<span class="lineNum">     741 </span>            : 
+<span class="lineNum">     742 </span>            : #endif /* js_Utility_h */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

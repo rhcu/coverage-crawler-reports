@@ -1,0 +1,750 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - xpcom/base/AvailableMemoryTracker.cpp</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">xpcom/base</a> - AvailableMemoryTracker.cpp<span style="font-size: 80%;"> (source / <a href="AvailableMemoryTracker.cpp.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">25</td>
+            <td class="headerCovTableEntryLo">40.0 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #include &quot;mozilla/AvailableMemoryTracker.h&quot;
+<span class="lineNum">       8 </span>            : 
+<span class="lineNum">       9 </span>            : #if defined(XP_WIN)
+<span class="lineNum">      10 </span>            : #include &quot;prinrval.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;prenv.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;nsExceptionHandler.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;nsIMemoryReporter.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;nsMemoryPressure.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;nsPrintfCString.h&quot;
+<span class="lineNum">      16 </span>            : #endif
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : #include &quot;nsIObserver.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;nsIObserverService.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;nsIRunnable.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;nsISupports.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;nsITimer.h&quot;
+<span class="lineNum">      23 </span>            : #include &quot;nsThreadUtils.h&quot;
+<span class="lineNum">      24 </span>            : #include &quot;nsXULAppAPI.h&quot;
+<span class="lineNum">      25 </span>            : 
+<span class="lineNum">      26 </span>            : #include &quot;mozilla/ResultExtensions.h&quot;
+<span class="lineNum">      27 </span>            : #include &quot;mozilla/Services.h&quot;
+<span class="lineNum">      28 </span>            : #include &quot;mozilla/Unused.h&quot;
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : #if defined(XP_WIN)
+<span class="lineNum">      31 </span>            : #   include &quot;nsWindowsDllInterceptor.h&quot;
+<span class="lineNum">      32 </span>            : #   include &lt;windows.h&gt;
+<span class="lineNum">      33 </span>            : #endif
+<span class="lineNum">      34 </span>            : 
+<span class="lineNum">      35 </span>            : #if defined(MOZ_MEMORY)
+<span class="lineNum">      36 </span>            : #   include &quot;mozmemory.h&quot;
+<span class="lineNum">      37 </span>            : #endif  // MOZ_MEMORY
+<span class="lineNum">      38 </span>            : 
+<span class="lineNum">      39 </span>            : using namespace mozilla;
+<span class="lineNum">      40 </span>            : 
+<span class="lineNum">      41 </span>            : namespace {
+<span class="lineNum">      42 </span>            : 
+<span class="lineNum">      43 </span>            : #if defined(XP_WIN)
+<span class="lineNum">      44 </span>            : 
+<span class="lineNum">      45 </span>            : // Fire a low-memory notification if we have less than this many bytes of
+<span class="lineNum">      46 </span>            : // virtual address space available.
+<span class="lineNum">      47 </span>            : #if defined(HAVE_64BIT_BUILD)
+<span class="lineNum">      48 </span>            : static const size_t kLowVirtualMemoryThreshold = 0;
+<span class="lineNum">      49 </span>            : #else
+<span class="lineNum">      50 </span>            : static const size_t kLowVirtualMemoryThreshold = 256 * 1024 * 1024;
+<span class="lineNum">      51 </span>            : #endif
+<span class="lineNum">      52 </span>            : 
+<span class="lineNum">      53 </span>            : // Fire a low-memory notification if we have less than this many bytes of commit
+<span class="lineNum">      54 </span>            : // space (physical memory plus page file) left.
+<span class="lineNum">      55 </span>            : static const size_t kLowCommitSpaceThreshold = 256 * 1024 * 1024;
+<span class="lineNum">      56 </span>            : 
+<span class="lineNum">      57 </span>            : // Fire a low-memory notification if we have less than this many bytes of
+<span class="lineNum">      58 </span>            : // physical memory available on the whole machine.
+<span class="lineNum">      59 </span>            : static const size_t kLowPhysicalMemoryThreshold = 0;
+<span class="lineNum">      60 </span>            : 
+<span class="lineNum">      61 </span>            : // Don't fire a low-memory notification because of low available physical
+<span class="lineNum">      62 </span>            : // memory or low commit space more often than this interval.
+<span class="lineNum">      63 </span>            : static const uint32_t kLowMemoryNotificationIntervalMS = 10000;
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            : Atomic&lt;uint32_t, MemoryOrdering::Relaxed&gt; sNumLowVirtualMemEvents;
+<span class="lineNum">      66 </span>            : Atomic&lt;uint32_t, MemoryOrdering::Relaxed&gt; sNumLowCommitSpaceEvents;
+<span class="lineNum">      67 </span>            : Atomic&lt;uint32_t, MemoryOrdering::Relaxed&gt; sNumLowPhysicalMemEvents;
+<span class="lineNum">      68 </span>            : 
+<span class="lineNum">      69 </span>            : #if !defined(HAVE_64BIT_BUILD)
+<span class="lineNum">      70 </span>            : 
+<span class="lineNum">      71 </span>            : WindowsDllInterceptor sKernel32Intercept;
+<span class="lineNum">      72 </span>            : WindowsDllInterceptor sGdi32Intercept;
+<span class="lineNum">      73 </span>            : 
+<span class="lineNum">      74 </span>            : // Has Init() been called?
+<span class="lineNum">      75 </span>            : bool sInitialized = false;
+<span class="lineNum">      76 </span>            : 
+<span class="lineNum">      77 </span>            : // Has Activate() been called?  The hooks don't do anything until this happens.
+<span class="lineNum">      78 </span>            : bool sHooksActive = false;
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : // Alas, we'd like to use mozilla::TimeStamp, but we can't, because it acquires
+<span class="lineNum">      81 </span>            : // a lock!
+<span class="lineNum">      82 </span>            : volatile bool sUnderMemoryPressure = false;
+<span class="lineNum">      83 </span>            : volatile PRIntervalTime sLastLowMemoryNotificationTime;
+<span class="lineNum">      84 </span>            : 
+<span class="lineNum">      85 </span>            : // These are function pointers to the functions we wrap in Init().
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : void* (WINAPI* sVirtualAllocOrig)(LPVOID aAddress, SIZE_T aSize,
+<span class="lineNum">      88 </span>            :                                   DWORD aAllocationType, DWORD aProtect);
+<span class="lineNum">      89 </span>            : 
+<span class="lineNum">      90 </span>            : void* (WINAPI* sMapViewOfFileOrig)(HANDLE aFileMappingObject,
+<span class="lineNum">      91 </span>            :                                    DWORD aDesiredAccess, DWORD aFileOffsetHigh,
+<span class="lineNum">      92 </span>            :                                    DWORD aFileOffsetLow, SIZE_T aNumBytesToMap);
+<span class="lineNum">      93 </span>            : 
+<span class="lineNum">      94 </span>            : HBITMAP(WINAPI* sCreateDIBSectionOrig)(HDC aDC, const BITMAPINFO* aBitmapInfo,
+<span class="lineNum">      95 </span>            :                                        UINT aUsage, VOID** aBits,
+<span class="lineNum">      96 </span>            :                                        HANDLE aSection, DWORD aOffset);
+<span class="lineNum">      97 </span>            : 
+<span class="lineNum">      98 </span>            : /**
+<span class="lineNum">      99 </span>            :  * Fire a memory pressure event if we were not under memory pressure yet, or
+<span class="lineNum">     100 </span>            :  * fire an ongoing one if it's been long enough since the last one we
+<span class="lineNum">     101 </span>            :  * fired.
+<span class="lineNum">     102 </span>            :  */
+<span class="lineNum">     103 </span>            : bool
+<span class="lineNum">     104 </span>            : MaybeScheduleMemoryPressureEvent()
+<span class="lineNum">     105 </span>            : {
+<span class="lineNum">     106 </span>            :   MemoryPressureState state = MemPressure_New;
+<span class="lineNum">     107 </span>            :   PRIntervalTime now = PR_IntervalNow();
+<span class="lineNum">     108 </span>            : 
+<span class="lineNum">     109 </span>            :   // If this interval rolls over, we may fire an extra memory pressure
+<span class="lineNum">     110 </span>            :   // event, but that's not a big deal.
+<span class="lineNum">     111 </span>            :   PRIntervalTime interval = now - sLastLowMemoryNotificationTime;
+<span class="lineNum">     112 </span>            :   if (sUnderMemoryPressure) {
+<span class="lineNum">     113 </span>            :     if (PR_IntervalToMilliseconds(interval) &lt;
+<span class="lineNum">     114 </span>            :         kLowMemoryNotificationIntervalMS) {
+<span class="lineNum">     115 </span>            :       return false;
+<span class="lineNum">     116 </span>            :     }
+<span class="lineNum">     117 </span>            : 
+<span class="lineNum">     118 </span>            :     state = MemPressure_Ongoing;
+<span class="lineNum">     119 </span>            :   }
+<span class="lineNum">     120 </span>            : 
+<span class="lineNum">     121 </span>            :   // There's a bit of a race condition here, since an interval may be a
+<span class="lineNum">     122 </span>            :   // 64-bit number, and 64-bit writes aren't atomic on x86-32.  But let's
+<span class="lineNum">     123 </span>            :   // not worry about it -- the races only happen when we're already
+<span class="lineNum">     124 </span>            :   // experiencing memory pressure and firing notifications, so the worst
+<span class="lineNum">     125 </span>            :   // thing that can happen is that we fire two notifications when we
+<span class="lineNum">     126 </span>            :   // should have fired only one.
+<span class="lineNum">     127 </span>            :   sUnderMemoryPressure = true;
+<span class="lineNum">     128 </span>            :   sLastLowMemoryNotificationTime = now;
+<span class="lineNum">     129 </span>            : 
+<span class="lineNum">     130 </span>            :   NS_DispatchEventualMemoryPressure(state);
+<span class="lineNum">     131 </span>            :   return true;
+<span class="lineNum">     132 </span>            : }
+<span class="lineNum">     133 </span>            : 
+<span class="lineNum">     134 </span>            : static bool
+<span class="lineNum">     135 </span>            : CheckLowMemory(DWORDLONG available, size_t threshold,
+<span class="lineNum">     136 </span>            :                Atomic&lt;uint32_t, MemoryOrdering::Relaxed&gt;&amp; counter)
+<span class="lineNum">     137 </span>            : {
+<span class="lineNum">     138 </span>            :   if (available &lt; threshold) {
+<span class="lineNum">     139 </span>            :     if (MaybeScheduleMemoryPressureEvent()) {
+<span class="lineNum">     140 </span>            :       counter++;
+<span class="lineNum">     141 </span>            :     }
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            :     return true;
+<span class="lineNum">     144 </span>            :   }
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            :   return false;
+<span class="lineNum">     147 </span>            : }
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            : void
+<span class="lineNum">     150 </span>            : CheckMemAvailable()
+<span class="lineNum">     151 </span>            : {
+<span class="lineNum">     152 </span>            :   if (!sHooksActive) {
+<span class="lineNum">     153 </span>            :     return;
+<span class="lineNum">     154 </span>            :   }
+<span class="lineNum">     155 </span>            : 
+<span class="lineNum">     156 </span>            :   MEMORYSTATUSEX stat;
+<span class="lineNum">     157 </span>            :   stat.dwLength = sizeof(stat);
+<span class="lineNum">     158 </span>            :   bool success = GlobalMemoryStatusEx(&amp;stat);
+<span class="lineNum">     159 </span>            : 
+<span class="lineNum">     160 </span>            :   if (success) {
+<span class="lineNum">     161 </span>            :     bool lowMemory = CheckLowMemory(stat.ullAvailVirtual,
+<span class="lineNum">     162 </span>            :                                     kLowVirtualMemoryThreshold,
+<span class="lineNum">     163 </span>            :                                     sNumLowVirtualMemEvents);
+<span class="lineNum">     164 </span>            :     lowMemory |= CheckLowMemory(stat.ullAvailPageFile, kLowCommitSpaceThreshold,
+<span class="lineNum">     165 </span>            :                                 sNumLowCommitSpaceEvents);
+<span class="lineNum">     166 </span>            :     lowMemory |= CheckLowMemory(stat.ullAvailPhys, kLowPhysicalMemoryThreshold,
+<span class="lineNum">     167 </span>            :                                 sNumLowPhysicalMemEvents);
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            :     sUnderMemoryPressure = lowMemory;
+<span class="lineNum">     170 </span>            :   }
+<span class="lineNum">     171 </span>            : }
+<span class="lineNum">     172 </span>            : 
+<span class="lineNum">     173 </span>            : LPVOID WINAPI
+<span class="lineNum">     174 </span>            : VirtualAllocHook(LPVOID aAddress, SIZE_T aSize,
+<span class="lineNum">     175 </span>            :                  DWORD aAllocationType,
+<span class="lineNum">     176 </span>            :                  DWORD aProtect)
+<span class="lineNum">     177 </span>            : {
+<span class="lineNum">     178 </span>            :   // It's tempting to see whether we have enough free virtual address space for
+<span class="lineNum">     179 </span>            :   // this allocation and, if we don't, synchronously fire a low-memory
+<span class="lineNum">     180 </span>            :   // notification to free some before we allocate.
+<span class="lineNum">     181 </span>            :   //
+<span class="lineNum">     182 </span>            :   // Unfortunately that doesn't work, principally because code doesn't expect a
+<span class="lineNum">     183 </span>            :   // call to malloc could trigger a GC (or call into the other routines which
+<span class="lineNum">     184 </span>            :   // are triggered by a low-memory notification).
+<span class="lineNum">     185 </span>            :   //
+<span class="lineNum">     186 </span>            :   // I think the best we can do here is try to allocate the memory and check
+<span class="lineNum">     187 </span>            :   // afterwards how much free virtual address space we have.  If we're running
+<span class="lineNum">     188 </span>            :   // low, we schedule a low-memory notification to run as soon as possible.
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span>            :   LPVOID result = sVirtualAllocOrig(aAddress, aSize, aAllocationType, aProtect);
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :   // Don't call CheckMemAvailable for MEM_RESERVE if we're not tracking low
+<span class="lineNum">     193 </span>            :   // virtual memory.  Similarly, don't call CheckMemAvailable for MEM_COMMIT if
+<span class="lineNum">     194 </span>            :   // we're not tracking low physical memory.
+<span class="lineNum">     195 </span>            :   if ((kLowVirtualMemoryThreshold != 0 &amp;&amp; aAllocationType &amp; MEM_RESERVE) ||
+<span class="lineNum">     196 </span>            :       ((kLowCommitSpaceThreshold != 0 || kLowPhysicalMemoryThreshold != 0) &amp;&amp;
+<span class="lineNum">     197 </span>            :        aAllocationType &amp; MEM_COMMIT)) {
+<span class="lineNum">     198 </span>            :     CheckMemAvailable();
+<span class="lineNum">     199 </span>            :   }
+<span class="lineNum">     200 </span>            : 
+<span class="lineNum">     201 </span>            :   return result;
+<span class="lineNum">     202 </span>            : }
+<span class="lineNum">     203 </span>            : 
+<span class="lineNum">     204 </span>            : LPVOID WINAPI
+<span class="lineNum">     205 </span>            : MapViewOfFileHook(HANDLE aFileMappingObject,
+<span class="lineNum">     206 </span>            :                   DWORD aDesiredAccess,
+<span class="lineNum">     207 </span>            :                   DWORD aFileOffsetHigh,
+<span class="lineNum">     208 </span>            :                   DWORD aFileOffsetLow,
+<span class="lineNum">     209 </span>            :                   SIZE_T aNumBytesToMap)
+<span class="lineNum">     210 </span>            : {
+<span class="lineNum">     211 </span>            :   LPVOID result = sMapViewOfFileOrig(aFileMappingObject, aDesiredAccess,
+<span class="lineNum">     212 </span>            :                                      aFileOffsetHigh, aFileOffsetLow,
+<span class="lineNum">     213 </span>            :                                      aNumBytesToMap);
+<span class="lineNum">     214 </span>            :   CheckMemAvailable();
+<span class="lineNum">     215 </span>            :   return result;
+<span class="lineNum">     216 </span>            : }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            : HBITMAP WINAPI
+<span class="lineNum">     219 </span>            : CreateDIBSectionHook(HDC aDC,
+<span class="lineNum">     220 </span>            :                      const BITMAPINFO* aBitmapInfo,
+<span class="lineNum">     221 </span>            :                      UINT aUsage,
+<span class="lineNum">     222 </span>            :                      VOID** aBits,
+<span class="lineNum">     223 </span>            :                      HANDLE aSection,
+<span class="lineNum">     224 </span>            :                      DWORD aOffset)
+<span class="lineNum">     225 </span>            : {
+<span class="lineNum">     226 </span>            :   // There are a lot of calls to CreateDIBSection, so we make some effort not
+<span class="lineNum">     227 </span>            :   // to CheckMemAvailable() for calls to CreateDIBSection which allocate only
+<span class="lineNum">     228 </span>            :   // a small amount of memory.
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span>            :   // If aSection is non-null, CreateDIBSection won't allocate any new memory.
+<span class="lineNum">     231 </span>            :   bool doCheck = false;
+<span class="lineNum">     232 </span>            :   if (sHooksActive &amp;&amp; !aSection &amp;&amp; aBitmapInfo) {
+<span class="lineNum">     233 </span>            :     uint16_t bitCount = aBitmapInfo-&gt;bmiHeader.biBitCount;
+<span class="lineNum">     234 </span>            :     if (bitCount == 0) {
+<span class="lineNum">     235 </span>            :       // MSDN says bitCount == 0 means that it figures out how many bits each
+<span class="lineNum">     236 </span>            :       // pixel gets by examining the corresponding JPEG or PNG data.  We'll just
+<span class="lineNum">     237 </span>            :       // assume the worst.
+<span class="lineNum">     238 </span>            :       bitCount = 32;
+<span class="lineNum">     239 </span>            :     }
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span>            :     // |size| contains the expected allocation size in *bits*.  Height may be
+<span class="lineNum">     242 </span>            :     // negative (indicating the direction the DIB is drawn in), so we take the
+<span class="lineNum">     243 </span>            :     // absolute value.
+<span class="lineNum">     244 </span>            :     int64_t size = bitCount * aBitmapInfo-&gt;bmiHeader.biWidth *
+<span class="lineNum">     245 </span>            :                               aBitmapInfo-&gt;bmiHeader.biHeight;
+<span class="lineNum">     246 </span>            :     if (size &lt; 0) {
+<span class="lineNum">     247 </span>            :       size *= -1;
+<span class="lineNum">     248 </span>            :     }
+<span class="lineNum">     249 </span>            : 
+<span class="lineNum">     250 </span>            :     // If we're allocating more than 1MB, check how much memory is left after
+<span class="lineNum">     251 </span>            :     // the allocation.
+<span class="lineNum">     252 </span>            :     if (size &gt; 1024 * 1024 * 8) {
+<span class="lineNum">     253 </span>            :       doCheck = true;
+<span class="lineNum">     254 </span>            :     }
+<span class="lineNum">     255 </span>            :   }
+<span class="lineNum">     256 </span>            : 
+<span class="lineNum">     257 </span>            :   HBITMAP result = sCreateDIBSectionOrig(aDC, aBitmapInfo, aUsage, aBits,
+<span class="lineNum">     258 </span>            :                                          aSection, aOffset);
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span>            :   if (doCheck) {
+<span class="lineNum">     261 </span>            :     CheckMemAvailable();
+<span class="lineNum">     262 </span>            :   }
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            :   return result;
+<span class="lineNum">     265 </span>            : }
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span>            : #else
+<span class="lineNum">     268 </span>            : 
+<span class="lineNum">     269 </span>            : class nsAvailableMemoryWatcher final : public nsIObserver,
+<span class="lineNum">     270 </span>            :                                        public nsITimerCallback
+<span class="lineNum">     271 </span>            : {
+<span class="lineNum">     272 </span>            : public:
+<span class="lineNum">     273 </span>            :   NS_DECL_ISUPPORTS
+<span class="lineNum">     274 </span>            :   NS_DECL_NSIOBSERVER
+<span class="lineNum">     275 </span>            :   NS_DECL_NSITIMERCALLBACK
+<span class="lineNum">     276 </span>            : 
+<span class="lineNum">     277 </span>            :   nsresult Init();
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            : private:
+<span class="lineNum">     280 </span>            :   // Poll the amount of free memory at this rate.
+<span class="lineNum">     281 </span>            :   static const uint32_t kPollingIntervalMS = 1000;
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            :   // Observer topics we subscribe to
+<span class="lineNum">     284 </span>            :   static const char* const kObserverTopics[];
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span>            :   static bool IsVirtualMemoryLow(const MEMORYSTATUSEX&amp; aStat);
+<span class="lineNum">     287 </span>            :   static bool IsCommitSpaceLow(const MEMORYSTATUSEX&amp; aStat);
+<span class="lineNum">     288 </span>            :   static bool IsPhysicalMemoryLow(const MEMORYSTATUSEX&amp; aStat);
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span>            :   ~nsAvailableMemoryWatcher() {};
+<span class="lineNum">     291 </span>            :   void AdjustPollingInterval(const bool aLowMemory);
+<span class="lineNum">     292 </span>            :   void SendMemoryPressureEvent();
+<span class="lineNum">     293 </span>            :   void Shutdown();
+<span class="lineNum">     294 </span>            : 
+<span class="lineNum">     295 </span>            :   nsCOMPtr&lt;nsITimer&gt; mTimer;
+<span class="lineNum">     296 </span>            :   bool mUnderMemoryPressure;
+<span class="lineNum">     297 </span>            : };
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span>            : const char* const nsAvailableMemoryWatcher::kObserverTopics[] = {
+<span class="lineNum">     300 </span>            :   &quot;quit-application&quot;,
+<span class="lineNum">     301 </span>            :   &quot;user-interaction-active&quot;,
+<span class="lineNum">     302 </span>            :   &quot;user-interaction-inactive&quot;,
+<span class="lineNum">     303 </span>            : };
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span>            : NS_IMPL_ISUPPORTS(nsAvailableMemoryWatcher, nsIObserver, nsITimerCallback)
+<span class="lineNum">     306 </span>            : 
+<span class="lineNum">     307 </span>            : nsresult
+<span class="lineNum">     308 </span>            : nsAvailableMemoryWatcher::Init()
+<span class="lineNum">     309 </span>            : {
+<span class="lineNum">     310 </span>            :   mTimer = NS_NewTimer();
+<span class="lineNum">     311 </span>            : 
+<span class="lineNum">     312 </span>            :   nsCOMPtr&lt;nsIObserverService&gt; observerService = services::GetObserverService();
+<span class="lineNum">     313 </span>            :   MOZ_ASSERT(observerService);
+<span class="lineNum">     314 </span>            : 
+<span class="lineNum">     315 </span>            :   for (auto topic : kObserverTopics) {
+<span class="lineNum">     316 </span>            :     nsresult rv = observerService-&gt;AddObserver(this, topic,
+<span class="lineNum">     317 </span>            :                                                /* ownsWeak */ false);
+<span class="lineNum">     318 </span>            :     NS_ENSURE_SUCCESS(rv, rv);
+<span class="lineNum">     319 </span>            :   }
+<span class="lineNum">     320 </span>            : 
+<span class="lineNum">     321 </span>            :   MOZ_TRY(mTimer-&gt;InitWithCallback(this, kPollingIntervalMS,
+<span class="lineNum">     322 </span>            :                                    nsITimer::TYPE_REPEATING_SLACK));
+<span class="lineNum">     323 </span>            :   return NS_OK;
+<span class="lineNum">     324 </span>            : }
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span>            : void
+<span class="lineNum">     327 </span>            : nsAvailableMemoryWatcher::Shutdown()
+<span class="lineNum">     328 </span>            : {
+<span class="lineNum">     329 </span>            :   nsCOMPtr&lt;nsIObserverService&gt; observerService = services::GetObserverService();
+<span class="lineNum">     330 </span>            :   MOZ_ASSERT(observerService);
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span>            :   for (auto topic : kObserverTopics) {
+<span class="lineNum">     333 </span>            :     Unused &lt;&lt; observerService-&gt;RemoveObserver(this, topic);
+<span class="lineNum">     334 </span>            :   }
+<span class="lineNum">     335 </span>            : 
+<span class="lineNum">     336 </span>            :   if (mTimer) {
+<span class="lineNum">     337 </span>            :     mTimer-&gt;Cancel();
+<span class="lineNum">     338 </span>            :     mTimer = nullptr;
+<span class="lineNum">     339 </span>            :   }
+<span class="lineNum">     340 </span>            : }
+<span class="lineNum">     341 </span>            : 
+<span class="lineNum">     342 </span>            : /* static */ bool
+<span class="lineNum">     343 </span>            : nsAvailableMemoryWatcher::IsVirtualMemoryLow(const MEMORYSTATUSEX&amp; aStat)
+<span class="lineNum">     344 </span>            : {
+<span class="lineNum">     345 </span>            :   if ((kLowVirtualMemoryThreshold != 0) &amp;&amp;
+<span class="lineNum">     346 </span>            :       (aStat.ullAvailVirtual &lt; kLowVirtualMemoryThreshold)) {
+<span class="lineNum">     347 </span>            :     sNumLowVirtualMemEvents++;
+<span class="lineNum">     348 </span>            :     return true;
+<span class="lineNum">     349 </span>            :   }
+<span class="lineNum">     350 </span>            : 
+<span class="lineNum">     351 </span>            :   return false;
+<span class="lineNum">     352 </span>            : }
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span>            : /* static */ bool
+<span class="lineNum">     355 </span>            : nsAvailableMemoryWatcher::IsCommitSpaceLow(const MEMORYSTATUSEX&amp; aStat)
+<span class="lineNum">     356 </span>            : {
+<span class="lineNum">     357 </span>            :   if ((kLowCommitSpaceThreshold != 0) &amp;&amp;
+<span class="lineNum">     358 </span>            :       (aStat.ullAvailPageFile &lt; kLowCommitSpaceThreshold)) {
+<span class="lineNum">     359 </span>            :     sNumLowCommitSpaceEvents++;
+<span class="lineNum">     360 </span>            :     CrashReporter::AnnotateCrashReport(
+<span class="lineNum">     361 </span>            :       NS_LITERAL_CSTRING(&quot;LowCommitSpaceEvents&quot;),
+<span class="lineNum">     362 </span>            :       nsPrintfCString(&quot;%&quot; PRIu32, uint32_t(sNumLowCommitSpaceEvents)));
+<span class="lineNum">     363 </span>            :     return true;
+<span class="lineNum">     364 </span>            :   }
+<span class="lineNum">     365 </span>            : 
+<span class="lineNum">     366 </span>            :   return false;
+<span class="lineNum">     367 </span>            : }
+<span class="lineNum">     368 </span>            : 
+<span class="lineNum">     369 </span>            : /* static */ bool
+<span class="lineNum">     370 </span>            : nsAvailableMemoryWatcher::IsPhysicalMemoryLow(const MEMORYSTATUSEX&amp; aStat)
+<span class="lineNum">     371 </span>            : {
+<span class="lineNum">     372 </span>            :   if ((kLowPhysicalMemoryThreshold != 0) &amp;&amp;
+<span class="lineNum">     373 </span>            :       (aStat.ullAvailPhys &lt; kLowPhysicalMemoryThreshold)) {
+<span class="lineNum">     374 </span>            :     sNumLowPhysicalMemEvents++;
+<span class="lineNum">     375 </span>            :     return true;
+<span class="lineNum">     376 </span>            :   }
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span>            :   return false;
+<span class="lineNum">     379 </span>            : }
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span>            : void
+<span class="lineNum">     382 </span>            : nsAvailableMemoryWatcher::SendMemoryPressureEvent()
+<span class="lineNum">     383 </span>            : {
+<span class="lineNum">     384 </span>            :     MemoryPressureState state = mUnderMemoryPressure ? MemPressure_Ongoing
+<span class="lineNum">     385 </span>            :                                                      : MemPressure_New;
+<span class="lineNum">     386 </span>            :     NS_DispatchEventualMemoryPressure(state);
+<span class="lineNum">     387 </span>            : }
+<span class="lineNum">     388 </span>            : 
+<span class="lineNum">     389 </span>            : void
+<span class="lineNum">     390 </span>            : nsAvailableMemoryWatcher::AdjustPollingInterval(const bool aLowMemory)
+<span class="lineNum">     391 </span>            : {
+<span class="lineNum">     392 </span>            :   if (aLowMemory) {
+<span class="lineNum">     393 </span>            :     // We entered a low-memory state, wait for a longer interval before polling
+<span class="lineNum">     394 </span>            :     // again as there's no point in rapidly sending further notifications.
+<span class="lineNum">     395 </span>            :     mTimer-&gt;SetDelay(kLowMemoryNotificationIntervalMS);
+<span class="lineNum">     396 </span>            :   } else if (mUnderMemoryPressure) {
+<span class="lineNum">     397 </span>            :     // We were under memory pressure but we're not anymore, resume polling at
+<span class="lineNum">     398 </span>            :     // a faster pace.
+<span class="lineNum">     399 </span>            :     mTimer-&gt;SetDelay(kPollingIntervalMS);
+<span class="lineNum">     400 </span>            :   }
+<span class="lineNum">     401 </span>            : }
+<span class="lineNum">     402 </span>            : 
+<span class="lineNum">     403 </span>            : // Timer callback, polls memory stats to detect low-memory conditions. This
+<span class="lineNum">     404 </span>            : // will send memory-pressure events if memory is running low and adjust the
+<span class="lineNum">     405 </span>            : // polling interval accordingly.
+<span class="lineNum">     406 </span>            : NS_IMETHODIMP
+<span class="lineNum">     407 </span>            : nsAvailableMemoryWatcher::Notify(nsITimer* aTimer)
+<span class="lineNum">     408 </span>            : {
+<span class="lineNum">     409 </span>            :   MEMORYSTATUSEX stat;
+<span class="lineNum">     410 </span>            :   stat.dwLength = sizeof(stat);
+<span class="lineNum">     411 </span>            :   bool success = GlobalMemoryStatusEx(&amp;stat);
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span>            :   if (success) {
+<span class="lineNum">     414 </span>            :     bool lowMemory =
+<span class="lineNum">     415 </span>            :       IsVirtualMemoryLow(stat) ||
+<span class="lineNum">     416 </span>            :       IsCommitSpaceLow(stat) ||
+<span class="lineNum">     417 </span>            :       IsPhysicalMemoryLow(stat);
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span>            :     if (lowMemory) {
+<span class="lineNum">     420 </span>            :       SendMemoryPressureEvent();
+<span class="lineNum">     421 </span>            :     }
+<span class="lineNum">     422 </span>            : 
+<span class="lineNum">     423 </span>            :     AdjustPollingInterval(lowMemory);
+<span class="lineNum">     424 </span>            :     mUnderMemoryPressure = lowMemory;
+<span class="lineNum">     425 </span>            :   }
+<span class="lineNum">     426 </span>            : 
+<span class="lineNum">     427 </span>            :   return NS_OK;
+<span class="lineNum">     428 </span>            : }
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span>            : // Observer service callback, used to stop the polling timer when the user
+<span class="lineNum">     431 </span>            : // stops interacting with Firefox and resuming it when they interact again.
+<span class="lineNum">     432 </span>            : // Also used to shut down the service if the application is quitting.
+<span class="lineNum">     433 </span>            : NS_IMETHODIMP
+<span class="lineNum">     434 </span>            : nsAvailableMemoryWatcher::Observe(nsISupports* aSubject, const char* aTopic,
+<span class="lineNum">     435 </span>            :                                   const char16_t* aData)
+<span class="lineNum">     436 </span>            : {
+<span class="lineNum">     437 </span>            :   if (strcmp(aTopic, &quot;quit-application&quot;) == 0) {
+<span class="lineNum">     438 </span>            :     Shutdown();
+<span class="lineNum">     439 </span>            :   } else if (strcmp(aTopic, &quot;user-interaction-inactive&quot;) == 0) {
+<span class="lineNum">     440 </span>            :     mTimer-&gt;Cancel();
+<span class="lineNum">     441 </span>            :   } else if (strcmp(aTopic, &quot;user-interaction-active&quot;) == 0) {
+<span class="lineNum">     442 </span>            :     mTimer-&gt;InitWithCallback(this, kPollingIntervalMS,
+<span class="lineNum">     443 </span>            :                              nsITimer::TYPE_REPEATING_SLACK);
+<span class="lineNum">     444 </span>            :   } else {
+<span class="lineNum">     445 </span>            :     MOZ_ASSERT_UNREACHABLE(&quot;Unknown topic&quot;);
+<span class="lineNum">     446 </span>            :   }
+<span class="lineNum">     447 </span>            : 
+<span class="lineNum">     448 </span>            :   return NS_OK;
+<span class="lineNum">     449 </span>            : }
+<span class="lineNum">     450 </span>            : 
+<span class="lineNum">     451 </span>            : #endif // !defined(HAVE_64BIT_BUILD)
+<span class="lineNum">     452 </span>            : 
+<span class="lineNum">     453 </span>            : static int64_t
+<span class="lineNum">     454 </span>            : LowMemoryEventsVirtualDistinguishedAmount()
+<span class="lineNum">     455 </span>            : {
+<span class="lineNum">     456 </span>            :   return sNumLowVirtualMemEvents;
+<span class="lineNum">     457 </span>            : }
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span>            : static int64_t
+<span class="lineNum">     460 </span>            : LowMemoryEventsCommitSpaceDistinguishedAmount()
+<span class="lineNum">     461 </span>            : {
+<span class="lineNum">     462 </span>            :   return sNumLowCommitSpaceEvents;
+<span class="lineNum">     463 </span>            : }
+<span class="lineNum">     464 </span>            : 
+<span class="lineNum">     465 </span>            : static int64_t
+<span class="lineNum">     466 </span>            : LowMemoryEventsPhysicalDistinguishedAmount()
+<span class="lineNum">     467 </span>            : {
+<span class="lineNum">     468 </span>            :   return sNumLowPhysicalMemEvents;
+<span class="lineNum">     469 </span>            : }
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span>            : class LowEventsReporter final : public nsIMemoryReporter
+<span class="lineNum">     472 </span>            : {
+<span class="lineNum">     473 </span>            :   ~LowEventsReporter() {}
+<span class="lineNum">     474 </span>            : 
+<span class="lineNum">     475 </span>            : public:
+<span class="lineNum">     476 </span>            :   NS_DECL_ISUPPORTS
+<span class="lineNum">     477 </span>            : 
+<span class="lineNum">     478 </span>            :   NS_IMETHOD CollectReports(nsIHandleReportCallback* aHandleReport,
+<span class="lineNum">     479 </span>            :                             nsISupports* aData, bool aAnonymize) override
+<span class="lineNum">     480 </span>            :   {
+<span class="lineNum">     481 </span>            :     MOZ_COLLECT_REPORT(
+<span class="lineNum">     482 </span>            :       &quot;low-memory-events/virtual&quot;, KIND_OTHER, UNITS_COUNT_CUMULATIVE,
+<span class="lineNum">     483 </span>            :       LowMemoryEventsVirtualDistinguishedAmount(),
+<span class="lineNum">     484 </span>            : &quot;Number of low-virtual-memory events fired since startup. We fire such an &quot;
+<span class="lineNum">     485 </span>            : &quot;event if we notice there is less than memory.low_virtual_mem_threshold_mb of &quot;
+<span class="lineNum">     486 </span>            : &quot;virtual address space available (if zero, this behavior is disabled). The &quot;
+<span class="lineNum">     487 </span>            : &quot;process will probably crash if it runs out of virtual address space, so &quot;
+<span class="lineNum">     488 </span>            : &quot;this event is dire.&quot;);
+<span class="lineNum">     489 </span>            : 
+<span class="lineNum">     490 </span>            :     MOZ_COLLECT_REPORT(
+<span class="lineNum">     491 </span>            :       &quot;low-memory-events/commit-space&quot;, KIND_OTHER, UNITS_COUNT_CUMULATIVE,
+<span class="lineNum">     492 </span>            :       LowMemoryEventsCommitSpaceDistinguishedAmount(),
+<span class="lineNum">     493 </span>            : &quot;Number of low-commit-space events fired since startup. We fire such an &quot;
+<span class="lineNum">     494 </span>            : &quot;event if we notice there is less than memory.low_commit_space_threshold_mb of &quot;
+<span class="lineNum">     495 </span>            : &quot;commit space available (if zero, this behavior is disabled). Windows will &quot;
+<span class="lineNum">     496 </span>            : &quot;likely kill the process if it runs out of commit space, so this event is &quot;
+<span class="lineNum">     497 </span>            : &quot;dire.&quot;);
+<span class="lineNum">     498 </span>            : 
+<span class="lineNum">     499 </span>            :     MOZ_COLLECT_REPORT(
+<span class="lineNum">     500 </span>            :       &quot;low-memory-events/physical&quot;, KIND_OTHER, UNITS_COUNT_CUMULATIVE,
+<span class="lineNum">     501 </span>            :       LowMemoryEventsPhysicalDistinguishedAmount(),
+<span class="lineNum">     502 </span>            : &quot;Number of low-physical-memory events fired since startup. We fire such an &quot;
+<span class="lineNum">     503 </span>            : &quot;event if we notice there is less than memory.low_physical_memory_threshold_mb &quot;
+<span class="lineNum">     504 </span>            : &quot;of physical memory available (if zero, this behavior is disabled).  The &quot;
+<span class="lineNum">     505 </span>            : &quot;machine will start to page if it runs out of physical memory.  This may &quot;
+<span class="lineNum">     506 </span>            : &quot;cause it to run slowly, but it shouldn't cause it to crash.&quot;);
+<span class="lineNum">     507 </span>            : 
+<span class="lineNum">     508 </span>            :     return NS_OK;
+<span class="lineNum">     509 </span>            :   }
+<span class="lineNum">     510 </span>            : };
+<span class="lineNum">     511 </span>            : NS_IMPL_ISUPPORTS(LowEventsReporter, nsIMemoryReporter)
+<span class="lineNum">     512 </span>            : 
+<span class="lineNum">     513 </span>            : #endif // defined(XP_WIN)
+<span class="lineNum">     514 </span>            : 
+<span class="lineNum">     515 </span>            : /**
+<span class="lineNum">     516 </span>            :  * This runnable is executed in response to a memory-pressure event; we spin
+<span class="lineNum">     517 </span>            :  * the event-loop when receiving the memory-pressure event in the hope that
+<span class="lineNum">     518 </span>            :  * other observers will synchronously free some memory that we'll be able to
+<span class="lineNum">     519 </span>            :  * purge here.
+<span class="lineNum">     520 </span>            :  */
+<span class="lineNum">     521 </span><span class="lineNoCov">          0 : class nsJemallocFreeDirtyPagesRunnable final : public nsIRunnable</span>
+<span class="lineNum">     522 </span>            : {
+<span class="lineNum">     523 </span><span class="lineNoCov">          0 :   ~nsJemallocFreeDirtyPagesRunnable() {}</span>
+<span class="lineNum">     524 </span>            : 
+<span class="lineNum">     525 </span>            : public:
+<span class="lineNum">     526 </span>            :   NS_DECL_ISUPPORTS
+<span class="lineNum">     527 </span>            :   NS_DECL_NSIRUNNABLE
+<span class="lineNum">     528 </span>            : };
+<span class="lineNum">     529 </span>            : 
+<span class="lineNum">     530 </span><span class="lineNoCov">          0 : NS_IMPL_ISUPPORTS(nsJemallocFreeDirtyPagesRunnable, nsIRunnable)</span>
+<span class="lineNum">     531 </span>            : 
+<span class="lineNum">     532 </span>            : NS_IMETHODIMP
+<span class="lineNum">     533 </span><span class="lineNoCov">          0 : nsJemallocFreeDirtyPagesRunnable::Run()</span>
+<span class="lineNum">     534 </span>            : {
+<span class="lineNum">     535 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(NS_IsMainThread());</span>
+<span class="lineNum">     536 </span>            : 
+<span class="lineNum">     537 </span>            : #if defined(MOZ_MEMORY)
+<span class="lineNum">     538 </span><span class="lineNoCov">          0 :   jemalloc_free_dirty_pages();</span>
+<span class="lineNum">     539 </span>            : #endif
+<span class="lineNum">     540 </span>            : 
+<span class="lineNum">     541 </span><span class="lineNoCov">          0 :   return NS_OK;</span>
+<span class="lineNum">     542 </span>            : }
+<span class="lineNum">     543 </span>            : 
+<span class="lineNum">     544 </span>            : /**
+<span class="lineNum">     545 </span>            :  * The memory pressure watcher is used for listening to memory-pressure events
+<span class="lineNum">     546 </span>            :  * and reacting upon them. We use one instance per process currently only for
+<span class="lineNum">     547 </span>            :  * cleaning up dirty unused pages held by jemalloc.
+<span class="lineNum">     548 </span>            :  */
+<span class="lineNum">     549 </span><span class="lineCov">          3 : class nsMemoryPressureWatcher final : public nsIObserver</span>
+<span class="lineNum">     550 </span>            : {
+<span class="lineNum">     551 </span><span class="lineNoCov">          0 :   ~nsMemoryPressureWatcher() {}</span>
+<span class="lineNum">     552 </span>            : 
+<span class="lineNum">     553 </span>            : public:
+<span class="lineNum">     554 </span>            :   NS_DECL_ISUPPORTS
+<span class="lineNum">     555 </span>            :   NS_DECL_NSIOBSERVER
+<span class="lineNum">     556 </span>            : 
+<span class="lineNum">     557 </span>            :   void Init();
+<span class="lineNum">     558 </span>            : };
+<span class="lineNum">     559 </span>            : 
+<span class="lineNum">     560 </span><span class="lineCov">         12 : NS_IMPL_ISUPPORTS(nsMemoryPressureWatcher, nsIObserver)</span>
+<span class="lineNum">     561 </span>            : 
+<span class="lineNum">     562 </span>            : /**
+<span class="lineNum">     563 </span>            :  * Initialize and subscribe to the memory-pressure events. We subscribe to the
+<span class="lineNum">     564 </span>            :  * observer service in this method and not in the constructor because we need
+<span class="lineNum">     565 </span>            :  * to hold a strong reference to 'this' before calling the observer service.
+<span class="lineNum">     566 </span>            :  */
+<span class="lineNum">     567 </span>            : void
+<span class="lineNum">     568 </span><span class="lineNoCov">          0 : nsMemoryPressureWatcher::Init()</span>
+<span class="lineNum">     569 </span>            : {
+<span class="lineNum">     570 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIObserverService&gt; os = services::GetObserverService();</span>
+<span class="lineNum">     571 </span>            : 
+<span class="lineNum">     572 </span><span class="lineCov">          1 :   if (os) {</span>
+<span class="lineNum">     573 </span><span class="lineCov">          1 :     os-&gt;AddObserver(this, &quot;memory-pressure&quot;, /* ownsWeak */ false);</span>
+<span class="lineNum">     574 </span>            :   }
+<span class="lineNum">     575 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">     576 </span>            : 
+<span class="lineNum">     577 </span>            : /**
+<span class="lineNum">     578 </span>            :  * Reacts to all types of memory-pressure events, launches a runnable to
+<span class="lineNum">     579 </span>            :  * free dirty pages held by jemalloc.
+<span class="lineNum">     580 </span>            :  */
+<span class="lineNum">     581 </span>            : NS_IMETHODIMP
+<span class="lineNum">     582 </span><span class="lineNoCov">          0 : nsMemoryPressureWatcher::Observe(nsISupports* aSubject, const char* aTopic,</span>
+<span class="lineNum">     583 </span>            :                                  const char16_t* aData)
+<span class="lineNum">     584 </span>            : {
+<span class="lineNum">     585 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(!strcmp(aTopic, &quot;memory-pressure&quot;), &quot;Unknown topic&quot;);</span>
+<span class="lineNum">     586 </span>            : 
+<span class="lineNum">     587 </span><span class="lineNoCov">          0 :   nsCOMPtr&lt;nsIRunnable&gt; runnable = new nsJemallocFreeDirtyPagesRunnable();</span>
+<span class="lineNum">     588 </span>            : 
+<span class="lineNum">     589 </span><span class="lineNoCov">          0 :   NS_DispatchToMainThread(runnable);</span>
+<span class="lineNum">     590 </span>            : 
+<span class="lineNum">     591 </span><span class="lineNoCov">          0 :   return NS_OK;</span>
+<span class="lineNum">     592 </span>            : }
+<span class="lineNum">     593 </span>            : 
+<span class="lineNum">     594 </span>            : } // namespace
+<span class="lineNum">     595 </span>            : 
+<span class="lineNum">     596 </span>            : namespace mozilla {
+<span class="lineNum">     597 </span>            : namespace AvailableMemoryTracker {
+<span class="lineNum">     598 </span>            : 
+<span class="lineNum">     599 </span>            : void
+<span class="lineNum">     600 </span><span class="lineCov">          1 : Activate()</span>
+<span class="lineNum">     601 </span>            : {
+<span class="lineNum">     602 </span>            : #if defined(XP_WIN) &amp;&amp; !defined(HAVE_64BIT_BUILD)
+<span class="lineNum">     603 </span>            :   MOZ_ASSERT(sInitialized);
+<span class="lineNum">     604 </span>            :   MOZ_ASSERT(!sHooksActive);
+<span class="lineNum">     605 </span>            : 
+<span class="lineNum">     606 </span>            :   RegisterStrongMemoryReporter(new LowEventsReporter());
+<span class="lineNum">     607 </span>            :   RegisterLowMemoryEventsVirtualDistinguishedAmount(
+<span class="lineNum">     608 </span>            :     LowMemoryEventsVirtualDistinguishedAmount);
+<span class="lineNum">     609 </span>            :   RegisterLowMemoryEventsPhysicalDistinguishedAmount(
+<span class="lineNum">     610 </span>            :     LowMemoryEventsPhysicalDistinguishedAmount);
+<span class="lineNum">     611 </span>            :   sHooksActive = true;
+<span class="lineNum">     612 </span>            : #endif // defined(XP_WIN) &amp;&amp; !defined(HAVE_64BIT_BUILD)
+<span class="lineNum">     613 </span>            : 
+<span class="lineNum">     614 </span>            :   // The watchers are held alive by the observer service.
+<span class="lineNum">     615 </span><span class="lineCov">          2 :   RefPtr&lt;nsMemoryPressureWatcher&gt; watcher = new nsMemoryPressureWatcher();</span>
+<span class="lineNum">     616 </span><span class="lineCov">          1 :   watcher-&gt;Init();</span>
+<span class="lineNum">     617 </span>            : 
+<span class="lineNum">     618 </span>            : #if defined(XP_WIN) &amp;&amp; defined(HAVE_64BIT_BUILD)
+<span class="lineNum">     619 </span>            :   if (XRE_IsParentProcess()) {
+<span class="lineNum">     620 </span>            :     RefPtr&lt;nsAvailableMemoryWatcher&gt; poller = new nsAvailableMemoryWatcher();
+<span class="lineNum">     621 </span>            : 
+<span class="lineNum">     622 </span>            :     if (NS_FAILED(poller-&gt;Init())) {
+<span class="lineNum">     623 </span>            :       NS_WARNING(&quot;Could not start the available memory watcher&quot;);
+<span class="lineNum">     624 </span>            :     }
+<span class="lineNum">     625 </span>            :   }
+<span class="lineNum">     626 </span>            : #endif // defined(XP_WIN) &amp;&amp; defined(HAVE_64BIT_BUILD)
+<span class="lineNum">     627 </span><span class="lineCov">          1 : }</span>
+<span class="lineNum">     628 </span>            : 
+<span class="lineNum">     629 </span>            : void
+<span class="lineNum">     630 </span><span class="lineCov">          1 : Init()</span>
+<span class="lineNum">     631 </span>            : {
+<span class="lineNum">     632 </span>            :   // Do nothing on x86-64, because nsWindowsDllInterceptor is not thread-safe
+<span class="lineNum">     633 </span>            :   // on 64-bit.  (On 32-bit, it's probably thread-safe.)  Even if we run Init()
+<span class="lineNum">     634 </span>            :   // before any other of our threads are running, another process may have
+<span class="lineNum">     635 </span>            :   // started a remote thread which could call VirtualAlloc!
+<span class="lineNum">     636 </span>            :   //
+<span class="lineNum">     637 </span>            :   // Moreover, the benefit of this code is less clear when we're a 64-bit
+<span class="lineNum">     638 </span>            :   // process, because we aren't going to run out of virtual memory, and the
+<span class="lineNum">     639 </span>            :   // system is likely to have a fair bit of physical memory.
+<span class="lineNum">     640 </span>            : 
+<span class="lineNum">     641 </span>            : #if defined(XP_WIN) &amp;&amp; !defined(HAVE_64BIT_BUILD)
+<span class="lineNum">     642 </span>            :   // Don't register the hooks if we're a build instrumented for PGO: If we're
+<span class="lineNum">     643 </span>            :   // an instrumented build, the compiler adds function calls all over the place
+<span class="lineNum">     644 </span>            :   // which may call VirtualAlloc; this makes it hard to prevent
+<span class="lineNum">     645 </span>            :   // VirtualAllocHook from reentering itself.
+<span class="lineNum">     646 </span>            :   if (!PR_GetEnv(&quot;MOZ_PGO_INSTRUMENTED&quot;)) {
+<span class="lineNum">     647 </span>            :     sKernel32Intercept.Init(&quot;Kernel32.dll&quot;);
+<span class="lineNum">     648 </span>            :     sKernel32Intercept.AddHook(&quot;VirtualAlloc&quot;,
+<span class="lineNum">     649 </span>            :                                reinterpret_cast&lt;intptr_t&gt;(VirtualAllocHook),
+<span class="lineNum">     650 </span>            :                                reinterpret_cast&lt;void**&gt;(&amp;sVirtualAllocOrig));
+<span class="lineNum">     651 </span>            :     sKernel32Intercept.AddHook(&quot;MapViewOfFile&quot;,
+<span class="lineNum">     652 </span>            :                                reinterpret_cast&lt;intptr_t&gt;(MapViewOfFileHook),
+<span class="lineNum">     653 </span>            :                                reinterpret_cast&lt;void**&gt;(&amp;sMapViewOfFileOrig));
+<span class="lineNum">     654 </span>            : 
+<span class="lineNum">     655 </span>            :     sGdi32Intercept.Init(&quot;Gdi32.dll&quot;);
+<span class="lineNum">     656 </span>            :     sGdi32Intercept.AddHook(&quot;CreateDIBSection&quot;,
+<span class="lineNum">     657 </span>            :                             reinterpret_cast&lt;intptr_t&gt;(CreateDIBSectionHook),
+<span class="lineNum">     658 </span>            :                             reinterpret_cast&lt;void**&gt;(&amp;sCreateDIBSectionOrig));
+<span class="lineNum">     659 </span>            :   }
+<span class="lineNum">     660 </span>            : 
+<span class="lineNum">     661 </span>            :   sInitialized = true;
+<span class="lineNum">     662 </span>            : #endif // defined(XP_WIN) &amp;&amp; !defined(HAVE_64BIT_BUILD)
+<span class="lineNum">     663 </span>            : }
+<span class="lineNum">     664 </span>            : 
+<span class="lineNum">     665 </span>            : } // namespace AvailableMemoryTracker
+<span class="lineNum">     666 </span>            : } // namespace mozilla
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

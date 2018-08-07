@@ -1,0 +1,395 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - xpcom/base/CycleCollectedJSContext.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">xpcom/base</a> - CycleCollectedJSContext.h<span style="font-size: 80%;"> (source / <a href="CycleCollectedJSContext.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">22</td>
+            <td class="headerCovTableEntry">39</td>
+            <td class="headerCovTableEntryLo">56.4 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef mozilla_CycleCollectedJSContext_h
+<span class="lineNum">       8 </span>            : #define mozilla_CycleCollectedJSContext_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &lt;queue&gt;
+<span class="lineNum">      11 </span>            : 
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/DeferredFinalize.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/LinkedList.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/mozalloc.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/MemoryReporting.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;mozilla/dom/AtomList.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;jsapi.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;jsfriendapi.h&quot;
+<span class="lineNum">      19 </span>            : 
+<span class="lineNum">      20 </span>            : #include &quot;nsCOMPtr.h&quot;
+<span class="lineNum">      21 </span>            : #include &quot;nsCycleCollectionParticipant.h&quot;
+<span class="lineNum">      22 </span>            : #include &quot;nsTArray.h&quot;
+<span class="lineNum">      23 </span>            : 
+<span class="lineNum">      24 </span>            : class nsCycleCollectionNoteRootCallback;
+<span class="lineNum">      25 </span>            : class nsIRunnable;
+<span class="lineNum">      26 </span>            : class nsThread;
+<span class="lineNum">      27 </span>            : class nsWrapperCache;
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : namespace mozilla {
+<span class="lineNum">      30 </span>            : class AutoSlowOperation;
+<span class="lineNum">      31 </span>            : 
+<span class="lineNum">      32 </span>            : class CycleCollectedJSRuntime;
+<span class="lineNum">      33 </span>            : 
+<span class="lineNum">      34 </span>            : namespace dom {
+<span class="lineNum">      35 </span>            : class Exception;
+<span class="lineNum">      36 </span>            : class WorkerJSContext;
+<span class="lineNum">      37 </span>            : class WorkletJSContext;
+<span class="lineNum">      38 </span>            : } // namespace dom
+<span class="lineNum">      39 </span>            : 
+<span class="lineNum">      40 </span>            : // Contains various stats about the cycle collection.
+<span class="lineNum">      41 </span>            : struct CycleCollectorResults
+<span class="lineNum">      42 </span>            : {
+<span class="lineNum">      43 </span>            :   CycleCollectorResults()
+<span class="lineNum">      44 </span><span class="lineCov">          4 :   {</span>
+<span class="lineNum">      45 </span>            :     // Initialize here so when we increment mNumSlices the first time we're
+<span class="lineNum">      46 </span>            :     // not using uninitialized memory.
+<span class="lineNum">      47 </span><span class="lineCov">          4 :     Init();</span>
+<span class="lineNum">      48 </span>            :   }
+<span class="lineNum">      49 </span>            : 
+<span class="lineNum">      50 </span><span class="lineNoCov">          0 :   void Init()</span>
+<span class="lineNum">      51 </span>            :   {
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :     mForcedGC = false;</span>
+<span class="lineNum">      53 </span><span class="lineNoCov">          0 :     mMergedZones = false;</span>
+<span class="lineNum">      54 </span><span class="lineNoCov">          0 :     mAnyManual = false;</span>
+<span class="lineNum">      55 </span><span class="lineNoCov">          0 :     mVisitedRefCounted = 0;</span>
+<span class="lineNum">      56 </span><span class="lineNoCov">          0 :     mVisitedGCed = 0;</span>
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 :     mFreedRefCounted = 0;</span>
+<span class="lineNum">      58 </span><span class="lineNoCov">          0 :     mFreedGCed = 0;</span>
+<span class="lineNum">      59 </span><span class="lineCov">          4 :     mFreedJSZones = 0;</span>
+<span class="lineNum">      60 </span><span class="lineCov">          4 :     mNumSlices = 1;</span>
+<span class="lineNum">      61 </span>            :     // mNumSlices is initialized to one, because we call Init() after the
+<span class="lineNum">      62 </span>            :     // per-slice increment of mNumSlices has already occurred.
+<span class="lineNum">      63 </span><span class="lineCov">          4 :   }</span>
+<span class="lineNum">      64 </span>            : 
+<span class="lineNum">      65 </span>            :   bool mForcedGC;
+<span class="lineNum">      66 </span>            :   bool mMergedZones;
+<span class="lineNum">      67 </span>            :   bool mAnyManual; // true if any slice of the CC was manually triggered, or at shutdown.
+<span class="lineNum">      68 </span>            :   uint32_t mVisitedRefCounted;
+<span class="lineNum">      69 </span>            :   uint32_t mVisitedGCed;
+<span class="lineNum">      70 </span>            :   uint32_t mFreedRefCounted;
+<span class="lineNum">      71 </span>            :   uint32_t mFreedGCed;
+<span class="lineNum">      72 </span>            :   uint32_t mFreedJSZones;
+<span class="lineNum">      73 </span>            :   uint32_t mNumSlices;
+<span class="lineNum">      74 </span>            : };
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span>            : class MicroTaskRunnable
+<span class="lineNum">      77 </span>            : {
+<span class="lineNum">      78 </span>            : public:
+<span class="lineNum">      79 </span><span class="lineCov">       8310 :   MicroTaskRunnable() {}</span>
+<span class="lineNum">      80 </span><span class="lineNoCov">          0 :   NS_INLINE_DECL_REFCOUNTING(MicroTaskRunnable)</span>
+<span class="lineNum">      81 </span>            :   virtual void Run(AutoSlowOperation&amp; aAso) = 0;
+<span class="lineNum">      82 </span><span class="lineCov">          5 :   virtual bool Suppressed() { return false; }</span>
+<span class="lineNum">      83 </span>            : protected:
+<span class="lineNum">      84 </span>            :   virtual ~MicroTaskRunnable() {}
+<span class="lineNum">      85 </span>            : };
+<span class="lineNum">      86 </span>            : 
+<span class="lineNum">      87 </span>            : class CycleCollectedJSContext
+<span class="lineNum">      88 </span>            :   : dom::PerThreadAtomCache
+<span class="lineNum">      89 </span>            :   , public LinkedListElement&lt;CycleCollectedJSContext&gt;
+<span class="lineNum">      90 </span>            : {
+<span class="lineNum">      91 </span>            :   friend class CycleCollectedJSRuntime;
+<span class="lineNum">      92 </span>            : 
+<span class="lineNum">      93 </span>            : protected:
+<span class="lineNum">      94 </span>            :   CycleCollectedJSContext();
+<span class="lineNum">      95 </span>            :   virtual ~CycleCollectedJSContext();
+<span class="lineNum">      96 </span>            : 
+<span class="lineNum">      97 </span>            :   MOZ_IS_CLASS_INIT
+<span class="lineNum">      98 </span>            :   nsresult Initialize(JSRuntime* aParentRuntime,
+<span class="lineNum">      99 </span>            :                       uint32_t aMaxBytes,
+<span class="lineNum">     100 </span>            :                       uint32_t aMaxNurseryBytes);
+<span class="lineNum">     101 </span>            : 
+<span class="lineNum">     102 </span>            :   // See explanation in mIsPrimaryContext.
+<span class="lineNum">     103 </span>            :   MOZ_IS_CLASS_INIT
+<span class="lineNum">     104 </span>            :   nsresult InitializeNonPrimary(CycleCollectedJSContext* aPrimaryContext);
+<span class="lineNum">     105 </span>            : 
+<span class="lineNum">     106 </span>            :   virtual CycleCollectedJSRuntime* CreateRuntime(JSContext* aCx) = 0;
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            :   size_t SizeOfExcludingThis(mozilla::MallocSizeOf aMallocSizeOf) const;
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            : private:
+<span class="lineNum">     111 </span>            :   MOZ_IS_CLASS_INIT
+<span class="lineNum">     112 </span>            :   void InitializeCommon();
+<span class="lineNum">     113 </span>            : 
+<span class="lineNum">     114 </span>            :   static JSObject* GetIncumbentGlobalCallback(JSContext* aCx);
+<span class="lineNum">     115 </span>            :   static bool EnqueuePromiseJobCallback(JSContext* aCx,
+<span class="lineNum">     116 </span>            :                                         JS::HandleObject aJob,
+<span class="lineNum">     117 </span>            :                                         JS::HandleObject aAllocationSite,
+<span class="lineNum">     118 </span>            :                                         JS::HandleObject aIncumbentGlobal,
+<span class="lineNum">     119 </span>            :                                         void* aData);
+<span class="lineNum">     120 </span>            :   static void PromiseRejectionTrackerCallback(JSContext* aCx,
+<span class="lineNum">     121 </span>            :                                               JS::HandleObject aPromise,
+<span class="lineNum">     122 </span>            :                                               JS::PromiseRejectionHandlingState state,
+<span class="lineNum">     123 </span>            :                                               void* aData);
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span>            :   void AfterProcessMicrotasks();
+<span class="lineNum">     126 </span>            : public:
+<span class="lineNum">     127 </span>            :   void ProcessStableStateQueue();
+<span class="lineNum">     128 </span>            : private:
+<span class="lineNum">     129 </span>            :   void CleanupIDBTransactions(uint32_t aRecursionDepth);
+<span class="lineNum">     130 </span>            : 
+<span class="lineNum">     131 </span>            : public:
+<span class="lineNum">     132 </span>            :   enum DeferredFinalizeType {
+<span class="lineNum">     133 </span>            :     FinalizeIncrementally,
+<span class="lineNum">     134 </span>            :     FinalizeNow,
+<span class="lineNum">     135 </span>            :   };
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span><span class="lineNoCov">          0 :   virtual dom::WorkerJSContext* GetAsWorkerJSContext() { return nullptr; }</span>
+<span class="lineNum">     138 </span><span class="lineNoCov">          0 :   virtual dom::WorkletJSContext* GetAsWorkletJSContext() { return nullptr; }</span>
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span><span class="lineCov">      21779 :   CycleCollectedJSRuntime* Runtime() const</span>
+<span class="lineNum">     141 </span>            :   {
+<span class="lineNum">     142 </span><span class="lineCov">      21779 :     MOZ_ASSERT(mRuntime);</span>
+<span class="lineNum">     143 </span><span class="lineCov">      21779 :     return mRuntime;</span>
+<span class="lineNum">     144 </span>            :   }
+<span class="lineNum">     145 </span>            : 
+<span class="lineNum">     146 </span>            :   already_AddRefed&lt;dom::Exception&gt; GetPendingException() const;
+<span class="lineNum">     147 </span>            :   void SetPendingException(dom::Exception* aException);
+<span class="lineNum">     148 </span>            : 
+<span class="lineNum">     149 </span>            :   std::queue&lt;RefPtr&lt;MicroTaskRunnable&gt;&gt;&amp; GetMicroTaskQueue();
+<span class="lineNum">     150 </span>            :   std::queue&lt;RefPtr&lt;MicroTaskRunnable&gt;&gt;&amp; GetDebuggerMicroTaskQueue();
+<span class="lineNum">     151 </span>            : 
+<span class="lineNum">     152 </span><span class="lineCov">     118710 :   JSContext* Context() const</span>
+<span class="lineNum">     153 </span>            :   {
+<span class="lineNum">     154 </span><span class="lineNoCov">          0 :     MOZ_ASSERT(mJSContext);</span>
+<span class="lineNum">     155 </span><span class="lineCov">     118710 :     return mJSContext;</span>
+<span class="lineNum">     156 </span>            :   }
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span><span class="lineCov">       1285 :   JS::RootingContext* RootingCx() const</span>
+<span class="lineNum">     159 </span>            :   {
+<span class="lineNum">     160 </span><span class="lineCov">       1285 :     MOZ_ASSERT(mJSContext);</span>
+<span class="lineNum">     161 </span><span class="lineCov">       1285 :     return JS::RootingContext::get(mJSContext);</span>
+<span class="lineNum">     162 </span>            :   }
+<span class="lineNum">     163 </span>            : 
+<span class="lineNum">     164 </span>            :   void SetTargetedMicroTaskRecursionDepth(uint32_t aDepth)
+<span class="lineNum">     165 </span>            :   {
+<span class="lineNum">     166 </span><span class="lineCov">          3 :     mTargetedMicroTaskRecursionDepth = aDepth;</span>
+<span class="lineNum">     167 </span>            :   }
+<span class="lineNum">     168 </span>            : 
+<span class="lineNum">     169 </span>            : protected:
+<span class="lineNum">     170 </span>            :   JSContext* MaybeContext() const { return mJSContext; }
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            : public:
+<span class="lineNum">     173 </span>            :   // nsThread entrypoints
+<span class="lineNum">     174 </span>            :   virtual void BeforeProcessTask(bool aMightBlock);
+<span class="lineNum">     175 </span>            :   virtual void AfterProcessTask(uint32_t aRecursionDepth);
+<span class="lineNum">     176 </span>            : 
+<span class="lineNum">     177 </span>            :   // Check whether we need an idle GC task.
+<span class="lineNum">     178 </span>            :   void IsIdleGCTaskNeeded();
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span>            :   uint32_t RecursionDepth();
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span>            :   // Run in stable state (call through nsContentUtils)
+<span class="lineNum">     183 </span>            :   void RunInStableState(already_AddRefed&lt;nsIRunnable&gt;&amp;&amp; aRunnable);
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span>            :   void AddPendingIDBTransaction(already_AddRefed&lt;nsIRunnable&gt;&amp;&amp; aTransaction);
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span>            :   // Get the CycleCollectedJSContext for a JSContext.
+<span class="lineNum">     188 </span>            :   // Returns null only if Initialize() has not completed on or during
+<span class="lineNum">     189 </span>            :   // destruction of the CycleCollectedJSContext.
+<span class="lineNum">     190 </span>            :   static CycleCollectedJSContext* GetFor(JSContext* aCx);
+<span class="lineNum">     191 </span>            : 
+<span class="lineNum">     192 </span>            :   // Get the current thread's CycleCollectedJSContext.  Returns null if there
+<span class="lineNum">     193 </span>            :   // isn't one.
+<span class="lineNum">     194 </span>            :   static CycleCollectedJSContext* Get();
+<span class="lineNum">     195 </span>            : 
+<span class="lineNum">     196 </span>            :   // Queue an async microtask to the current main or worker thread.
+<span class="lineNum">     197 </span>            :   virtual void DispatchToMicroTask(already_AddRefed&lt;MicroTaskRunnable&gt; aRunnable);
+<span class="lineNum">     198 </span>            : 
+<span class="lineNum">     199 </span>            :   // Call EnterMicroTask when you're entering JS execution.
+<span class="lineNum">     200 </span>            :   // Usually the best way to do this is to use nsAutoMicroTask.
+<span class="lineNum">     201 </span>            :   void EnterMicroTask()
+<span class="lineNum">     202 </span>            :   {
+<span class="lineNum">     203 </span><span class="lineCov">       4851 :     ++mMicroTaskLevel;</span>
+<span class="lineNum">     204 </span>            :   }
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span><span class="lineCov">       4851 :   void LeaveMicroTask()</span>
+<span class="lineNum">     207 </span>            :   {
+<span class="lineNum">     208 </span><span class="lineCov">       4851 :     if (--mMicroTaskLevel == 0) {</span>
+<span class="lineNum">     209 </span><span class="lineCov">       4607 :       PerformMicroTaskCheckPoint();</span>
+<span class="lineNum">     210 </span>            :     }
+<span class="lineNum">     211 </span><span class="lineCov">       4851 :   }</span>
+<span class="lineNum">     212 </span>            : 
+<span class="lineNum">     213 </span>            :   bool IsInMicroTask()
+<span class="lineNum">     214 </span>            :   {
+<span class="lineNum">     215 </span>            :     return mMicroTaskLevel != 0;
+<span class="lineNum">     216 </span>            :   }
+<span class="lineNum">     217 </span>            : 
+<span class="lineNum">     218 </span>            :   uint32_t MicroTaskLevel()
+<span class="lineNum">     219 </span>            :   {
+<span class="lineNum">     220 </span>            :     return mMicroTaskLevel;
+<span class="lineNum">     221 </span>            :   }
+<span class="lineNum">     222 </span>            : 
+<span class="lineNum">     223 </span>            :   void SetMicroTaskLevel(uint32_t aLevel)
+<span class="lineNum">     224 </span>            :   {
+<span class="lineNum">     225 </span><span class="lineNoCov">          0 :     mMicroTaskLevel = aLevel;</span>
+<span class="lineNum">     226 </span>            :   }
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span>            :   bool PerformMicroTaskCheckPoint();
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span>            :   void PerformDebuggerMicroTaskCheckpoint();
+<span class="lineNum">     231 </span>            : 
+<span class="lineNum">     232 </span>            :   bool IsInStableOrMetaStableState()
+<span class="lineNum">     233 </span>            :   {
+<span class="lineNum">     234 </span>            :     return mDoingStableStates;
+<span class="lineNum">     235 </span>            :   }
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span>            :   // Storage for watching rejected promises waiting for some client to
+<span class="lineNum">     238 </span>            :   // consume their rejection.
+<span class="lineNum">     239 </span>            :   // Promises in this list have been rejected in the last turn of the
+<span class="lineNum">     240 </span>            :   // event loop without the rejection being handled.
+<span class="lineNum">     241 </span>            :   // Note that this can contain nullptrs in place of promises removed because
+<span class="lineNum">     242 </span>            :   // they're consumed before it'd be reported.
+<span class="lineNum">     243 </span>            :   JS::PersistentRooted&lt;JS::GCVector&lt;JSObject*, 0, js::SystemAllocPolicy&gt;&gt; mUncaughtRejections;
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span>            :   // Promises in this list have previously been reported as rejected
+<span class="lineNum">     246 </span>            :   // (because they were in the above list), but the rejection was handled
+<span class="lineNum">     247 </span>            :   // in the last turn of the event loop.
+<span class="lineNum">     248 </span>            :   JS::PersistentRooted&lt;JS::GCVector&lt;JSObject*, 0, js::SystemAllocPolicy&gt;&gt; mConsumedRejections;
+<span class="lineNum">     249 </span>            :   nsTArray&lt;nsCOMPtr&lt;nsISupports /* UncaughtRejectionObserver */ &gt;&gt; mUncaughtRejectionObservers;
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span>            :   virtual bool IsSystemCaller() const = 0;
+<span class="lineNum">     252 </span>            : 
+<span class="lineNum">     253 </span>            : private:
+<span class="lineNum">     254 </span>            :   // A primary context owns the mRuntime. Non-main-thread contexts should always
+<span class="lineNum">     255 </span>            :   // be primary. On the main thread, the primary context should be the first one
+<span class="lineNum">     256 </span>            :   // created and the last one destroyed. Non-primary contexts are used for
+<span class="lineNum">     257 </span>            :   // cooperatively scheduled threads.
+<span class="lineNum">     258 </span>            :   bool mIsPrimaryContext;
+<span class="lineNum">     259 </span>            : 
+<span class="lineNum">     260 </span>            :   CycleCollectedJSRuntime* mRuntime;
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span>            :   JSContext* mJSContext;
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            :   nsCOMPtr&lt;dom::Exception&gt; mPendingException;
+<span class="lineNum">     265 </span>            :   nsThread* mOwningThread; // Manual refcounting to avoid include hell.
+<span class="lineNum">     266 </span>            : 
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :   struct PendingIDBTransactionData</span>
+<span class="lineNum">     268 </span>            :   {
+<span class="lineNum">     269 </span>            :     nsCOMPtr&lt;nsIRunnable&gt; mTransaction;
+<span class="lineNum">     270 </span>            :     uint32_t mRecursionDepth;
+<span class="lineNum">     271 </span>            :   };
+<span class="lineNum">     272 </span>            : 
+<span class="lineNum">     273 </span>            :   nsTArray&lt;nsCOMPtr&lt;nsIRunnable&gt;&gt; mStableStateEvents;
+<span class="lineNum">     274 </span>            :   nsTArray&lt;PendingIDBTransactionData&gt; mPendingIDBTransactions;
+<span class="lineNum">     275 </span>            :   uint32_t mBaseRecursionDepth;
+<span class="lineNum">     276 </span>            :   bool mDoingStableStates;
+<span class="lineNum">     277 </span>            : 
+<span class="lineNum">     278 </span>            :   // If set to none 0, microtasks will be processed only when recursion depth
+<span class="lineNum">     279 </span>            :   // is the set value.
+<span class="lineNum">     280 </span>            :   uint32_t mTargetedMicroTaskRecursionDepth;
+<span class="lineNum">     281 </span>            : 
+<span class="lineNum">     282 </span>            :   uint32_t mMicroTaskLevel;
+<span class="lineNum">     283 </span>            : 
+<span class="lineNum">     284 </span>            :   std::queue&lt;RefPtr&lt;MicroTaskRunnable&gt;&gt; mPendingMicroTaskRunnables;
+<span class="lineNum">     285 </span>            :   std::queue&lt;RefPtr&lt;MicroTaskRunnable&gt;&gt; mDebuggerMicroTaskQueue;
+<span class="lineNum">     286 </span>            : 
+<span class="lineNum">     287 </span>            :   uint32_t mMicroTaskRecursionDepth;
+<span class="lineNum">     288 </span>            : };
+<span class="lineNum">     289 </span>            : 
+<span class="lineNum">     290 </span>            : class MOZ_STACK_CLASS nsAutoMicroTask
+<span class="lineNum">     291 </span>            : {
+<span class="lineNum">     292 </span>            : public:
+<span class="lineNum">     293 </span><span class="lineNoCov">          0 :   nsAutoMicroTask()</span>
+<span class="lineNum">     294 </span>            :   {
+<span class="lineNum">     295 </span><span class="lineNoCov">          0 :     CycleCollectedJSContext* ccjs = CycleCollectedJSContext::Get();</span>
+<span class="lineNum">     296 </span><span class="lineCov">        443 :     if (ccjs) {</span>
+<span class="lineNum">     297 </span><span class="lineNoCov">          0 :       ccjs-&gt;EnterMicroTask();</span>
+<span class="lineNum">     298 </span>            :     }
+<span class="lineNum">     299 </span>            :   }
+<span class="lineNum">     300 </span>            :   ~nsAutoMicroTask()
+<span class="lineNum">     301 </span>            :   {
+<span class="lineNum">     302 </span>            :     CycleCollectedJSContext* ccjs = CycleCollectedJSContext::Get();
+<span class="lineNum">     303 </span>            :     if (ccjs) {
+<span class="lineNum">     304 </span>            :       ccjs-&gt;LeaveMicroTask();
+<span class="lineNum">     305 </span>            :     }
+<span class="lineNum">     306 </span>            :   }
+<span class="lineNum">     307 </span>            : };
+<span class="lineNum">     308 </span>            : 
+<span class="lineNum">     309 </span>            : } // namespace mozilla
+<span class="lineNum">     310 </span>            : 
+<span class="lineNum">     311 </span>            : #endif // mozilla_CycleCollectedJSContext_h
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

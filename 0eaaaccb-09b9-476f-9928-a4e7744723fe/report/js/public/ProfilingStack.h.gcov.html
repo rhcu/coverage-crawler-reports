@@ -1,0 +1,577 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - js/public/ProfilingStack.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">js/public</a> - ProfilingStack.h<span style="font-size: 80%;"> (source / <a href="ProfilingStack.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">28</td>
+            <td class="headerCovTableEntry">86</td>
+            <td class="headerCovTableEntryLo">32.6 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-</a>
+<span class="lineNum">       2 </span>            :  * vim: set ts=8 sts=4 et sw=4 tw=99:
+<span class="lineNum">       3 </span>            :  * This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this
+<span class="lineNum">       5 </span>            :  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef js_ProfilingStack_h
+<span class="lineNum">       8 </span>            : #define js_ProfilingStack_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &lt;algorithm&gt;
+<span class="lineNum">      11 </span>            : #include &lt;stdint.h&gt;
+<span class="lineNum">      12 </span>            : 
+<span class="lineNum">      13 </span>            : #include &quot;jstypes.h&quot;
+<span class="lineNum">      14 </span>            : 
+<span class="lineNum">      15 </span>            : #include &quot;js/TypeDecls.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;js/Utility.h&quot;
+<span class="lineNum">      17 </span>            : 
+<span class="lineNum">      18 </span>            : #ifdef JS_BROKEN_GCC_ATTRIBUTE_WARNING
+<span class="lineNum">      19 </span>            : #pragma GCC diagnostic push
+<span class="lineNum">      20 </span>            : #pragma GCC diagnostic ignored &quot;-Wattributes&quot;
+<span class="lineNum">      21 </span>            : #endif // JS_BROKEN_GCC_ATTRIBUTE_WARNING
+<span class="lineNum">      22 </span>            : 
+<span class="lineNum">      23 </span>            : class JS_PUBLIC_API(JSTracer);
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : #ifdef JS_BROKEN_GCC_ATTRIBUTE_WARNING
+<span class="lineNum">      26 </span>            : #pragma GCC diagnostic pop
+<span class="lineNum">      27 </span>            : #endif // JS_BROKEN_GCC_ATTRIBUTE_WARNING
+<span class="lineNum">      28 </span>            : 
+<span class="lineNum">      29 </span>            : class ProfilingStack;
+<span class="lineNum">      30 </span>            : 
+<span class="lineNum">      31 </span>            : // This file defines the classes ProfilingStack and ProfilingStackFrame.
+<span class="lineNum">      32 </span>            : // The ProfilingStack manages an array of ProfilingStackFrames.
+<span class="lineNum">      33 </span>            : // It keeps track of the &quot;label stack&quot; and the JS interpreter stack.
+<span class="lineNum">      34 </span>            : // The two stack types are interleaved.
+<span class="lineNum">      35 </span>            : //
+<span class="lineNum">      36 </span>            : // Usage:
+<span class="lineNum">      37 </span>            : //
+<span class="lineNum">      38 </span>            : //  ProfilingStack* profilingStack = ...;
+<span class="lineNum">      39 </span>            : //
+<span class="lineNum">      40 </span>            : //  // For label frames:
+<span class="lineNum">      41 </span>            : //  profilingStack-&gt;pushLabelFrame(...);
+<span class="lineNum">      42 </span>            : //  // Execute some code. When finished, pop the frame:
+<span class="lineNum">      43 </span>            : //  profilingStack-&gt;pop();
+<span class="lineNum">      44 </span>            : //
+<span class="lineNum">      45 </span>            : //  // For JS stack frames:
+<span class="lineNum">      46 </span>            : //  profilingStack-&gt;pushJSFrame(...);
+<span class="lineNum">      47 </span>            : //  // Execute some code. When finished, pop the frame:
+<span class="lineNum">      48 </span>            : //  profilingStack-&gt;pop();
+<span class="lineNum">      49 </span>            : //
+<span class="lineNum">      50 </span>            : //
+<span class="lineNum">      51 </span>            : // Concurrency considerations
+<span class="lineNum">      52 </span>            : //
+<span class="lineNum">      53 </span>            : // A thread's profiling stack (and the frames inside it) is only modified by
+<span class="lineNum">      54 </span>            : // that thread. However, the profiling stack can be *read* by a different thread,
+<span class="lineNum">      55 </span>            : // the sampler thread: Whenever the profiler wants to sample a given thread A,
+<span class="lineNum">      56 </span>            : // the following happens:
+<span class="lineNum">      57 </span>            : //  (1) Thread A is suspended.
+<span class="lineNum">      58 </span>            : //  (2) The sampler thread (thread S) reads the ProfilingStack of thread A,
+<span class="lineNum">      59 </span>            : //      including all ProfilingStackFrames that are currently in that stack
+<span class="lineNum">      60 </span>            : //      (profilingStack-&gt;frames[0..profilingStack-&gt;stackSize()]).
+<span class="lineNum">      61 </span>            : //  (3) Thread A is resumed.
+<span class="lineNum">      62 </span>            : //
+<span class="lineNum">      63 </span>            : // Thread suspension is achieved using platform-specific APIs; refer to each
+<span class="lineNum">      64 </span>            : // platform's Sampler::SuspendAndSampleAndResumeThread implementation in
+<span class="lineNum">      65 </span>            : // platform-*.cpp for details.
+<span class="lineNum">      66 </span>            : //
+<span class="lineNum">      67 </span>            : // When the thread is suspended, the values in profilingStack-&gt;stackPointer and in
+<span class="lineNum">      68 </span>            : // the stack frame range profilingStack-&gt;frames[0..profilingStack-&gt;stackPointer] need
+<span class="lineNum">      69 </span>            : // to be in a consistent state, so that thread S does not read partially-
+<span class="lineNum">      70 </span>            : // constructed stack frames. More specifically, we have two requirements:
+<span class="lineNum">      71 </span>            : //  (1) When adding a new frame at the top of the stack, its ProfilingStackFrame
+<span class="lineNum">      72 </span>            : //      data needs to be put in place *before* the stackPointer is incremented,
+<span class="lineNum">      73 </span>            : //      and the compiler + CPU need to know that this order matters.
+<span class="lineNum">      74 </span>            : //  (2) When popping an frame from the stack and then preparing the
+<span class="lineNum">      75 </span>            : //      ProfilingStackFrame data for the next frame that is about to be pushed,
+<span class="lineNum">      76 </span>            : //      the decrement of the stackPointer in pop() needs to happen *before* the
+<span class="lineNum">      77 </span>            : //      ProfilingStackFrame for the new frame is being popuplated, and the
+<span class="lineNum">      78 </span>            : //      compiler + CPU need to know that this order matters.
+<span class="lineNum">      79 </span>            : //
+<span class="lineNum">      80 </span>            : // We can express the relevance of these orderings in multiple ways.
+<span class="lineNum">      81 </span>            : // Option A is to make stackPointer an atomic with SequentiallyConsistent
+<span class="lineNum">      82 </span>            : // memory ordering. This would ensure that no writes in thread A would be
+<span class="lineNum">      83 </span>            : // reordered across any writes to stackPointer, which satisfies requirements
+<span class="lineNum">      84 </span>            : // (1) and (2) at the same time. Option A is the simplest.
+<span class="lineNum">      85 </span>            : // Option B is to use ReleaseAcquire memory ordering both for writes to
+<span class="lineNum">      86 </span>            : // stackPointer *and* for writes to ProfilingStackFrame fields. Release-stores
+<span class="lineNum">      87 </span>            : // ensure that all writes that happened *before this write in program order* are
+<span class="lineNum">      88 </span>            : // not reordered to happen after this write. ReleaseAcquire ordering places no
+<span class="lineNum">      89 </span>            : // requirements on the ordering of writes that happen *after* this write in
+<span class="lineNum">      90 </span>            : // program order.
+<span class="lineNum">      91 </span>            : // Using release-stores for writes to stackPointer expresses requirement (1),
+<span class="lineNum">      92 </span>            : // and using release-stores for writes to the ProfilingStackFrame fields
+<span class="lineNum">      93 </span>            : // expresses requirement (2).
+<span class="lineNum">      94 </span>            : //
+<span class="lineNum">      95 </span>            : // Option B is more complicated than option A, but has much better performance
+<span class="lineNum">      96 </span>            : // on x86/64: In a microbenchmark run on a Macbook Pro from 2017, switching
+<span class="lineNum">      97 </span>            : // from option A to option B reduced the overhead of pushing+popping a
+<span class="lineNum">      98 </span>            : // ProfilingStackFrame by 10 nanoseconds.
+<span class="lineNum">      99 </span>            : // On x86/64, release-stores require no explicit hardware barriers or lock
+<span class="lineNum">     100 </span>            : // instructions.
+<span class="lineNum">     101 </span>            : // On ARM/64, option B may be slower than option A, because the compiler will
+<span class="lineNum">     102 </span>            : // generate hardware barriers for every single release-store instead of just
+<span class="lineNum">     103 </span>            : // for the writes to stackPointer. However, the actual performance impact of
+<span class="lineNum">     104 </span>            : // this has not yet been measured on ARM, so we're currently using option B
+<span class="lineNum">     105 </span>            : // everywhere. This is something that we may want to change in the future once
+<span class="lineNum">     106 </span>            : // we've done measurements.
+<span class="lineNum">     107 </span>            : 
+<span class="lineNum">     108 </span>            : namespace js {
+<span class="lineNum">     109 </span>            : 
+<span class="lineNum">     110 </span>            : // A call stack can be specified to the JS engine such that all JS entry/exits
+<span class="lineNum">     111 </span>            : // to functions push/pop a stack frame to/from the specified stack.
+<span class="lineNum">     112 </span>            : //
+<span class="lineNum">     113 </span>            : // For more detailed information, see vm/GeckoProfiler.h.
+<span class="lineNum">     114 </span>            : //
+<span class="lineNum">     115 </span>            : class ProfilingStackFrame
+<span class="lineNum">     116 </span>            : {
+<span class="lineNum">     117 </span>            :     // A ProfilingStackFrame represents either a label frame or a JS frame.
+<span class="lineNum">     118 </span>            : 
+<span class="lineNum">     119 </span>            :     // WARNING WARNING WARNING
+<span class="lineNum">     120 </span>            :     //
+<span class="lineNum">     121 </span>            :     // All the fields below are Atomic&lt;...,ReleaseAcquire&gt;. This is needed so
+<span class="lineNum">     122 </span>            :     // that writes to these fields are release-writes, which ensures that
+<span class="lineNum">     123 </span>            :     // earlier writes in this thread don't get reordered after the writes to
+<span class="lineNum">     124 </span>            :     // these fields. In particular, the decrement of the stack pointer in
+<span class="lineNum">     125 </span>            :     // ProfilingStack::pop() is a write that *must* happen before the values in
+<span class="lineNum">     126 </span>            :     // this ProfilingStackFrame are changed. Otherwise, the sampler thread might
+<span class="lineNum">     127 </span>            :     // see an inconsistent state where the stack pointer still points to a
+<span class="lineNum">     128 </span>            :     // ProfilingStackFrame which has already been popped off the stack and whose
+<span class="lineNum">     129 </span>            :     // fields have now been partially repopulated with new values.
+<span class="lineNum">     130 </span>            :     // See the &quot;Concurrency considerations&quot; paragraph at the top of this file
+<span class="lineNum">     131 </span>            :     // for more details.
+<span class="lineNum">     132 </span>            : 
+<span class="lineNum">     133 </span>            :     // Descriptive label for this stack frame. Must be a static string! Can be
+<span class="lineNum">     134 </span>            :     // an empty string, but not a null pointer.
+<span class="lineNum">     135 </span>            :     mozilla::Atomic&lt;const char*, mozilla::ReleaseAcquire&gt; label_;
+<span class="lineNum">     136 </span>            : 
+<span class="lineNum">     137 </span>            :     // An additional descriptive string of this frame which is combined with
+<span class="lineNum">     138 </span>            :     // |label_| in profiler output. Need not be (and usually isn't) static. Can
+<span class="lineNum">     139 </span>            :     // be null.
+<span class="lineNum">     140 </span>            :     mozilla::Atomic&lt;const char*, mozilla::ReleaseAcquire&gt; dynamicString_;
+<span class="lineNum">     141 </span>            : 
+<span class="lineNum">     142 </span>            :     // Stack pointer for non-JS stack frames, the script pointer otherwise.
+<span class="lineNum">     143 </span>            :     mozilla::Atomic&lt;void*, mozilla::ReleaseAcquire&gt; spOrScript;
+<span class="lineNum">     144 </span>            : 
+<span class="lineNum">     145 </span>            :     // Line number for non-JS stack frames, the bytecode offset otherwise.
+<span class="lineNum">     146 </span>            :     mozilla::Atomic&lt;int32_t, mozilla::ReleaseAcquire&gt; lineOrPcOffset;
+<span class="lineNum">     147 </span>            : 
+<span class="lineNum">     148 </span>            :     // Bits 0...1 hold the Kind. Bits 2...31 hold the category.
+<span class="lineNum">     149 </span>            :     mozilla::Atomic&lt;uint32_t, mozilla::ReleaseAcquire&gt; kindAndCategory_;
+<span class="lineNum">     150 </span>            : 
+<span class="lineNum">     151 </span>            :     static int32_t pcToOffset(JSScript* aScript, jsbytecode* aPc);
+<span class="lineNum">     152 </span>            : 
+<span class="lineNum">     153 </span>            :   public:
+<span class="lineNum">     154 </span><span class="lineCov">      52830 :     ProfilingStackFrame() = default;</span>
+<span class="lineNum">     155 </span><span class="lineNoCov">          0 :     ProfilingStackFrame&amp; operator=(const ProfilingStackFrame&amp; other)</span>
+<span class="lineNum">     156 </span>            :     {
+<span class="lineNum">     157 </span><span class="lineNoCov">          0 :         label_ = other.label();</span>
+<span class="lineNum">     158 </span><span class="lineNoCov">          0 :         dynamicString_ = other.dynamicString();</span>
+<span class="lineNum">     159 </span><span class="lineNoCov">          0 :         void* spScript = other.spOrScript;</span>
+<span class="lineNum">     160 </span><span class="lineNoCov">          0 :         spOrScript = spScript;</span>
+<span class="lineNum">     161 </span><span class="lineNoCov">          0 :         int32_t offset = other.lineOrPcOffset;</span>
+<span class="lineNum">     162 </span><span class="lineNoCov">          0 :         lineOrPcOffset = offset;</span>
+<span class="lineNum">     163 </span><span class="lineNoCov">          0 :         uint32_t kindAndCategory = other.kindAndCategory_;</span>
+<span class="lineNum">     164 </span><span class="lineNoCov">          0 :         kindAndCategory_ = kindAndCategory;</span>
+<span class="lineNum">     165 </span><span class="lineNoCov">          0 :         return *this;</span>
+<span class="lineNum">     166 </span>            :     }
+<span class="lineNum">     167 </span>            : 
+<span class="lineNum">     168 </span>            :     enum class Kind : uint32_t {
+<span class="lineNum">     169 </span>            :         // A regular label frame. These usually come from AutoProfilerLabel.
+<span class="lineNum">     170 </span>            :         LABEL = 0,
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            :         // A special frame indicating the start of a run of JS profiling stack
+<span class="lineNum">     173 </span>            :         // frames. SP_MARKER frames are ignored, except for the sp field.
+<span class="lineNum">     174 </span>            :         // These frames are needed to get correct ordering between JS and LABEL
+<span class="lineNum">     175 </span>            :         // frames because JS frames don't carry sp information.
+<span class="lineNum">     176 </span>            :         // SP is short for &quot;stack pointer&quot;.
+<span class="lineNum">     177 </span>            :         SP_MARKER = 1,
+<span class="lineNum">     178 </span>            : 
+<span class="lineNum">     179 </span>            :         // A normal JS frame.
+<span class="lineNum">     180 </span>            :         JS_NORMAL = 2,
+<span class="lineNum">     181 </span>            : 
+<span class="lineNum">     182 </span>            :         // An interpreter JS frame that has OSR-ed into baseline. JS_NORMAL
+<span class="lineNum">     183 </span>            :         // frames can be converted to JS_OSR and back. JS_OSR frames are
+<span class="lineNum">     184 </span>            :         // ignored.
+<span class="lineNum">     185 </span>            :         JS_OSR = 3,
+<span class="lineNum">     186 </span>            : 
+<span class="lineNum">     187 </span>            :         KIND_BITCOUNT = 2,
+<span class="lineNum">     188 </span>            :         KIND_MASK = (1 &lt;&lt; KIND_BITCOUNT) - 1
+<span class="lineNum">     189 </span>            :     };
+<span class="lineNum">     190 </span>            : 
+<span class="lineNum">     191 </span>            :     // Keep these in sync with devtools/client/performance/modules/categories.js
+<span class="lineNum">     192 </span>            :     enum class Category : uint32_t {
+<span class="lineNum">     193 </span>            :         IDLE,
+<span class="lineNum">     194 </span>            :         OTHER,
+<span class="lineNum">     195 </span>            :         LAYOUT,
+<span class="lineNum">     196 </span>            :         JS,
+<span class="lineNum">     197 </span>            :         GCCC,
+<span class="lineNum">     198 </span>            :         NETWORK,
+<span class="lineNum">     199 </span>            :         GRAPHICS,
+<span class="lineNum">     200 </span>            :         DOM,
+<span class="lineNum">     201 </span>            : 
+<span class="lineNum">     202 </span>            :         FIRST    = OTHER,
+<span class="lineNum">     203 </span>            :         LAST     = DOM,
+<span class="lineNum">     204 </span>            :     };
+<span class="lineNum">     205 </span>            : 
+<span class="lineNum">     206 </span>            :     static_assert(uint32_t(Category::LAST) &lt;= (UINT32_MAX &gt;&gt; uint32_t(Kind::KIND_BITCOUNT)),
+<span class="lineNum">     207 </span>            :                   &quot;Too many categories to fit into u32 with two bits reserved for the kind&quot;);
+<span class="lineNum">     208 </span>            : 
+<span class="lineNum">     209 </span><span class="lineCov">       7536 :     bool isLabelFrame() const</span>
+<span class="lineNum">     210 </span>            :     {
+<span class="lineNum">     211 </span><span class="lineCov">      20215 :         return kind() == Kind::LABEL;</span>
+<span class="lineNum">     212 </span>            :     }
+<span class="lineNum">     213 </span>            : 
+<span class="lineNum">     214 </span><span class="lineNoCov">          0 :     bool isSpMarkerFrame() const</span>
+<span class="lineNum">     215 </span>            :     {
+<span class="lineNum">     216 </span><span class="lineCov">      14914 :         return kind() == Kind::SP_MARKER;</span>
+<span class="lineNum">     217 </span>            :     }
+<span class="lineNum">     218 </span>            : 
+<span class="lineNum">     219 </span><span class="lineNoCov">          0 :     bool isJsFrame() const</span>
+<span class="lineNum">     220 </span>            :     {
+<span class="lineNum">     221 </span><span class="lineCov">      14953 :         Kind k = kind();</span>
+<span class="lineNum">     222 </span><span class="lineNoCov">          0 :         return k == Kind::JS_NORMAL || k == Kind::JS_OSR;</span>
+<span class="lineNum">     223 </span>            :     }
+<span class="lineNum">     224 </span>            : 
+<span class="lineNum">     225 </span>            :     void setLabel(const char* aLabel) { label_ = aLabel; }
+<span class="lineNum">     226 </span><span class="lineNoCov">          0 :     const char* label() const { return label_; }</span>
+<span class="lineNum">     227 </span>            : 
+<span class="lineNum">     228 </span><span class="lineNoCov">          0 :     const char* dynamicString() const { return dynamicString_; }</span>
+<span class="lineNum">     229 </span>            : 
+<span class="lineNum">     230 </span><span class="lineCov">      20215 :     void initLabelFrame(const char* aLabel, const char* aDynamicString, void* sp,</span>
+<span class="lineNum">     231 </span>            :                         uint32_t aLine, Category aCategory)
+<span class="lineNum">     232 </span>            :     {
+<span class="lineNum">     233 </span><span class="lineNoCov">          0 :         label_ = aLabel;</span>
+<span class="lineNum">     234 </span><span class="lineCov">      40429 :         dynamicString_ = aDynamicString;</span>
+<span class="lineNum">     235 </span><span class="lineCov">      40430 :         spOrScript = sp;</span>
+<span class="lineNum">     236 </span><span class="lineNoCov">          0 :         lineOrPcOffset = static_cast&lt;int32_t&gt;(aLine);</span>
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :         kindAndCategory_ = uint32_t(Kind::LABEL) | (uint32_t(aCategory) &lt;&lt; uint32_t(Kind::KIND_BITCOUNT));</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(isLabelFrame());</span>
+<span class="lineNum">     239 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     240 </span>            : 
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :     void initSpMarkerFrame(void* sp)</span>
+<span class="lineNum">     242 </span>            :     {
+<span class="lineNum">     243 </span><span class="lineCov">      29828 :         label_ = &quot;&quot;;</span>
+<span class="lineNum">     244 </span><span class="lineNoCov">          0 :         dynamicString_ = nullptr;</span>
+<span class="lineNum">     245 </span><span class="lineCov">      29828 :         spOrScript = sp;</span>
+<span class="lineNum">     246 </span><span class="lineNoCov">          0 :         lineOrPcOffset = 0;</span>
+<span class="lineNum">     247 </span><span class="lineNoCov">          0 :         kindAndCategory_ = uint32_t(Kind::SP_MARKER) | (uint32_t(Category::OTHER) &lt;&lt; uint32_t(Kind::KIND_BITCOUNT));</span>
+<span class="lineNum">     248 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(isSpMarkerFrame());</span>
+<span class="lineNum">     249 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     250 </span>            : 
+<span class="lineNum">     251 </span><span class="lineNoCov">          0 :     void initJsFrame(const char* aLabel, const char* aDynamicString, JSScript* aScript,</span>
+<span class="lineNum">     252 </span>            :                      jsbytecode* aPc)
+<span class="lineNum">     253 </span>            :     {
+<span class="lineNum">     254 </span><span class="lineNoCov">          0 :         label_ = aLabel;</span>
+<span class="lineNum">     255 </span><span class="lineCov">      29828 :         dynamicString_ = aDynamicString;</span>
+<span class="lineNum">     256 </span><span class="lineCov">      29828 :         spOrScript = aScript;</span>
+<span class="lineNum">     257 </span><span class="lineNoCov">          0 :         lineOrPcOffset = pcToOffset(aScript, aPc);</span>
+<span class="lineNum">     258 </span><span class="lineNoCov">          0 :         kindAndCategory_ = uint32_t(Kind::JS_NORMAL) | (uint32_t(Category::JS) &lt;&lt; uint32_t(Kind::KIND_BITCOUNT));</span>
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(isJsFrame());</span>
+<span class="lineNum">     260 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     261 </span>            : 
+<span class="lineNum">     262 </span><span class="lineNoCov">          0 :     void setKind(Kind aKind) {</span>
+<span class="lineNum">     263 </span><span class="lineNoCov">          0 :         kindAndCategory_ = uint32_t(aKind) | (uint32_t(category()) &lt;&lt; uint32_t(Kind::KIND_BITCOUNT));</span>
+<span class="lineNum">     264 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     265 </span>            : 
+<span class="lineNum">     266 </span><span class="lineNoCov">          0 :     Kind kind() const {</span>
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 :         return Kind(kindAndCategory_ &amp; uint32_t(Kind::KIND_MASK));</span>
+<span class="lineNum">     268 </span>            :     }
+<span class="lineNum">     269 </span>            : 
+<span class="lineNum">     270 </span><span class="lineNoCov">          0 :     Category category() const {</span>
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :         return Category(kindAndCategory_ &gt;&gt; uint32_t(Kind::KIND_BITCOUNT));</span>
+<span class="lineNum">     272 </span>            :     }
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span><span class="lineNoCov">          0 :     void* stackAddress() const {</span>
+<span class="lineNum">     275 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(!isJsFrame());</span>
+<span class="lineNum">     276 </span><span class="lineNoCov">          0 :         return spOrScript;</span>
+<span class="lineNum">     277 </span>            :     }
+<span class="lineNum">     278 </span>            : 
+<span class="lineNum">     279 </span>            :     JS_PUBLIC_API(JSScript*) script() const;
+<span class="lineNum">     280 </span>            : 
+<span class="lineNum">     281 </span><span class="lineNoCov">          0 :     uint32_t line() const {</span>
+<span class="lineNum">     282 </span><span class="lineNoCov">          0 :         MOZ_ASSERT(!isJsFrame());</span>
+<span class="lineNum">     283 </span><span class="lineNoCov">          0 :         return static_cast&lt;uint32_t&gt;(lineOrPcOffset);</span>
+<span class="lineNum">     284 </span>            :     }
+<span class="lineNum">     285 </span>            : 
+<span class="lineNum">     286 </span>            :     // Note that the pointer returned might be invalid.
+<span class="lineNum">     287 </span><span class="lineCov">         10 :     JSScript* rawScript() const {</span>
+<span class="lineNum">     288 </span><span class="lineCov">         10 :         MOZ_ASSERT(isJsFrame());</span>
+<span class="lineNum">     289 </span><span class="lineCov">         20 :         void* script = spOrScript;</span>
+<span class="lineNum">     290 </span><span class="lineNoCov">          0 :         return static_cast&lt;JSScript*&gt;(script);</span>
+<span class="lineNum">     291 </span>            :     }
+<span class="lineNum">     292 </span>            : 
+<span class="lineNum">     293 </span>            :     // We can't know the layout of JSScript, so look in vm/GeckoProfiler.cpp.
+<span class="lineNum">     294 </span>            :     JS_FRIEND_API(jsbytecode*) pc() const;
+<span class="lineNum">     295 </span>            :     void setPC(jsbytecode* pc);
+<span class="lineNum">     296 </span>            : 
+<span class="lineNum">     297 </span>            :     void trace(JSTracer* trc);
+<span class="lineNum">     298 </span>            : 
+<span class="lineNum">     299 </span>            :     // The offset of a pc into a script's code can actually be 0, so to
+<span class="lineNum">     300 </span>            :     // signify a nullptr pc, use a -1 index. This is checked against in
+<span class="lineNum">     301 </span>            :     // pc() and setPC() to set/get the right pc.
+<span class="lineNum">     302 </span>            :     static const int32_t NullPCOffset = -1;
+<span class="lineNum">     303 </span>            : };
+<span class="lineNum">     304 </span>            : 
+<span class="lineNum">     305 </span>            : JS_FRIEND_API(void)
+<span class="lineNum">     306 </span>            : SetContextProfilingStack(JSContext* cx, ProfilingStack* profilingStack);
+<span class="lineNum">     307 </span>            : 
+<span class="lineNum">     308 </span>            : // GetContextProfilingStack also exists, but it's defined in RootingAPI.h.
+<span class="lineNum">     309 </span>            : 
+<span class="lineNum">     310 </span>            : JS_FRIEND_API(void)
+<span class="lineNum">     311 </span>            : EnableContextProfilingStack(JSContext* cx, bool enabled);
+<span class="lineNum">     312 </span>            : 
+<span class="lineNum">     313 </span>            : JS_FRIEND_API(void)
+<span class="lineNum">     314 </span>            : RegisterContextProfilingEventMarker(JSContext* cx, void (*fn)(const char*));
+<span class="lineNum">     315 </span>            : 
+<span class="lineNum">     316 </span>            : } // namespace js
+<span class="lineNum">     317 </span>            : 
+<span class="lineNum">     318 </span>            : namespace JS {
+<span class="lineNum">     319 </span>            : 
+<span class="lineNum">     320 </span>            : typedef void
+<span class="lineNum">     321 </span>            : (* RegisterThreadCallback)(const char* threadName, void* stackBase);
+<span class="lineNum">     322 </span>            : 
+<span class="lineNum">     323 </span>            : typedef void
+<span class="lineNum">     324 </span>            : (* UnregisterThreadCallback)();
+<span class="lineNum">     325 </span>            : 
+<span class="lineNum">     326 </span>            : JS_FRIEND_API(void)
+<span class="lineNum">     327 </span>            : SetProfilingThreadCallbacks(RegisterThreadCallback registerThread,
+<span class="lineNum">     328 </span>            :                             UnregisterThreadCallback unregisterThread);
+<span class="lineNum">     329 </span>            : 
+<span class="lineNum">     330 </span>            : } // namespace JS
+<span class="lineNum">     331 </span>            : 
+<span class="lineNum">     332 </span>            : // Each thread has its own ProfilingStack. That thread modifies the ProfilingStack,
+<span class="lineNum">     333 </span>            : // pushing and popping elements as necessary.
+<span class="lineNum">     334 </span>            : //
+<span class="lineNum">     335 </span>            : // The ProfilingStack is also read periodically by the profiler's sampler thread.
+<span class="lineNum">     336 </span>            : // This happens only when the thread that owns the ProfilingStack is suspended.
+<span class="lineNum">     337 </span>            : // So there are no genuine parallel accesses.
+<span class="lineNum">     338 </span>            : //
+<span class="lineNum">     339 </span>            : // However, it is possible for pushing/popping to be interrupted by a periodic
+<span class="lineNum">     340 </span>            : // sample. Because of this, we need pushing/popping to be effectively atomic.
+<span class="lineNum">     341 </span>            : //
+<span class="lineNum">     342 </span>            : // - When pushing a new frame, we increment the stack pointer -- making the new
+<span class="lineNum">     343 </span>            : //   frame visible to the sampler thread -- only after the new frame has been
+<span class="lineNum">     344 </span>            : //   fully written. The stack pointer is Atomic&lt;uint32_t,ReleaseAcquire&gt;, so
+<span class="lineNum">     345 </span>            : //   the increment is a release-store, which ensures that this store is not
+<span class="lineNum">     346 </span>            : //   reordered before the writes of the frame.
+<span class="lineNum">     347 </span>            : //
+<span class="lineNum">     348 </span>            : // - When popping an old frame, the only operation is the decrementing of the
+<span class="lineNum">     349 </span>            : //   stack pointer, which is obviously atomic.
+<span class="lineNum">     350 </span>            : //
+<span class="lineNum">     351 </span>            : class ProfilingStack final
+<span class="lineNum">     352 </span>            : {
+<span class="lineNum">     353 </span>            :   public:
+<span class="lineNum">     354 </span>            :     ProfilingStack()
+<span class="lineNum">     355 </span><span class="lineCov">        249 :       : stackPointer(0)</span>
+<span class="lineNum">     356 </span>            :     {}
+<span class="lineNum">     357 </span>            : 
+<span class="lineNum">     358 </span>            :     ~ProfilingStack();
+<span class="lineNum">     359 </span>            : 
+<span class="lineNum">     360 </span><span class="lineCov">      20214 :     void pushLabelFrame(const char* label, const char* dynamicString, void* sp,</span>
+<span class="lineNum">     361 </span>            :                         uint32_t line, js::ProfilingStackFrame::Category category) {
+<span class="lineNum">     362 </span><span class="lineCov">      40429 :         uint32_t oldStackPointer = stackPointer;</span>
+<span class="lineNum">     363 </span>            : 
+<span class="lineNum">     364 </span><span class="lineNoCov">          0 :         if (MOZ_LIKELY(capacity &gt; oldStackPointer) || MOZ_LIKELY(ensureCapacitySlow()))</span>
+<span class="lineNum">     365 </span><span class="lineNoCov">          0 :             frames[oldStackPointer].initLabelFrame(label, dynamicString, sp, line, category);</span>
+<span class="lineNum">     366 </span>            : 
+<span class="lineNum">     367 </span>            :         // This must happen at the end! The compiler will not reorder this
+<span class="lineNum">     368 </span>            :         // update because stackPointer is Atomic&lt;..., ReleaseAcquire&gt;, so any
+<span class="lineNum">     369 </span>            :         // the writes above will not be reordered below the stackPointer store.
+<span class="lineNum">     370 </span>            :         // Do the read and the write as two separate statements, in order to
+<span class="lineNum">     371 </span>            :         // make it clear that we don't need an atomic increment, which would be
+<span class="lineNum">     372 </span>            :         // more expensive on x86 than the separate operations done here.
+<span class="lineNum">     373 </span>            :         // This thread is the only one that ever changes the value of
+<span class="lineNum">     374 </span>            :         // stackPointer.
+<span class="lineNum">     375 </span><span class="lineNoCov">          0 :         stackPointer = oldStackPointer + 1;</span>
+<span class="lineNum">     376 </span><span class="lineCov">      20215 :     }</span>
+<span class="lineNum">     377 </span>            : 
+<span class="lineNum">     378 </span><span class="lineCov">      14914 :     void pushSpMarkerFrame(void* sp) {</span>
+<span class="lineNum">     379 </span><span class="lineNoCov">          0 :         uint32_t oldStackPointer = stackPointer;</span>
+<span class="lineNum">     380 </span>            : 
+<span class="lineNum">     381 </span><span class="lineNoCov">          0 :         if (MOZ_LIKELY(capacity &gt; oldStackPointer) || MOZ_LIKELY(ensureCapacitySlow()))</span>
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :             frames[oldStackPointer].initSpMarkerFrame(sp);</span>
+<span class="lineNum">     383 </span>            : 
+<span class="lineNum">     384 </span>            :         // This must happen at the end, see the comment in pushLabelFrame.
+<span class="lineNum">     385 </span><span class="lineNoCov">          0 :         stackPointer = oldStackPointer + 1;</span>
+<span class="lineNum">     386 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     387 </span>            : 
+<span class="lineNum">     388 </span><span class="lineNoCov">          0 :     void pushJsFrame(const char* label, const char* dynamicString, JSScript* script,</span>
+<span class="lineNum">     389 </span>            :                      jsbytecode* pc) {
+<span class="lineNum">     390 </span><span class="lineCov">      29828 :         uint32_t oldStackPointer = stackPointer;</span>
+<span class="lineNum">     391 </span>            : 
+<span class="lineNum">     392 </span><span class="lineCov">      14914 :         if (MOZ_LIKELY(capacity &gt; oldStackPointer) || MOZ_LIKELY(ensureCapacitySlow()))</span>
+<span class="lineNum">     393 </span><span class="lineCov">      29828 :             frames[oldStackPointer].initJsFrame(label, dynamicString, script, pc);</span>
+<span class="lineNum">     394 </span>            : 
+<span class="lineNum">     395 </span>            :         // This must happen at the end, see the comment in pushLabelFrame.
+<span class="lineNum">     396 </span><span class="lineNoCov">          0 :         stackPointer = oldStackPointer + 1;</span>
+<span class="lineNum">     397 </span><span class="lineNoCov">          0 :     }</span>
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span><span class="lineNoCov">          0 :     void pop() {</span>
+<span class="lineNum">     400 </span><span class="lineCov">      99965 :         MOZ_ASSERT(stackPointer &gt; 0);</span>
+<span class="lineNum">     401 </span>            :         // Do the read and the write as two separate statements, in order to
+<span class="lineNum">     402 </span>            :         // make it clear that we don't need an atomic decrement, which would be
+<span class="lineNum">     403 </span>            :         // more expensive on x86 than the separate operations done here.
+<span class="lineNum">     404 </span>            :         // This thread is the only one that ever changes the value of
+<span class="lineNum">     405 </span>            :         // stackPointer.
+<span class="lineNum">     406 </span><span class="lineCov">      99975 :         uint32_t oldStackPointer = stackPointer;</span>
+<span class="lineNum">     407 </span><span class="lineCov">      99982 :         stackPointer = oldStackPointer - 1;</span>
+<span class="lineNum">     408 </span><span class="lineCov">      49993 :     }</span>
+<span class="lineNum">     409 </span>            : 
+<span class="lineNum">     410 </span><span class="lineCov">         12 :     uint32_t stackSize() const { return std::min(uint32_t(stackPointer), stackCapacity()); }</span>
+<span class="lineNum">     411 </span>            :     uint32_t stackCapacity() const { return capacity; }
+<span class="lineNum">     412 </span>            : 
+<span class="lineNum">     413 </span>            :   private:
+<span class="lineNum">     414 </span>            :     // Out of line path for expanding the buffer, since otherwise this would get inlined in every
+<span class="lineNum">     415 </span>            :     // DOM WebIDL call.
+<span class="lineNum">     416 </span>            :     MOZ_COLD MOZ_MUST_USE bool ensureCapacitySlow();
+<span class="lineNum">     417 </span>            : 
+<span class="lineNum">     418 </span>            :     // No copying.
+<span class="lineNum">     419 </span>            :     ProfilingStack(const ProfilingStack&amp;) = delete;
+<span class="lineNum">     420 </span>            :     void operator=(const ProfilingStack&amp;) = delete;
+<span class="lineNum">     421 </span>            : 
+<span class="lineNum">     422 </span>            :     // No moving either.
+<span class="lineNum">     423 </span>            :     ProfilingStack(ProfilingStack&amp;&amp;) = delete;
+<span class="lineNum">     424 </span>            :     void operator=(ProfilingStack&amp;&amp;) = delete;
+<span class="lineNum">     425 </span>            : 
+<span class="lineNum">     426 </span>            :     uint32_t capacity = 0;
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span>            :   public:
+<span class="lineNum">     429 </span>            : 
+<span class="lineNum">     430 </span>            :     // The pointer to the stack frames, this is read from the profiler thread and written from the
+<span class="lineNum">     431 </span>            :     // current thread.
+<span class="lineNum">     432 </span>            :     //
+<span class="lineNum">     433 </span>            :     // This is effectively a unique pointer.
+<span class="lineNum">     434 </span>            :     mozilla::Atomic&lt;js::ProfilingStackFrame*&gt; frames { nullptr };
+<span class="lineNum">     435 </span>            : 
+<span class="lineNum">     436 </span>            :     // This may exceed the capacity, so instead use the stackSize() method to
+<span class="lineNum">     437 </span>            :     // determine the number of valid frames in stackFrames. When this is less
+<span class="lineNum">     438 </span>            :     // than stackCapacity(), it refers to the first free stackframe past the top
+<span class="lineNum">     439 </span>            :     // of the in-use stack (i.e. frames[stackPointer - 1] is the top stack
+<span class="lineNum">     440 </span>            :     // frame).
+<span class="lineNum">     441 </span>            :     //
+<span class="lineNum">     442 </span>            :     // WARNING WARNING WARNING
+<span class="lineNum">     443 </span>            :     //
+<span class="lineNum">     444 </span>            :     // This is an atomic variable that uses ReleaseAcquire memory ordering.
+<span class="lineNum">     445 </span>            :     // See the &quot;Concurrency considerations&quot; paragraph at the top of this file
+<span class="lineNum">     446 </span>            :     // for more details.
+<span class="lineNum">     447 </span>            :     mozilla::Atomic&lt;uint32_t, mozilla::ReleaseAcquire&gt; stackPointer;
+<span class="lineNum">     448 </span>            : };
+<span class="lineNum">     449 </span>            : 
+<span class="lineNum">     450 </span>            : namespace js {
+<span class="lineNum">     451 </span>            : 
+<span class="lineNum">     452 </span>            : class AutoGeckoProfilerEntry;
+<span class="lineNum">     453 </span>            : class GeckoProfilerEntryMarker;
+<span class="lineNum">     454 </span>            : class GeckoProfilerBaselineOSRMarker;
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span>            : class GeckoProfilerThread
+<span class="lineNum">     457 </span>            : {
+<span class="lineNum">     458 </span>            :     friend class AutoGeckoProfilerEntry;
+<span class="lineNum">     459 </span>            :     friend class GeckoProfilerEntryMarker;
+<span class="lineNum">     460 </span>            :     friend class GeckoProfilerBaselineOSRMarker;
+<span class="lineNum">     461 </span>            : 
+<span class="lineNum">     462 </span>            :     ProfilingStack*         profilingStack_;
+<span class="lineNum">     463 </span>            : 
+<span class="lineNum">     464 </span>            :   public:
+<span class="lineNum">     465 </span>            :     GeckoProfilerThread();
+<span class="lineNum">     466 </span>            : 
+<span class="lineNum">     467 </span>            :     uint32_t stackPointer() { MOZ_ASSERT(installed()); return profilingStack_-&gt;stackPointer; }
+<span class="lineNum">     468 </span>            :     ProfilingStackFrame* stack() { return profilingStack_-&gt;frames; }
+<span class="lineNum">     469 </span>            :     ProfilingStack* getProfilingStack() { return profilingStack_; }
+<span class="lineNum">     470 </span>            : 
+<span class="lineNum">     471 </span>            :     /* management of whether instrumentation is on or off */
+<span class="lineNum">     472 </span>            :     bool installed() { return profilingStack_ != nullptr; }
+<span class="lineNum">     473 </span>            : 
+<span class="lineNum">     474 </span>            :     void setProfilingStack(ProfilingStack* profilingStack);
+<span class="lineNum">     475 </span>            :     void trace(JSTracer* trc);
+<span class="lineNum">     476 </span>            : 
+<span class="lineNum">     477 </span>            :     /*
+<span class="lineNum">     478 </span>            :      * Functions which are the actual instrumentation to track run information
+<span class="lineNum">     479 </span>            :      *
+<span class="lineNum">     480 </span>            :      *   - enter: a function has started to execute
+<span class="lineNum">     481 </span>            :      *   - updatePC: updates the pc information about where a function
+<span class="lineNum">     482 </span>            :      *               is currently executing
+<span class="lineNum">     483 </span>            :      *   - exit: this function has ceased execution, and no further
+<span class="lineNum">     484 </span>            :      *           entries/exits will be made
+<span class="lineNum">     485 </span>            :      */
+<span class="lineNum">     486 </span>            :     bool enter(JSContext* cx, JSScript* script, JSFunction* maybeFun);
+<span class="lineNum">     487 </span>            :     void exit(JSScript* script, JSFunction* maybeFun);
+<span class="lineNum">     488 </span>            :     inline void updatePC(JSContext* cx, JSScript* script, jsbytecode* pc);
+<span class="lineNum">     489 </span>            : };
+<span class="lineNum">     490 </span>            : 
+<span class="lineNum">     491 </span>            : } // namespace js
+<span class="lineNum">     492 </span>            : 
+<span class="lineNum">     493 </span>            : #endif  /* js_ProfilingStack_h */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>

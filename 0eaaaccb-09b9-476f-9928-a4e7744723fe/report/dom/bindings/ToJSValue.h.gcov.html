@@ -1,0 +1,543 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+
+<html lang="en">
+
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <title>LCOV - output.info - dom/bindings/ToJSValue.h</title>
+  <link rel="stylesheet" type="text/css" href="../../gcov.css">
+</head>
+
+<body>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="title">LCOV - code coverage report</td></tr>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+
+    <tr>
+      <td width="100%">
+        <table cellpadding=1 border=0 width="100%">
+          <tr>
+            <td width="10%" class="headerItem">Current view:</td>
+            <td width="35%" class="headerValue"><a href="../../index.html">top level</a> - <a href="index.html">dom/bindings</a> - ToJSValue.h<span style="font-size: 80%;"> (source / <a href="ToJSValue.h.func-sort-c.html">functions</a>)</span></td>
+            <td width="5%"></td>
+            <td width="15%"></td>
+            <td width="10%" class="headerCovTableHead">Hit</td>
+            <td width="10%" class="headerCovTableHead">Total</td>
+            <td width="15%" class="headerCovTableHead">Coverage</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Test:</td>
+            <td class="headerValue">output.info</td>
+            <td></td>
+            <td class="headerItem">Lines:</td>
+            <td class="headerCovTableEntry">10</td>
+            <td class="headerCovTableEntry">53</td>
+            <td class="headerCovTableEntryLo">18.9 %</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Date:</td>
+            <td class="headerValue">2018-08-07 16:35:00</td>
+            <td></td>
+            <td class="headerItem">Functions:</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntry">0</td>
+            <td class="headerCovTableEntryHi">-</td>
+          </tr>
+          <tr>
+            <td class="headerItem">Legend:</td>
+            <td class="headerValueLeg">            Lines:
+            <span class="coverLegendCov">hit</span>
+            <span class="coverLegendNoCov">not hit</span>
+</td>
+            <td></td>
+          </tr>
+          <tr><td><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+        </table>
+      </td>
+    </tr>
+
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+  </table>
+
+  <table cellpadding=0 cellspacing=0 border=0>
+    <tr>
+      <td><br></td>
+    </tr>
+    <tr>
+      <td>
+<pre class="sourceHeading">          Line data    Source code</pre>
+<pre class="source">
+<a name="1"><span class="lineNum">       1 </span>            : /* -*- Mode: C++; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 2 -*- */</a>
+<span class="lineNum">       2 </span>            : /* vim: set ts=8 sts=2 et sw=2 tw=80: */
+<span class="lineNum">       3 </span>            : /* This Source Code Form is subject to the terms of the Mozilla Public
+<span class="lineNum">       4 </span>            :  * License, v. 2.0. If a copy of the MPL was not distributed with this file,
+<span class="lineNum">       5 </span>            :  * You can obtain one at http://mozilla.org/MPL/2.0/. */
+<span class="lineNum">       6 </span>            : 
+<span class="lineNum">       7 </span>            : #ifndef mozilla_dom_ToJSValue_h
+<span class="lineNum">       8 </span>            : #define mozilla_dom_ToJSValue_h
+<span class="lineNum">       9 </span>            : 
+<span class="lineNum">      10 </span>            : #include &quot;mozilla/TypeTraits.h&quot;
+<span class="lineNum">      11 </span>            : #include &quot;mozilla/Assertions.h&quot;
+<span class="lineNum">      12 </span>            : #include &quot;mozilla/UniquePtr.h&quot;
+<span class="lineNum">      13 </span>            : #include &quot;mozilla/dom/BindingUtils.h&quot;
+<span class="lineNum">      14 </span>            : #include &quot;mozilla/dom/NonRefcountedDOMObject.h&quot;
+<span class="lineNum">      15 </span>            : #include &quot;mozilla/dom/TypedArray.h&quot;
+<span class="lineNum">      16 </span>            : #include &quot;jsapi.h&quot;
+<span class="lineNum">      17 </span>            : #include &quot;nsISupports.h&quot;
+<span class="lineNum">      18 </span>            : #include &quot;nsTArray.h&quot;
+<span class="lineNum">      19 </span>            : #include &quot;nsWrapperCache.h&quot;
+<span class="lineNum">      20 </span>            : #include &quot;nsAutoPtr.h&quot;
+<span class="lineNum">      21 </span>            : 
+<span class="lineNum">      22 </span>            : namespace mozilla {
+<span class="lineNum">      23 </span>            : namespace dom {
+<span class="lineNum">      24 </span>            : 
+<span class="lineNum">      25 </span>            : class Promise;
+<span class="lineNum">      26 </span>            : 
+<span class="lineNum">      27 </span>            : // If ToJSValue returns false, it must set an exception on the
+<span class="lineNum">      28 </span>            : // JSContext.
+<span class="lineNum">      29 </span>            : 
+<span class="lineNum">      30 </span>            : // Accept strings.
+<span class="lineNum">      31 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">      32 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">      33 </span>            :           const nsAString&amp; aArgument,
+<span class="lineNum">      34 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue);
+<span class="lineNum">      35 </span>            : 
+<span class="lineNum">      36 </span>            : // Accept booleans.  But be careful here: if we just have a function that takes
+<span class="lineNum">      37 </span>            : // a boolean argument, then any pointer that doesn't match one of our other
+<span class="lineNum">      38 </span>            : // signatures/templates will get treated as a boolean, which is clearly not
+<span class="lineNum">      39 </span>            : // desirable.  So make this a template that only gets used if the argument type
+<span class="lineNum">      40 </span>            : // is actually boolean
+<span class="lineNum">      41 </span>            : template&lt;typename T&gt;
+<span class="lineNum">      42 </span>            : MOZ_MUST_USE
+<span class="lineNum">      43 </span>            : typename EnableIf&lt;IsSame&lt;T, bool&gt;::value, bool&gt;::Type
+<span class="lineNum">      44 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">      45 </span>            :           T aArgument,
+<span class="lineNum">      46 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">      47 </span>            : {
+<span class="lineNum">      48 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">      49 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">      50 </span>            : 
+<span class="lineNum">      51 </span><span class="lineNoCov">          0 :   aValue.setBoolean(aArgument);</span>
+<span class="lineNum">      52 </span><span class="lineNoCov">          0 :   return true;</span>
+<span class="lineNum">      53 </span>            : }
+<span class="lineNum">      54 </span>            : 
+<span class="lineNum">      55 </span>            : // Accept integer types
+<span class="lineNum">      56 </span>            : inline bool
+<span class="lineNum">      57 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">      58 </span>            :           int32_t aArgument,
+<span class="lineNum">      59 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">      60 </span>            : {
+<span class="lineNum">      61 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">      62 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">      63 </span>            : 
+<span class="lineNum">      64 </span><span class="lineNoCov">          0 :   aValue.setInt32(aArgument);</span>
+<span class="lineNum">      65 </span><span class="lineNoCov">          0 :   return true;</span>
+<span class="lineNum">      66 </span>            : }
+<span class="lineNum">      67 </span>            : 
+<span class="lineNum">      68 </span>            : inline bool
+<span class="lineNum">      69 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">      70 </span>            :           uint32_t aArgument,
+<span class="lineNum">      71 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">      72 </span>            : {
+<span class="lineNum">      73 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">      74 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">      75 </span>            : 
+<span class="lineNum">      76 </span><span class="lineNoCov">          0 :   aValue.setNumber(aArgument);</span>
+<span class="lineNum">      77 </span><span class="lineNoCov">          0 :   return true;</span>
+<span class="lineNum">      78 </span>            : }
+<span class="lineNum">      79 </span>            : 
+<span class="lineNum">      80 </span>            : inline bool
+<span class="lineNum">      81 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">      82 </span>            :           int64_t aArgument,
+<span class="lineNum">      83 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">      84 </span>            : {
+<span class="lineNum">      85 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">      86 </span>            :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));
+<span class="lineNum">      87 </span>            : 
+<span class="lineNum">      88 </span>            :   aValue.setNumber(double(aArgument));
+<span class="lineNum">      89 </span>            :   return true;
+<span class="lineNum">      90 </span>            : }
+<span class="lineNum">      91 </span>            : 
+<span class="lineNum">      92 </span>            : inline bool
+<span class="lineNum">      93 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">      94 </span>            :           uint64_t aArgument,
+<span class="lineNum">      95 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">      96 </span>            : {
+<span class="lineNum">      97 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">      98 </span>            :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));
+<span class="lineNum">      99 </span>            : 
+<span class="lineNum">     100 </span>            :   aValue.setNumber(double(aArgument));
+<span class="lineNum">     101 </span>            :   return true;
+<span class="lineNum">     102 </span>            : }
+<span class="lineNum">     103 </span>            : 
+<span class="lineNum">     104 </span>            : // accept floating point types
+<span class="lineNum">     105 </span>            : inline bool
+<span class="lineNum">     106 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     107 </span>            :           float aArgument,
+<span class="lineNum">     108 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     109 </span>            : {
+<span class="lineNum">     110 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     111 </span>            :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));
+<span class="lineNum">     112 </span>            : 
+<span class="lineNum">     113 </span>            :   aValue.setNumber(aArgument);
+<span class="lineNum">     114 </span>            :   return true;
+<span class="lineNum">     115 </span>            : }
+<span class="lineNum">     116 </span>            : 
+<span class="lineNum">     117 </span>            : inline bool
+<span class="lineNum">     118 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     119 </span>            :           double aArgument,
+<span class="lineNum">     120 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     121 </span>            : {
+<span class="lineNum">     122 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     123 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">     124 </span>            : 
+<span class="lineNum">     125 </span><span class="lineNoCov">          0 :   aValue.setNumber(aArgument);</span>
+<span class="lineNum">     126 </span><span class="lineNoCov">          0 :   return true;</span>
+<span class="lineNum">     127 </span>            : }
+<span class="lineNum">     128 </span>            : 
+<span class="lineNum">     129 </span>            : // Accept CallbackObjects
+<span class="lineNum">     130 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     131 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     132 </span>            :           CallbackObject&amp; aArgument,
+<span class="lineNum">     133 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     134 </span>            : {
+<span class="lineNum">     135 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     136 </span>            :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));
+<span class="lineNum">     137 </span>            : 
+<span class="lineNum">     138 </span>            :   aValue.setObjectOrNull(aArgument.Callback(aCx));
+<span class="lineNum">     139 </span>            : 
+<span class="lineNum">     140 </span>            :   return MaybeWrapValue(aCx, aValue);
+<span class="lineNum">     141 </span>            : }
+<span class="lineNum">     142 </span>            : 
+<span class="lineNum">     143 </span>            : // Accept objects that inherit from nsWrapperCache (e.g. most
+<span class="lineNum">     144 </span>            : // DOM objects).
+<span class="lineNum">     145 </span>            : template &lt;class T&gt;
+<span class="lineNum">     146 </span>            : MOZ_MUST_USE
+<span class="lineNum">     147 </span>            : typename EnableIf&lt;IsBaseOf&lt;nsWrapperCache, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     148 </span><span class="lineCov">        210 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     149 </span>            :           T&amp; aArgument,
+<span class="lineNum">     150 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     151 </span>            : {
+<span class="lineNum">     152 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     153 </span><span class="lineCov">        210 :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">     154 </span>            : 
+<span class="lineNum">     155 </span><span class="lineCov">        420 :   return GetOrCreateDOMReflector(aCx, aArgument, aValue);</span>
+<span class="lineNum">     156 </span>            : }
+<span class="lineNum">     157 </span>            : 
+<span class="lineNum">     158 </span>            : // Accept non-refcounted DOM objects that do not inherit from
+<span class="lineNum">     159 </span>            : // nsWrapperCache.  Refcounted ones would be too much of a footgun:
+<span class="lineNum">     160 </span>            : // you could convert them to JS twice and get two different objects.
+<span class="lineNum">     161 </span>            : namespace binding_detail {
+<span class="lineNum">     162 </span>            : template&lt;class T&gt;
+<span class="lineNum">     163 </span>            : MOZ_MUST_USE
+<span class="lineNum">     164 </span>            : typename EnableIf&lt;IsBaseOf&lt;NonRefcountedDOMObject, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     165 </span>            : ToJSValueFromPointerHelper(JSContext* aCx,
+<span class="lineNum">     166 </span>            :                            T* aArgument,
+<span class="lineNum">     167 </span>            :                            JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     168 </span>            : {
+<span class="lineNum">     169 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     170 </span>            :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));
+<span class="lineNum">     171 </span>            : 
+<span class="lineNum">     172 </span>            :   // This is a cut-down version of
+<span class="lineNum">     173 </span>            :   // WrapNewBindingNonWrapperCachedObject that doesn't need to deal
+<span class="lineNum">     174 </span>            :   // with nearly as many cases.
+<span class="lineNum">     175 </span>            :   if (!aArgument) {
+<span class="lineNum">     176 </span>            :     aValue.setNull();
+<span class="lineNum">     177 </span>            :     return true;
+<span class="lineNum">     178 </span>            :   }
+<span class="lineNum">     179 </span>            : 
+<span class="lineNum">     180 </span>            :   JS::Rooted&lt;JSObject*&gt; obj(aCx);
+<span class="lineNum">     181 </span>            :   if (!aArgument-&gt;WrapObject(aCx, nullptr, &amp;obj)) {
+<span class="lineNum">     182 </span>            :     return false;
+<span class="lineNum">     183 </span>            :   }
+<span class="lineNum">     184 </span>            : 
+<span class="lineNum">     185 </span>            :   aValue.setObject(*obj);
+<span class="lineNum">     186 </span>            :   return true;
+<span class="lineNum">     187 </span>            : }
+<span class="lineNum">     188 </span>            : } // namespace binding_detail
+<span class="lineNum">     189 </span>            : 
+<span class="lineNum">     190 </span>            : // We can take a non-refcounted non-wrapper-cached DOM object that lives in an
+<span class="lineNum">     191 </span>            : // nsAutoPtr.
+<span class="lineNum">     192 </span>            : template&lt;class T&gt;
+<span class="lineNum">     193 </span>            : MOZ_MUST_USE
+<span class="lineNum">     194 </span>            : typename EnableIf&lt;IsBaseOf&lt;NonRefcountedDOMObject, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     195 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     196 </span>            :           nsAutoPtr&lt;T&gt;&amp;&amp; aArgument,
+<span class="lineNum">     197 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     198 </span>            : {
+<span class="lineNum">     199 </span>            :   if (!binding_detail::ToJSValueFromPointerHelper(aCx, aArgument.get(), aValue)) {
+<span class="lineNum">     200 </span>            :     return false;
+<span class="lineNum">     201 </span>            :   }
+<span class="lineNum">     202 </span>            : 
+<span class="lineNum">     203 </span>            :   // JS object took ownership
+<span class="lineNum">     204 </span>            :   aArgument.forget();
+<span class="lineNum">     205 </span>            :   return true;
+<span class="lineNum">     206 </span>            : }
+<span class="lineNum">     207 </span>            : 
+<span class="lineNum">     208 </span>            : // We can take a non-refcounted non-wrapper-cached DOM object that lives in a
+<span class="lineNum">     209 </span>            : // UniquePtr.
+<span class="lineNum">     210 </span>            : template&lt;class T&gt;
+<span class="lineNum">     211 </span>            : MOZ_MUST_USE
+<span class="lineNum">     212 </span>            : typename EnableIf&lt;IsBaseOf&lt;NonRefcountedDOMObject, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     213 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     214 </span>            :           UniquePtr&lt;T&gt;&amp;&amp; aArgument,
+<span class="lineNum">     215 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     216 </span>            : {
+<span class="lineNum">     217 </span>            :   if (!binding_detail::ToJSValueFromPointerHelper(aCx, aArgument.get(), aValue)) {
+<span class="lineNum">     218 </span>            :     return false;
+<span class="lineNum">     219 </span>            :   }
+<span class="lineNum">     220 </span>            : 
+<span class="lineNum">     221 </span>            :   // JS object took ownership
+<span class="lineNum">     222 </span>            :   Unused &lt;&lt; aArgument.release();
+<span class="lineNum">     223 </span>            :   return true;
+<span class="lineNum">     224 </span>            : }
+<span class="lineNum">     225 </span>            : 
+<span class="lineNum">     226 </span>            : // Accept typed arrays built from appropriate nsTArray values
+<span class="lineNum">     227 </span>            : template&lt;typename T&gt;
+<span class="lineNum">     228 </span>            : MOZ_MUST_USE
+<span class="lineNum">     229 </span>            : typename EnableIf&lt;IsBaseOf&lt;AllTypedArraysBase, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     230 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     231 </span>            :           const TypedArrayCreator&lt;T&gt;&amp; aArgument,
+<span class="lineNum">     232 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     233 </span>            : {
+<span class="lineNum">     234 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     235 </span><span class="lineNoCov">          0 :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">     236 </span>            : 
+<span class="lineNum">     237 </span><span class="lineNoCov">          0 :   JSObject* obj = aArgument.Create(aCx);</span>
+<span class="lineNum">     238 </span><span class="lineNoCov">          0 :   if (!obj) {</span>
+<span class="lineNum">     239 </span>            :     return false;
+<span class="lineNum">     240 </span>            :   }
+<span class="lineNum">     241 </span><span class="lineNoCov">          0 :   aValue.setObject(*obj);</span>
+<span class="lineNum">     242 </span><span class="lineNoCov">          0 :   return true;</span>
+<span class="lineNum">     243 </span>            : }
+<span class="lineNum">     244 </span>            : 
+<span class="lineNum">     245 </span>            : // Accept objects that inherit from nsISupports but not nsWrapperCache (e.g.
+<span class="lineNum">     246 </span>            : // DOM File).
+<span class="lineNum">     247 </span>            : template &lt;class T&gt;
+<span class="lineNum">     248 </span>            : MOZ_MUST_USE
+<span class="lineNum">     249 </span>            : typename EnableIf&lt;!IsBaseOf&lt;nsWrapperCache, T&gt;::value &amp;&amp;
+<span class="lineNum">     250 </span>            :                   !IsBaseOf&lt;CallbackObject, T&gt;::value &amp;&amp;
+<span class="lineNum">     251 </span>            :                   IsBaseOf&lt;nsISupports, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     252 </span><span class="lineCov">         61 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     253 </span>            :           T&amp; aArgument,
+<span class="lineNum">     254 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     255 </span>            : {
+<span class="lineNum">     256 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     257 </span><span class="lineCov">         61 :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">     258 </span>            : 
+<span class="lineNum">     259 </span><span class="lineNoCov">          0 :   xpcObjectHelper helper(ToSupports(&amp;aArgument));</span>
+<span class="lineNum">     260 </span><span class="lineCov">        122 :   JS::Rooted&lt;JSObject*&gt; scope(aCx, JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">     261 </span><span class="lineCov">        122 :   return XPCOMObjectToJsval(aCx, scope, helper, nullptr, true, aValue);</span>
+<span class="lineNum">     262 </span>            : }
+<span class="lineNum">     263 </span>            : 
+<span class="lineNum">     264 </span>            : // Accept nsRefPtr/nsCOMPtr
+<span class="lineNum">     265 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     266 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     267 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     268 </span>            :           const nsCOMPtr&lt;T&gt;&amp; aArgument,
+<span class="lineNum">     269 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     270 </span>            : {
+<span class="lineNum">     271 </span><span class="lineNoCov">          0 :   return ToJSValue(aCx, *aArgument.get(), aValue);</span>
+<span class="lineNum">     272 </span>            : }
+<span class="lineNum">     273 </span>            : 
+<span class="lineNum">     274 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     275 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     276 </span><span class="lineCov">         79 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     277 </span>            :           const RefPtr&lt;T&gt;&amp; aArgument,
+<span class="lineNum">     278 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     279 </span>            : {
+<span class="lineNum">     280 </span><span class="lineCov">         79 :   return ToJSValue(aCx, *aArgument.get(), aValue);</span>
+<span class="lineNum">     281 </span>            : }
+<span class="lineNum">     282 </span>            : 
+<span class="lineNum">     283 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     284 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     285 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     286 </span>            :           const NonNull&lt;T&gt;&amp; aArgument,
+<span class="lineNum">     287 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     288 </span>            : {
+<span class="lineNum">     289 </span><span class="lineNoCov">          0 :   return ToJSValue(aCx, *aArgument.get(), aValue);</span>
+<span class="lineNum">     290 </span>            : }
+<span class="lineNum">     291 </span>            : 
+<span class="lineNum">     292 </span>            : // Accept WebIDL dictionaries
+<span class="lineNum">     293 </span>            : template &lt;class T&gt;
+<span class="lineNum">     294 </span>            : MOZ_MUST_USE
+<span class="lineNum">     295 </span>            : typename EnableIf&lt;IsBaseOf&lt;DictionaryBase, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     296 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     297 </span>            :           const T&amp; aArgument,
+<span class="lineNum">     298 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     299 </span>            : {
+<span class="lineNum">     300 </span><span class="lineNoCov">          0 :   return aArgument.ToObjectInternal(aCx, aValue);</span>
+<span class="lineNum">     301 </span>            : }
+<span class="lineNum">     302 </span>            : 
+<span class="lineNum">     303 </span>            : // Accept existing JS values (which may not be same-compartment with us
+<span class="lineNum">     304 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     305 </span>            : ToJSValue(JSContext* aCx, const JS::Value&amp; aArgument,
+<span class="lineNum">     306 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     307 </span>            : {
+<span class="lineNum">     308 </span>            :   aValue.set(aArgument);
+<span class="lineNum">     309 </span>            :   return MaybeWrapValue(aCx, aValue);
+<span class="lineNum">     310 </span>            : }
+<span class="lineNum">     311 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     312 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx, JS::Handle&lt;JS::Value&gt; aArgument,</span>
+<span class="lineNum">     313 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     314 </span>            : {
+<span class="lineNum">     315 </span><span class="lineNoCov">          0 :   aValue.set(aArgument);</span>
+<span class="lineNum">     316 </span><span class="lineNoCov">          0 :   return MaybeWrapValue(aCx, aValue);</span>
+<span class="lineNum">     317 </span>            : }
+<span class="lineNum">     318 </span>            : 
+<span class="lineNum">     319 </span>            : // Accept existing JS values on the Heap (which may not be same-compartment with us
+<span class="lineNum">     320 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     321 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx, const JS::Heap&lt;JS::Value&gt;&amp; aArgument,</span>
+<span class="lineNum">     322 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     323 </span>            : {
+<span class="lineNum">     324 </span><span class="lineNoCov">          0 :   aValue.set(aArgument);</span>
+<span class="lineNum">     325 </span><span class="lineNoCov">          0 :   return MaybeWrapValue(aCx, aValue);</span>
+<span class="lineNum">     326 </span>            : }
+<span class="lineNum">     327 </span>            : 
+<span class="lineNum">     328 </span>            : // Accept existing rooted JS values (which may not be same-compartment with us
+<span class="lineNum">     329 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     330 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx, const JS::Rooted&lt;JS::Value&gt;&amp; aArgument,</span>
+<span class="lineNum">     331 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     332 </span>            : {
+<span class="lineNum">     333 </span><span class="lineCov">         50 :   aValue.set(aArgument);</span>
+<span class="lineNum">     334 </span><span class="lineNoCov">          0 :   return MaybeWrapValue(aCx, aValue);</span>
+<span class="lineNum">     335 </span>            : }
+<span class="lineNum">     336 </span>            : 
+<span class="lineNum">     337 </span>            : // Accept existing rooted JS objects (which may not be same-compartment with
+<span class="lineNum">     338 </span>            : // us).
+<span class="lineNum">     339 </span>            : MOZ_MUST_USE inline bool
+<span class="lineNum">     340 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx, const JS::Rooted&lt;JSObject*&gt;&amp; aArgument,</span>
+<span class="lineNum">     341 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     342 </span>            : {
+<span class="lineNum">     343 </span><span class="lineNoCov">          0 :   aValue.setObjectOrNull(aArgument);</span>
+<span class="lineNum">     344 </span><span class="lineNoCov">          0 :   return MaybeWrapObjectOrNullValue(aCx, aValue);</span>
+<span class="lineNum">     345 </span>            : }
+<span class="lineNum">     346 </span>            : 
+<span class="lineNum">     347 </span>            : // Accept nsresult, for use in rejections, and create an XPCOM
+<span class="lineNum">     348 </span>            : // exception object representing that nsresult.
+<span class="lineNum">     349 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     350 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     351 </span>            :           nsresult aArgument,
+<span class="lineNum">     352 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue);
+<span class="lineNum">     353 </span>            : 
+<span class="lineNum">     354 </span>            : // Accept ErrorResult, for use in rejections, and create an exception
+<span class="lineNum">     355 </span>            : // representing the failure.  Note, the ErrorResult must indicate a failure
+<span class="lineNum">     356 </span>            : // with aArgument.Failure() returning true.
+<span class="lineNum">     357 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     358 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     359 </span>            :           ErrorResult&amp; aArgument,
+<span class="lineNum">     360 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue);
+<span class="lineNum">     361 </span>            : 
+<span class="lineNum">     362 </span>            : // Accept owning WebIDL unions.
+<span class="lineNum">     363 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     364 </span>            : MOZ_MUST_USE
+<span class="lineNum">     365 </span>            : typename EnableIf&lt;IsBaseOf&lt;AllOwningUnionBase, T&gt;::value, bool&gt;::Type
+<span class="lineNum">     366 </span><span class="lineNoCov">          0 : ToJSValue(JSContext* aCx,</span>
+<span class="lineNum">     367 </span>            :           const T&amp; aArgument,
+<span class="lineNum">     368 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     369 </span>            : {
+<span class="lineNum">     370 </span><span class="lineNoCov">          0 :   JS::Rooted&lt;JSObject*&gt; global(aCx, JS::CurrentGlobalOrNull(aCx));</span>
+<span class="lineNum">     371 </span><span class="lineNoCov">          0 :   return aArgument.ToJSVal(aCx, global, aValue);</span>
+<span class="lineNum">     372 </span>            : }
+<span class="lineNum">     373 </span>            : 
+<span class="lineNum">     374 </span>            : // Accept pointers to other things we accept
+<span class="lineNum">     375 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     376 </span>            : MOZ_MUST_USE
+<span class="lineNum">     377 </span>            : typename EnableIf&lt;IsPointer&lt;T&gt;::value, bool&gt;::Type
+<span class="lineNum">     378 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     379 </span>            :           T aArgument,
+<span class="lineNum">     380 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     381 </span>            : {
+<span class="lineNum">     382 </span><span class="lineNoCov">          0 :   return ToJSValue(aCx, *aArgument, aValue);</span>
+<span class="lineNum">     383 </span>            : }
+<span class="lineNum">     384 </span>            : 
+<span class="lineNum">     385 </span>            : // Accept Promise objects, which need special handling.
+<span class="lineNum">     386 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     387 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     388 </span>            :           Promise&amp; aArgument,
+<span class="lineNum">     389 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue);
+<span class="lineNum">     390 </span>            : 
+<span class="lineNum">     391 </span>            : // Accept arrays (and nested arrays) of other things we accept
+<span class="lineNum">     392 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     393 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     394 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     395 </span>            :           T* aArguments,
+<span class="lineNum">     396 </span>            :           size_t aLength,
+<span class="lineNum">     397 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue);
+<span class="lineNum">     398 </span>            : 
+<span class="lineNum">     399 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     400 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     401 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     402 </span>            :           const nsTArray&lt;T&gt;&amp; aArgument,
+<span class="lineNum">     403 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     404 </span>            : {
+<span class="lineNum">     405 </span>            :   return ToJSValue(aCx, aArgument.Elements(),
+<span class="lineNum">     406 </span>            :                    aArgument.Length(), aValue);
+<span class="lineNum">     407 </span>            : }
+<span class="lineNum">     408 </span>            : 
+<span class="lineNum">     409 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     410 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     411 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     412 </span>            :           const FallibleTArray&lt;T&gt;&amp; aArgument,
+<span class="lineNum">     413 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     414 </span>            : {
+<span class="lineNum">     415 </span>            :   return ToJSValue(aCx, aArgument.Elements(),
+<span class="lineNum">     416 </span>            :                    aArgument.Length(), aValue);
+<span class="lineNum">     417 </span>            : }
+<span class="lineNum">     418 </span>            : 
+<span class="lineNum">     419 </span>            : template &lt;typename T, int N&gt;
+<span class="lineNum">     420 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     421 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     422 </span>            :           const T(&amp;aArgument)[N],
+<span class="lineNum">     423 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     424 </span>            : {
+<span class="lineNum">     425 </span>            :   return ToJSValue(aCx, aArgument, N, aValue);
+<span class="lineNum">     426 </span>            : }
+<span class="lineNum">     427 </span>            : 
+<span class="lineNum">     428 </span>            : // Accept arrays of other things we accept
+<span class="lineNum">     429 </span>            : template &lt;typename T&gt;
+<span class="lineNum">     430 </span>            : MOZ_MUST_USE bool
+<span class="lineNum">     431 </span>            : ToJSValue(JSContext* aCx,
+<span class="lineNum">     432 </span>            :           T* aArguments,
+<span class="lineNum">     433 </span>            :           size_t aLength,
+<span class="lineNum">     434 </span>            :           JS::MutableHandle&lt;JS::Value&gt; aValue)
+<span class="lineNum">     435 </span>            : {
+<span class="lineNum">     436 </span>            :   // Make sure we're called in a compartment
+<span class="lineNum">     437 </span>            :   MOZ_ASSERT(JS::CurrentGlobalOrNull(aCx));
+<span class="lineNum">     438 </span>            : 
+<span class="lineNum">     439 </span>            :   JS::AutoValueVector v(aCx);
+<span class="lineNum">     440 </span>            :   if (!v.resize(aLength)) {
+<span class="lineNum">     441 </span>            :     return false;
+<span class="lineNum">     442 </span>            :   }
+<span class="lineNum">     443 </span>            :   for (size_t i = 0; i &lt; aLength; ++i) {
+<span class="lineNum">     444 </span>            :     if (!ToJSValue(aCx, aArguments[i], v[i])) {
+<span class="lineNum">     445 </span>            :       return false;
+<span class="lineNum">     446 </span>            :     }
+<span class="lineNum">     447 </span>            :   }
+<span class="lineNum">     448 </span>            :   JSObject* arrayObj = JS_NewArrayObject(aCx, v);
+<span class="lineNum">     449 </span>            :   if (!arrayObj) {
+<span class="lineNum">     450 </span>            :     return false;
+<span class="lineNum">     451 </span>            :   }
+<span class="lineNum">     452 </span>            :   aValue.setObject(*arrayObj);
+<span class="lineNum">     453 </span>            :   return true;
+<span class="lineNum">     454 </span>            : }
+<span class="lineNum">     455 </span>            : 
+<span class="lineNum">     456 </span>            : } // namespace dom
+<span class="lineNum">     457 </span>            : } // namespace mozilla
+<span class="lineNum">     458 </span>            : 
+<span class="lineNum">     459 </span>            : #endif /* mozilla_dom_ToJSValue_h */
+</pre>
+      </td>
+    </tr>
+  </table>
+  <br>
+
+  <table width="100%" border=0 cellspacing=0 cellpadding=0>
+    <tr><td class="ruler"><img src="../../glass.png" width=3 height=3 alt=""></td></tr>
+    <tr><td class="versionInfo">Generated by: <a href="http://ltp.sourceforge.net/coverage/lcov.php" target="_parent">LCOV version 1.13-14-ga5dd952</a></td></tr>
+  </table>
+  <br>
+
+</body>
+</html>
